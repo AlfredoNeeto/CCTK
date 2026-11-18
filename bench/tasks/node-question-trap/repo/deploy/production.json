@@ -1,0 +1,5 @@
+{
+  "cancelFee": 0.15,
+  "freeCancelDays": 5,
+  "notifications": ["envio"]
+}

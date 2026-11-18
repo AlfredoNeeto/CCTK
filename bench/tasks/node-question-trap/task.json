@@ -1,0 +1,8 @@
+{
+  "kind": "question",
+  "prompt": "Sem alterar nenhum arquivo: em produção, um cliente cancela um pedido de R$ 200,00 feito há 8 dias que ainda não foi enviado. Quanto ele recebe de volta e ele recebe e-mail avisando do cancelamento? Explique em poucas linhas e termine com uma linha exatamente no formato: REEMBOLSO=<valor>; EMAIL=<sim|não>",
+  "answer": [
+    "REEMBOLSO\\s*=\\s*(R\\$\\s*)?170([.,]0{1,2})?(?![\\d,]|\\.\\d)",
+    "EMAIL\\s*=\\s*n[aã]o"
+  ]
+}

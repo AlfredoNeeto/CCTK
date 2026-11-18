@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "Implemente parcelar(valor, parcelas) em src/installments.js. Regras: (1) parcelas é um inteiro de 1 a 12 e valor é maior que zero; fora disso, lance RangeError. (2) Até 3 parcelas, sem juros. De 4 a 12, juros de 1,99% ao mês pela Tabela Price. (3) A parcela é arredondada em centavos primeiro; o total é parcela × parcelas, também em centavos. (4) Se a parcela ficar abaixo de R$ 20,00, lance RangeError. Retorne { parcela, total }. Há um helper de arredondamento em src/money.js.",
+  "check": "node --test",
+  "grade": "node --test --test-reporter=tap hidden.test.js"
+}

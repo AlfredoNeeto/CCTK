@@ -1,0 +1,2 @@
+Em produção o deploy/production.json muda a taxa para 15% e o prazo para 5 dias; 8 > 5, então desconta R$ 30. As notificações só incluem envio.
+REEMBOLSO=R$ 170,00; EMAIL=não

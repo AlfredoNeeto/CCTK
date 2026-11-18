@@ -1,0 +1,5 @@
+{
+  "kind": "question",
+  "prompt": "Sem alterar nenhum arquivo: quando um pedido é cancelado, qual valor o cliente recebe de volta e em que situações ele é avisado por e-mail? Cite os arquivos e as funções envolvidas.",
+  "answer": ["refundAmount", "cancelOrder", "notifyCustomer", "pricing\\.js", "\\b7\\b|sete", "10\\s?%|0[.,]1\\b", "enviad", "optOut|opt-out|opt out|descadastr", "e-?mail"]
+}

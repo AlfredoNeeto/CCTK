@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/Calendario/Calendario.csproj" />
+  <Project Path="tests/Calendario.Tests/Calendario.Tests.csproj" />
+</Solution>

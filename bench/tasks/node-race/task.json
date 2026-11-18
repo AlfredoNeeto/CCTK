@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "Clientes relatam que na Black Friday vendemos mais unidades do que tínhamos em estoque, e às vezes o estoque de um produto fica inconsistente. Encontre a causa e corrija. O src/store.js simula o banco remoto e não pode ser alterado.",
+  "check": "node --test",
+  "grade": "node --test --test-reporter=tap hidden.test.js"
+}

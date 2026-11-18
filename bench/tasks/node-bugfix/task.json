@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "O teste test/discount.test.js falha: um pedido de R$ 500 deveria ter 10% de desconto. Corrija o bug em src/discount.js. As regras de negócio estão no comentário do arquivo.",
+  "check": "node --test",
+  "grade": "node --test --test-reporter=tap hidden.test.js"
+}

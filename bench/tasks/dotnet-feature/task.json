@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "Implemente Cnpj.IsValid em src/Docs/Cnpj.cs. Aceite CNPJ com ou sem máscara (pontos, barra e hífen) e também o CNPJ alfanumérico: as 12 primeiras posições podem ser dígitos ou letras maiúsculas A-Z; os 2 dígitos verificadores são sempre numéricos. No cálculo dos dígitos verificadores (módulo 11, pesos de 2 a 9 da direita para a esquerda), o valor de cada caractere é o código ASCII dele menos 48. Rejeite null, vazio, tamanho errado e sequências de um único caractere repetido. Os testes ficam em tests/Docs.Tests.",
+  "check": "dotnet test",
+  "grade": "dotnet test"
+}

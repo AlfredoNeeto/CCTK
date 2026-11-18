@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "Implemente a classe DiasUteis em src/Calendario/DiasUteis.cs (vencimento de boletos). Dia útil é de segunda a sexta, exceto feriados nacionais: 1/1, 21/4, 1/5, 7/9, 12/10, 2/11, 15/11, 20/11 e 25/12, mais os móveis calculados a partir da Páscoa: segunda e terça de Carnaval (48 e 47 dias antes), Sexta-feira Santa (2 dias antes) e Corpus Christi (60 dias depois). Precisa funcionar para qualquer ano de 1900 a 2100. EhDiaUtil(data): se a data é dia útil. Somar(data, dias): a data que fica `dias` dias úteis depois de `data` (a própria data não conta); dias negativos contam para trás; com 0, devolve a própria data se for dia útil, senão o próximo dia útil. Contar(inicio, fim): quantos dias úteis há no intervalo (inicio, fim], sem o início e com o fim; se fim < inicio, devolve o negativo da contagem de (fim, inicio]. Os testes ficam em tests/Calendario.Tests.",
+  "check": "dotnet test",
+  "grade": "dotnet test"
+}

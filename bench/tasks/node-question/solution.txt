@@ -1,0 +1,1 @@
+Em src/orders.js, cancelOrder chama refundAmount (src/pricing.js): reembolso integral até 7 dias, depois desconta 10%; pedido enviado tem reembolso 0. Se o reembolso for maior que zero, notifyCustomer (src/notify.js) manda e-mail, a menos que o cliente não tenha e-mail ou tenha optOut.
