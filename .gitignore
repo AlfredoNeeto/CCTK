@@ -1,0 +1,5 @@
+node_modules/
+.env
+.env.*
+dbhub.toml
+Claude Toolkit Dev — Pesquisa*.md

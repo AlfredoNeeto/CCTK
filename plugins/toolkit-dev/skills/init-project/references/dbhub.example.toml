@@ -1,0 +1,16 @@
+# DBHub, somente leitura. Este arquivo NÃO vai para o git (confira o .gitignore).
+# Use um login só com db_datareader, num banco de dev ou homologação. Nunca produção.
+# A senha pode vir de uma variável de ambiente do sistema: ${DB_PASSWORD}
+
+[[sources]]
+id = "dev"
+dsn = "sqlserver://<usuario_leitura>:${DB_PASSWORD}@<servidor>:1433/<banco>?sslmode=require"
+# Instância nomeada: acrescente &instanceName=<INSTANCIA> ao DSN
+# Autenticação Windows: ?authentication=ntlm&domain=<DOMINIO>
+query_timeout = 30
+
+[[tools]]
+name = "execute_sql"
+source = "dev"
+readonly = true
+max_rows = 200

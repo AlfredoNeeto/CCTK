@@ -1,0 +1,9 @@
+{
+  "name": "toolkit-dev",
+  "version": "0.1.0",
+  "description": "Check obrigatório antes de encerrar, cofre de variáveis, auditoria de terceiros, init de projeto com OpenSpec e conversão de documentos.",
+  "author": {
+    "name": "Alfredo Neto"
+  },
+  "license": "MIT"
+}

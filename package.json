@@ -1,0 +1,25 @@
+{
+  "name": "claude-toolkit",
+  "version": "0.1.0",
+  "description": "Claude Toolkit Dev: instala e configura o Claude Code para qualidade e economia no plano Pro.",
+  "license": "MIT",
+  "bin": {
+    "claude-toolkit": "cli.mjs"
+  },
+  "files": [
+    "cli.mjs",
+    "lib/",
+    "runtime/",
+    "plugins/"
+  ],
+  "engines": {
+    "node": ">=22.20"
+  },
+  "scripts": {
+    "test": "node --test test/toolkit.test.mjs test/e2e.test.mjs plugins/toolkit-dev/hooks/hooks.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlfredoNeeto/claude-toolkit.git"
+  }
+}
