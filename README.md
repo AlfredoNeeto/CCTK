@@ -31,7 +31,7 @@ Depois, em cada repositório: abra o Claude Code na pasta do projeto e rode `/to
 
 | Tipo | Item | Para quê |
 |---|---|---|
-| Configuração | Sonnet, esforço medium, estilo Concise, subagentes em Sonnet | Custo menor por mensagem. Use `claude --model opus` só em sessões de planejamento difícil |
+| Configuração | Sonnet, esforço medium, estilo Concise, subagentes em Sonnet, sem sugestões de prompt | Custo menor por mensagem. As sugestões de prompt fazem uma requisição extra depois de cada resposta |
 | Statusline | contexto %, uso de 5h e 7 dias com hora do reset | Ver a cota antes de ela acabar |
 | Hook | **check obrigatório** | Se houve edição, o Claude só encerra com o check do projeto (`.claude/toolkit.json`) passando |
 | Hook | **cofre de variáveis** | A IA usa `$NOME` sem ver o valor |
@@ -70,7 +70,15 @@ o teste que define "pronto".
 | Arquivar | B | `/openspec-archive-change`, e depois `/clear` |
 
 Uma mudança por sessão de implementação. Escolha o modelo ao abrir a sessão: trocar com `/model` no
-meio faz o Claude reler a conversa inteira sem o desconto do cache.
+meio faz o Claude reler a conversa inteira sem o desconto do cache. Pelo mesmo motivo, não use `opusplan`.
+
+**Tarefa com muitas regras e casos de borda** (validação, importação, cálculo): rode `/effort high` na
+própria sessão em Sonnet. Mudar o esforço não perde o cache. No benchmark (`bench/`), o Sonnet em `high`
+acertou tanto quanto o Opus (9/10 contra 9/10) pela metade do custo, enquanto o Sonnet em `medium`
+acertou 7/10. Em tarefa simples, o `high` só encarece; volte com `/effort medium`. Para aprofundar só
+uma resposta, escreva `ultrathink` no prompt.
+
+Para ver o que está gastando a cota, use `/usage` (mostra skills, plugins e MCPs).
 
 ## Cofre de variáveis
 

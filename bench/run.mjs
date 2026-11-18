@@ -13,8 +13,9 @@ const argv = process.argv.slice(2);
 const opt = (name, def) => { const i = argv.indexOf(`--${name}`); return i < 0 ? def : argv[i + 1]; };
 const REPS = Number(opt('reps', 3));
 const ONLY = opt('tasks')?.split(',');
-// padrao: de fábrica · config: só settings/CLAUDE.md do toolkit (sem plugin) · toolkit: instalação completa
-const ALL_ARMS = ['padrao', 'config', 'toolkit'];
+// padrao: de fábrica · config: só settings/CLAUDE.md do toolkit (sem plugin) · high: config com esforço high
+// toolkit: instalação completa
+const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit'];
 const ARMS = opt('arms', 'padrao,toolkit').split(',');
 if (!ARMS.every((a) => ALL_ARMS.includes(a))) throw new Error(`--arms aceita: ${ALL_ARMS.join(', ')}`);
 const HOUR = 3600 * 1000;
@@ -97,6 +98,12 @@ function makeHome(arm, auth) {
   if (auth) writeJson(path.join(p.claude, '.credentials.json'), auth.creds);
   writeJson(p.claudeJson, { hasCompletedOnboarding: true, ...(auth ? { oauthAccount: auth.account } : {}) });
   if (arm !== 'padrao') tk.writeConfig(p);
+  if (arm === 'high') {
+    const f = path.join(p.claude, 'settings.json');
+    const s = readJson(f);
+    for (const m of Object.values(s.modelSettings)) m.effortLevel = 'high';
+    writeJson(f, s);
+  }
   if (arm === 'toolkit') {
     for (const args of [['plugin', 'marketplace', 'add', tk.REPO_ROOT], ['plugin', 'install', tk.PLUGIN_ID],
       ['plugin', 'marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ['plugin', 'install', tk.SECURITY_PLUGIN]]) {
