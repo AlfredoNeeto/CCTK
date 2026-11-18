@@ -165,6 +165,7 @@ test('install → ado add → MCP launch → restore, full flow', async () => {
       `openspec config set workflows ${JSON.stringify(tk.OPENSPEC_WORKFLOWS)}`,
       `claude plugin marketplace add ${tk.REPO_ROOT}`,
       `claude plugin install ${tk.PLUGIN_ID}`,
+      `claude plugin marketplace add ${tk.OFFICIAL_MARKETPLACE}`,
       `claude plugin install ${tk.SECURITY_PLUGIN}`,
     ]);
 
