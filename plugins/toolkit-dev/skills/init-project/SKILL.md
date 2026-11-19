@@ -102,7 +102,7 @@ O OpenSpec (1) e o time (6) são **sempre** feitos. Os outros itens, só quando 
    ```json
    {
      "model": "sonnet",
-     "extraKnownMarketplaces": { "claude-toolkit": { "source": { "source": "github", "repo": "AlfredoNeeto/claude-toolkit", "ref": "v1.1.1" } } },
+     "extraKnownMarketplaces": { "claude-toolkit": { "source": { "source": "github", "repo": "AlfredoNeeto/claude-toolkit", "ref": "v1.1.2" } } },
      "enabledPlugins": { "toolkit-dev@claude-toolkit": true }
    }
    ```

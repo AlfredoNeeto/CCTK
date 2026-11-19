@@ -2,7 +2,7 @@
 
 Faz o plano Pro do Claude Code render mais, sem perder qualidade e sem vazar segredo.
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-1.1.1-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-kit-D97757)
+![versão](https://img.shields.io/badge/vers%C3%A3o-1.1.2-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-kit-D97757)
 
 **[Instalar](#instalar)** · **[📖 Guia do dia a dia](docs/GUIA.md)** · [Comandos](#comandos) · [Benchmark](bench/README.md)
 
@@ -43,7 +43,7 @@ Precisa de [Claude Code](https://code.claude.com) com login feito, [Node 22.20+]
 Code e rode num terminal comum:
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.1.1 install
+npx github:AlfredoNeeto/claude-toolkit#v1.1.2 install
 ```
 
 > [!WARNING]
@@ -70,13 +70,13 @@ No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina ant
 1. `cd meu-projeto` e `claude`. A statusline no rodapé deve começar por `Sonnet`.
 2. `/toolkit-dev:init-project`: descobre a stack e cria `AGENTS.md`, `CLAUDE.md`, `openspec/` e o
    **check** (o build e teste que o Claude roda antes de encerrar). Commite tudo.
-3. Num terminal, na pasta do projeto, aprove o check: `npx github:AlfredoNeeto/claude-toolkit#v1.1.1 trust`.
+3. Num terminal, na pasta do projeto, aprove o check: `npx github:AlfredoNeeto/claude-toolkit#v1.1.2 trust`.
    Como o comando vem do repositório, o kit só o roda depois de você aprovar.
 4. Peça uma tarefa pequena. Depois, leia o **[Guia do dia a dia](docs/GUIA.md)**.
 
 ## Comandos
 
-| No terminal (`npx github:AlfredoNeeto/claude-toolkit#v1.1.1 ...`) | Para quê |
+| No terminal (`npx github:AlfredoNeeto/claude-toolkit#v1.1.2 ...`) | Para quê |
 |---|---|
 | `install` | Instala ou atualiza o kit |
 | `doctor` | Confere a instalação e diz o que fazer em cada falha |
@@ -113,8 +113,8 @@ check e o guarda de segredos não mostraram ganho no benchmark; ficam como prote
 ## Desinstalar
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.1.1 restore           # a configuração de antes do kit
-npx github:AlfredoNeeto/claude-toolkit#v1.1.1 restore <data>    # um específico (lista em ~/.claude-toolkit/backups/)
+npx github:AlfredoNeeto/claude-toolkit#v1.1.2 restore           # a configuração de antes do kit
+npx github:AlfredoNeeto/claude-toolkit#v1.1.2 restore <data>    # um específico (lista em ~/.claude-toolkit/backups/)
 ```
 
 Devolve sua configuração, seus plugins e MCPs, e tira os plugins do kit. Se quiser, apague à mão a pasta

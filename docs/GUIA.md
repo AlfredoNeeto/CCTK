@@ -25,7 +25,7 @@ claude                      # abre no Sonnet: o modelo do dia a dia
 1. **Pedido pequeno?** Peça direto ([como pedir](#tarefa-pequena)).
 2. **Terminou?** `/clear` antes do próximo assunto.
 3. **Feature com regra de negócio?** Planeje no Opus, implemente no Sonnet ([fluxo](#feature-ou-bug-com-regra-de-negócio)).
-4. **No fim da semana:** `npx github:AlfredoNeeto/claude-toolkit#v1.1.1 stats` mostra para onde foi a cota.
+4. **No fim da semana:** `npx github:AlfredoNeeto/claude-toolkit#v1.1.2 stats` mostra para onde foi a cota.
 
 Primeira vez num repositório? Rode `/toolkit-dev:init-project` uma vez, commite o que ele criar e
 [aprove o check](#o-check-antes-de-encerrar).
@@ -89,7 +89,7 @@ comando no terminal (`sed -i`, `cat > arquivo`), num repositório git. Editar s�
   ou um PR poderia trazer qualquer comando. O kit só roda o check depois que você aprova, num terminal,
   na pasta do projeto:
   ```
-  npx github:AlfredoNeeto/claude-toolkit#v1.1.1 trust
+  npx github:AlfredoNeeto/claude-toolkit#v1.1.2 trust
   ```
   Se o comando mudar (num pull, num PR ou porque o Claude editou o arquivo), o kit avisa e pede aprovação
   de novo. O Claude não consegue aprovar sozinho.
@@ -110,9 +110,9 @@ comando no terminal (`sed -i`, `cat > arquivo`), num repositório git. Editar s�
 Dê ao Claude um token de desenvolvimento sem que ele veja o valor:
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.1.1 secret set API_TOKEN   # pede o valor sem mostrar
-npx github:AlfredoNeeto/claude-toolkit#v1.1.1 secret list
-npx github:AlfredoNeeto/claude-toolkit#v1.1.1 secret rm API_TOKEN
+npx github:AlfredoNeeto/claude-toolkit#v1.1.2 secret set API_TOKEN   # pede o valor sem mostrar
+npx github:AlfredoNeeto/claude-toolkit#v1.1.2 secret list
+npx github:AlfredoNeeto/claude-toolkit#v1.1.2 secret rm API_TOKEN
 ```
 
 Na sessão, o Claude recebe só o nome e usa `$API_TOKEN` nos comandos.
@@ -128,7 +128,7 @@ Na sessão, o Claude recebe só o nome e usa `$API_TOKEN` nos comandos.
 Para servidores on-premises (o MCP oficial da Microsoft só atende a nuvem):
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.1.1 ado add https://servidor/tfs/MinhaCollection
+npx github:AlfredoNeeto/claude-toolkit#v1.1.2 ado add https://servidor/tfs/MinhaCollection
 ```
 
 - Cada collection vira um MCP `ado-<collection>`. Pode cadastrar quantas quiser.
@@ -142,7 +142,7 @@ npx github:AlfredoNeeto/claude-toolkit#v1.1.1 ado add https://servidor/tfs/Minha
 Comece pelo `doctor`. Ele confere a instalação e diz o que fazer em cada item que falhou:
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.1.1 doctor
+npx github:AlfredoNeeto/claude-toolkit#v1.1.2 doctor
 ```
 
 | Sintoma | O que fazer |
@@ -153,7 +153,7 @@ npx github:AlfredoNeeto/claude-toolkit#v1.1.1 doctor
 | Aviso de que o check passou de 3 min | Troque o `check` em `.claude/toolkit.json` por algo mais rápido |
 | O Claude insiste num check que já estava quebrado | Conserte o projeto ou ajuste o `check`. O check desiste na segunda parada sem edição |
 | "Bloqueado pelo toolkit" | O comando ia mostrar um segredo. Peça para usar a variável (`$NOME`) |
-| Quero a configuração antiga | `npx github:AlfredoNeeto/claude-toolkit#v1.1.1 restore` |
+| Quero a configuração antiga | `npx github:AlfredoNeeto/claude-toolkit#v1.1.2 restore` |
 | Atualizar o kit | Rode o `install` com a tag nova, por exemplo `#v1.2.0`. Os MCPs do Azure DevOps continuam, e o `restore` ainda volta à configuração de antes do kit |
 | Certificado corporativo (proxy) | Defina `NODE_EXTRA_CA_CERTS=<caminho do .pem>` nas variáveis de ambiente do usuário |
 
