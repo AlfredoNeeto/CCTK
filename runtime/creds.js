@@ -8,8 +8,11 @@ const { spawnSync } = require('child_process');
 const SERVICE = 'claude-toolkit';
 const credDir = () => path.join(os.homedir(), '.claude-toolkit', 'creds');
 const dpapiFile = (name) => path.join(credDir(), `${name}.dpapi`);
-const ps = (script, opts) =>
-  spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { encoding: 'utf8', ...opts });
+// Without PSModulePath: one inherited from PowerShell 7 makes Windows PowerShell 5.1 fail to load ConvertTo-SecureString.
+const ps = (script, { env = process.env, ...opts } = {}) => {
+  const clean = Object.fromEntries(Object.entries(env).filter(([k]) => k.toLowerCase() !== 'psmodulepath'));
+  return spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { encoding: 'utf8', ...opts, env: clean });
+};
 
 function assertName(name) {
   if (!/^[A-Za-z0-9_.-]+$/.test(name)) throw new Error(`Nome de credencial inválido: ${name}`);

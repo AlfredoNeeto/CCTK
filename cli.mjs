@@ -26,9 +26,9 @@ function ask(q) {
 function askHidden(q) {
   if (!process.stdin.isTTY) return ask(q);
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-  process.stdout.write(q);
-  rl._writeToOutput = () => {}; // shortcut: private readline hook to mute echo; replace if Node removes it
-  return new Promise((r) => rl.question('', (a) => { rl.close(); process.stdout.write('\n'); r(a.trim()); }));
+  // Readline redraws prompt + typed text in one write: keep the prompt, drop the text.
+  rl._writeToOutput = (s) => rl.output.write(s.startsWith(q) ? q : ''); // shortcut: private readline hook; replace if Node removes it
+  return new Promise((r) => rl.question(q, (a) => { rl.close(); process.stdout.write('\n'); r(a.trim()); }));
 }
 
 const yes = async (q) => /^s(im)?$/i.test(await ask(`${q} [s/N] `));

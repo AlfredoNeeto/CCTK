@@ -93,7 +93,7 @@ Grave em `.claude/toolkit.json`:
    ```json
    {
      "model": "sonnet",
-     "extraKnownMarketplaces": { "claude-toolkit": { "source": { "source": "github", "repo": "AlfredoNeeto/claude-toolkit", "ref": "v1.0.1" } } },
+     "extraKnownMarketplaces": { "claude-toolkit": { "source": { "source": "github", "repo": "AlfredoNeeto/claude-toolkit", "ref": "v1.0.2" } } },
      "enabledPlugins": { "toolkit-dev@claude-toolkit": true }
    }
    ```
