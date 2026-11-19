@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "Implemente gerarSlug(titulo) em src/slug.js, que gera o slug da URL de um produto a partir do título dele. Os testes ficam em test/.",
+  "check": "node --test",
+  "grade": "node --test --test-reporter=tap hidden.test.js"
+}

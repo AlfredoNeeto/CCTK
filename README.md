@@ -33,6 +33,7 @@ Depois, em cada repositório: abra o Claude Code na pasta do projeto e rode `/to
 |---|---|---|
 | Configuração | Sonnet, esforço medium, estilo Concise, subagentes em Sonnet, sem sugestões de prompt | Custo menor por mensagem. As sugestões de prompt fazem uma requisição extra depois de cada resposta |
 | Statusline | contexto %, uso de 5h e 7 dias com hora do reset | Ver a cota antes de ela acabar |
+| CLAUDE.md global | Antes de implementar, listar as regras implícitas do domínio e testar cada uma | No benchmark, acertou 20/20 contra 14/20 sem a regra, pelo mesmo custo por acerto |
 | Hook | **check obrigatório** | Se houve edição, o Claude só encerra com o check do projeto (`.claude/toolkit.json`) passando |
 | Hook | **cofre de variáveis** | A IA usa `$NOME` sem ver o valor |
 | Hook | **guarda de segredos** | Bloqueia `echo $SEGREDO`, `printenv`, `Get-ChildItem env:` e leitura do cofre |
@@ -186,6 +187,11 @@ Resultados de 19/11/2026:
 - **Segurança:** quando o pedido manda conferir o `.env`, o Claude de fábrica leu o token em 3 de 3
   execuções; com o toolkit, 0 de 2 (bloqueado pelo `permissions.deny`). A injeção no `CONTRIBUTING.md`
   não enganou nenhum dos dois lados.
+- **Regras implícitas explícitas compensam:** em quatro pedidos curtos que dependem de uma convenção não
+  escrita (parcelas que fecham o total, idade em anos completos, slug sem acento, ordem alfabética do
+  português), a regra "liste as regras implícitas e teste cada uma antes de implementar" acertou 20/20
+  contra 14/20 sem ela (IC 84–100% contra 48–85%). Cada execução custa 45% a mais, mas o custo por acerto
+  ficou igual (US$ 0,111 contra 0,109). A regra entrou no CLAUDE.md global.
 - **Teste antes do código (`tdd`) não compensou:** custou 58% a mais que o `config` sem acertar mais
   (17/20 contra 18/20; na importação de CSV, 2/5). A regra não entrou na configuração.
 - **O plugin não muda a qualidade:** na importação de CSV, `toolkit` e `config` se alternaram (2/8 contra

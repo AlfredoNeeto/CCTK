@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "Implemente dividirEmParcelas(total, n) em src/parcelas.js: divide o valor total de uma compra em n parcelas e devolve a lista com o valor de cada parcela. Os testes ficam em test/.",
+  "check": "node --test",
+  "grade": "node --test --test-reporter=tap hidden.test.js"
+}

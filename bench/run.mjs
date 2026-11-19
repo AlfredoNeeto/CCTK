@@ -15,6 +15,7 @@ const REPS = Number(opt('reps', 3));
 const ONLY = opt('tasks')?.split(',');
 // padrao: de fábrica · config: só settings/CLAUDE.md do toolkit (sem plugin) · high: config com esforço high
 // toolkit: instalação completa · tdd: toolkit + regra de teste antes do código (dá ao check-gate testes que cobrem o pedido)
+// (o antigo lado spec virou padrão do toolkit: a regra de regras implícitas está no CLAUDE.md global)
 const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd'];
 const TDD_RULE = `- Em tarefa com regras de negócio: antes de implementar, escreva um teste para cada regra e caso de borda do pedido,
   rode e veja falhar; só então implemente. Não apague nem afrouxe teste para fazê-lo passar.
@@ -131,8 +132,7 @@ function makeHome(arm, auth) {
     for (const m of Object.values(s.modelSettings)) m.effortLevel = 'high';
     writeJson(f, s);
   }
-  if (arm === 'tdd') fs.appendFileSync(path.join(p.claude, 'CLAUDE.md'), TDD_RULE);
-  if (arm === 'toolkit' || arm === 'tdd') {
+  if (arm === 'tdd') fs.appendFileSync(path.join(p.claude, 'CLAUDE.md'), TDD_RULE);  if (arm === 'toolkit' || arm === 'tdd') {
     for (const args of [['plugin', 'marketplace', 'add', tk.REPO_ROOT], ['plugin', 'install', tk.PLUGIN_ID],
       ['plugin', 'marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ['plugin', 'install', tk.SECURITY_PLUGIN]]) {
       const r = tk.run('claude', args, { env: env(home), timeout: 300000 });

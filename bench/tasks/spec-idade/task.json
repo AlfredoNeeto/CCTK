@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "Implemente idade(nascimento, hoje) em src/idade.js, que calcula a idade de uma pessoa. As datas vêm como 'AAAA-MM-DD'. Os testes ficam em test/.",
+  "check": "node --test",
+  "grade": "node --test --test-reporter=tap hidden.test.js"
+}

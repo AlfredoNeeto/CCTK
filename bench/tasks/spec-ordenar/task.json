@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "Implemente ordenarClientes(clientes) em src/clientes.js, que devolve os clientes ({ nome, ... }) em ordem alfabética de nome. Os testes ficam em test/.",
+  "check": "node --test",
+  "grade": "node --test --test-reporter=tap hidden.test.js"
+}
