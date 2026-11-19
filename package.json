@@ -1,6 +1,6 @@
 {
   "name": "claude-toolkit",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Claude Toolkit Dev: instala e configura o Claude Code para qualidade e economia no plano Pro.",
   "license": "MIT",
   "bin": {

@@ -10,9 +10,9 @@ process.stdin.on('data', (d) => (raw += d)).on('end', () => {
     const hm = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     return long ? `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} ${hm}` : hm;
   };
-  // Opus spends about twice the quota of Sonnet for the same task (bench/): flag it where the user looks.
+  // Opus costs more than Sonnet for the same task (about 2x in API dollars in bench/; the Pro quota weight is undocumented).
   const opus = /opus/i.test(`${j.model?.id || ''} ${j.model?.display_name || ''}`);
-  const parts = [j.model?.display_name && `${j.model.display_name}${opus ? ' ⚠ ~2x cota' : ''}`];
+  const parts = [j.model?.display_name && `${j.model.display_name}${opus ? ' ⚠ mais caro' : ''}`];
   if (j.context_window?.used_percentage != null) parts.push(`ctx ${pct(j.context_window.used_percentage)}`);
   for (const [key, label, long] of [['five_hour', '5h', false], ['seven_day', '7d', true]]) {
     const r = j.rate_limits?.[key];

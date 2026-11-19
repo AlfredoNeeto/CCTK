@@ -38,15 +38,16 @@ Faça uma única rodada, com no máximo 4 perguntas, cada uma já com a sua suge
 - O que o sistema faz, em uma frase (se o README não disser).
 - Pastas ou legado que o agente não deve alterar.
 - Uma convenção que o código não mostra.
-- Se o check sugerido (passo 4) for demorado: aceitar assim ou usar uma versão mais rápida?
 
 ## 4. Gravar o check obrigatório
 
 Monte o comando com [stacks.md](references/stacks.md). Ele precisa:
 - **sair com código diferente de 0 quando algo quebra** e
-- terminar em poucos minutos, porque roda a cada fim de turno em que houve edição.
+- terminar em poucos minutos, porque roda a cada fim de turno em que houve edição. O hook interrompe o
+  check que passa de 3 minutos (ou que fica em modo watch) e libera o encerramento só com um aviso.
 
-Rode o comando uma vez. Se falhar no estado atual do repositório, mostre a saída e pergunte se deve
+Rode o comando uma vez e cronometre. Se passar de 2 minutos, grave a versão rápida (só build e typecheck,
+como em stacks.md) e avise o usuário, em vez de perguntar. Se falhar no estado atual do repositório, mostre a saída e pergunte se deve
 gravar mesmo assim (o Claude vai ficar preso tentando consertar algo que já estava quebrado).
 Grave em `.claude/toolkit.json`:
 
@@ -92,12 +93,12 @@ Grave em `.claude/toolkit.json`:
    ```json
    {
      "model": "sonnet",
-     "extraKnownMarketplaces": { "claude-toolkit": { "source": { "source": "github", "repo": "AlfredoNeeto/claude-toolkit" } } },
+     "extraKnownMarketplaces": { "claude-toolkit": { "source": { "source": "github", "repo": "AlfredoNeeto/claude-toolkit", "ref": "v1.0.0" } } },
      "enabledPlugins": { "toolkit-dev@claude-toolkit": true }
    }
    ```
    Assim, quem clonar o repositório recebe a sugestão de instalar o toolkit e trabalha em Sonnet, que no
-   benchmark custou cerca de metade do Opus pela mesma qualidade. Para planejar, `claude --model opus`
+   benchmark custou cerca de metade do Opus em custo de API, pela mesma qualidade. Para planejar, `claude --model opus`
    continua valendo, porque a opção de linha de comando tem precedência sobre o `settings.json`.
 
 ## 7. Modo atualizar (AGENTS.md já existe)

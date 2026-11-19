@@ -55,10 +55,20 @@ test('check-gate', async (t) => {
     run('check-gate.js', ['mark'], { session_id: 's5' }, env);
     assert.strictEqual(run('check-gate.js', ['gate'], { session_id: 's5', cwd, stop_hook_active: true }, env).status, 2);
   });
+  await t.test('a check that never ends is killed at the time limit and the stop goes through', () => {
+    const cwd = project('node -e "setInterval(() => {}, 1000)"');
+    run('check-gate.js', ['mark'], { session_id: 's6' }, env);
+    const started = Date.now();
+    const r = run('check-gate.js', ['gate'], { session_id: 's6', cwd }, { ...env, TOOLKIT_CHECK_TIMEOUT_MS: '1500' });
+    assert.strictEqual(r.status, 0);
+    assert.ok(Date.now() - started < 15000, `levou ${Date.now() - started} ms`);
+    assert.match(JSON.parse(r.stdout).systemMessage, /interrompido/);
+    assert.ok(!fs.existsSync(path.join(data, 'toolkit-dirty-s6')));
+  });
   await t.test('gate.log records each decision per session', () => {
     const log = fs.readFileSync(path.join(data, 'gate.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
     const of = (s) => log.filter((e) => e.session === s).map((e) => e.result);
-    assert.deepStrictEqual([of('s1'), of('s2'), of('s3'), of('s4'), of('s5')], [[], [], ['pass'], ['fail', 'giveup'], ['fail', 'fail']]);
+    assert.deepStrictEqual([of('s1'), of('s2'), of('s3'), of('s4'), of('s5'), of('s6')], [[], [], ['pass'], ['fail', 'giveup'], ['fail', 'fail'], ['timeout']]);
   });
 });
 
@@ -67,11 +77,16 @@ test('secret-guard', () => {
   for (const cmd of ['echo $DB_CONN', 'echo "${DB_CONN}"', 'Write-Output $env:DB_CONN', '$env:ADO_PAT_DEFAULTCOLLECTION',
     'printenv', 'env', 'env | grep DB', 'Get-ChildItem env:', 'cat ~/.claude-toolkit/secrets.env', 'printf "%s" $DB_CONN',
     'security find-generic-password -s claude-toolkit -a ado-x -w', 'secret-tool lookup service claude-toolkit account ado-x',
-    'Get-Content C:/Users/a/creds/ado-x.dpapi | ConvertTo-SecureString']) {
+    'Get-Content C:/Users/a/creds/ado-x.dpapi | ConvertTo-SecureString',
+    "[Environment]::GetEnvironmentVariable('DB_CONN')", "Write-Output [Environment]::GetEnvironmentVariable('DB_CONN')",
+    "$x = 1; [Environment]::GetEnvironmentVariable(\"DB_CONN\", 'User')", '[Environment]::GetEnvironmentVariables()']) {
     assert.ok(verdict(cmd, n), `should block: ${cmd}`);
   }
   for (const cmd of ['curl -H "Authorization: Bearer $DB_CONN" https://x', 'sqlcmd -S "$DB_CONN" -Q "select 1"',
-    'echo ok', 'dotnet test', 'env FOO=1 npm test', 'git status']) {
+    'echo ok', 'dotnet test', 'env FOO=1 npm test', 'git status',
+    // checks the variable without showing it: the 5 blocks measured in bench/ were this, each costing a turn
+    "$t = [Environment]::GetEnvironmentVariable('DB_CONN'); \"definida: $([bool]$t) (tamanho: $($t.Length))\"",
+    "[Environment]::GetEnvironmentVariable('PATH')"]) {
     assert.strictEqual(verdict(cmd, n), null, `should allow: ${cmd}`);
   }
 });

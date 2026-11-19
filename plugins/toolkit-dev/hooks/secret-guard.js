@@ -9,11 +9,13 @@ function verdict(cmd, names) {
   if (/find-generic-password|secret-tool\s+lookup|ConvertTo-SecureString|SecureStringToBSTR|\.dpapi\b/i.test(cmd)) return 'lê o cofre de credenciais do sistema';
   if (/(^|[|;&]\s*)(printenv|env|set|export\s+-p|declare\s+-x)\s*($|[|;&>])/m.test(cmd)) return 'lista todas as variáveis de ambiente';
   if (/\b(Get-ChildItem|gci|ls|dir|Get-Item)\s+env:/i.test(cmd)) return 'lista variáveis de ambiente';
-  if (/\[Environment\]::GetEnvironmentVariables?\(/i.test(cmd)) return 'lê variáveis de ambiente direto';
+  if (/\[Environment\]::GetEnvironmentVariables\(/i.test(cmd)) return 'lista variáveis de ambiente';
   for (const n of names) {
-    const ref = `\\$(\\{${n}\\}|${n}\\b|env:${n}\\b)`;
+    // The singular .NET call is how Claude checks a variable without showing it ($t = ...; [bool]$t): only
+    // block it where it prints, like a $NAME reference.
+    const ref = `(\\$(\\{${n}\\}|${n}\\b|env:${n}\\b)|\\[Environment\\]::GetEnvironmentVariable\\(\\s*['"]${n}['"][^)]*\\))`;
     if (new RegExp(`\\b(echo|printf|print|Write-Output|Write-Host|cat|type|Out-File|Set-Content|Add-Content|tee)\\b[^|;&]*${ref}`, 'i').test(cmd)) return `imprimiria ${n}`;
-    if (new RegExp(`^\\s*${ref}\\s*$`, 'im').test(cmd)) return `imprimiria ${n}`;
+    if (new RegExp(`(^|;)\\s*${ref}\\s*(;|$)`, 'im').test(cmd)) return `imprimiria ${n}`;
   }
   return null;
 }

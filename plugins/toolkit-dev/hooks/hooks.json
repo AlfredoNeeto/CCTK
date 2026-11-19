@@ -42,7 +42,7 @@
           {
             "type": "command",
             "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT.split(String.fromCharCode(92)).join('/'), 'hooks/check-gate.js'))\" gate",
-            "timeout": 600,
+            "timeout": 200,
             "statusMessage": "Rodando o check do projeto..."
           }
         ]

@@ -122,10 +122,15 @@ test('install refuses: inside Claude Code, missing prerequisite, user says no', 
   assert.strictEqual(inside.code, 1);
   assert.match(inside.err, /terminal comum/);
 
-  const noUv = await drive(['install'], [], env(home, { SHIM_FAIL: 'uv' }));
-  assert.strictEqual(noUv.code, 1);
-  assert.match(noUv.err, /Falta instalar:[\s\S]*uv:/);
-  assert.doesNotMatch(noUv.err, /git:|Claude Code:/);
+  const noGit = await drive(['install'], [], env(home, { SHIM_FAIL: 'git' }));
+  assert.strictEqual(noGit.code, 1);
+  assert.match(noGit.err, /Falta instalar:[\s\S]*git:/);
+  assert.doesNotMatch(noGit.err, /uv:|Claude Code:/);
+
+  // uv only serves /toolkit-dev:convert: a warning, not a blocker
+  const noUv = await drive(['install'], [[/Continuar\?/, 'n']], env(home, { SHIM_FAIL: 'uv' }));
+  assert.strictEqual(noUv.code, 0, noUv.err);
+  assert.match(noUv.out + noUv.err, /convert[\s\S]*uv/);
 
   const no = await drive(['install'], [[/Continuar\?/, 'n']], env(home));
   assert.strictEqual(no.code, 0, no.err);
@@ -302,7 +307,7 @@ test('statusline: full input and garbage input', () => {
     rate_limits: { five_hour: { used_percentage: 40, resets_at: 1763500000 }, seven_day: { used_percentage: 12.4, resets_at: '2026-11-20T10:00:00Z' } },
   }));
   assert.match(r.stdout, /^Sonnet \| ctx 85%! \| 5h 40% \(reset \d{2}:\d{2}\) \| 7d 12% \(reset \d{2}\/\d{2} \d{2}:\d{2}\)$/);
-  assert.match(sl(JSON.stringify({ model: { id: 'claude-opus-5-5', display_name: 'Opus' } })).stdout, /^Opus ⚠ ~2x cota$/);
+  assert.match(sl(JSON.stringify({ model: { id: 'claude-opus-5-5', display_name: 'Opus' } })).stdout, /^Opus ⚠ mais caro$/);
   const g = sl('isto não é json');
   assert.strictEqual(g.status, 0);
   assert.strictEqual(g.stdout, '');

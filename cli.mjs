@@ -39,7 +39,10 @@ function checkPrereqs() {
   if (maj < 22 || (maj === 22 && min < 20)) missing.push(`Node 22.20 ou mais novo (você tem ${process.versions.node}): https://nodejs.org`);
   if (tk.run('claude', ['--version']).status !== 0) missing.push('Claude Code: https://code.claude.com');
   if (tk.run('git', ['--version']).status !== 0) missing.push('git: https://git-scm.com');
-  if (tk.run('uv', ['--version']).status !== 0) missing.push('uv: https://docs.astral.sh/uv/getting-started/installation/');
+  // uv only runs MarkItDown/Docling for /toolkit-dev:convert: warn, don't block the install.
+  if (tk.run('uv', ['--version']).status !== 0) {
+    console.log('⚠ Sem o uv, o /toolkit-dev:convert não funciona. Instale quando precisar: https://docs.astral.sh/uv/getting-started/installation/');
+  }
   return missing;
 }
 
@@ -91,7 +94,10 @@ async function install() {
   else console.log('✔ OpenSpec e plugin instalados');
 
   if (await yes('Você usa Azure DevOps Server (on-premises)?')) await adoAdd();
-  console.log('\nPronto. Abra o Claude Code dentro de um projeto e rode /toolkit-dev:init-project.');
+  console.log(`\nPronto (Claude Toolkit Dev ${tk.VERSION}). Próximos passos:
+  1. Abra o Claude Code dentro de um projeto (cd meu-projeto && claude).
+  2. Rode /toolkit-dev:init-project para preparar o repositório.
+  3. Depois de alguns dias, veja o seu uso com: npx github:AlfredoNeeto/claude-toolkit#v${tk.VERSION} stats`);
 }
 
 const [cmd, sub, arg] = process.argv.slice(2);

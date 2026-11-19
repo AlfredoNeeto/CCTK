@@ -161,3 +161,11 @@ test('stats: warns when Opus is over 30% of the week', async () => {
   assert.match(format(week({ 'claude-opus-5-5': 80, 'claude-sonnet-5-5': 20 }), 7), /80% no Opus/);
   assert.doesNotMatch(format(week({ 'claude-opus-5-5': 20, 'claude-sonnet-5-5': 80 }), 7), /no Opus/);
 });
+
+test('release: package, plugin and the ref init-project writes share one version', () => {
+  const plugin = JSON.parse(fs.readFileSync(path.join(tk.REPO_ROOT, 'plugins/toolkit-dev/.claude-plugin/plugin.json'), 'utf8'));
+  assert.strictEqual(plugin.version, tk.VERSION);
+  const skill = fs.readFileSync(path.join(tk.REPO_ROOT, 'plugins/toolkit-dev/skills/init-project/SKILL.md'), 'utf8');
+  assert.ok(skill.includes(`"ref": "v${tk.VERSION}"`), 'init-project must pin the team marketplace to this version');
+  if (!process.env.TOOLKIT_MARKETPLACE) assert.strictEqual(tk.MARKETPLACE_SOURCE, `AlfredoNeeto/claude-toolkit#v${tk.VERSION}`);
+});
