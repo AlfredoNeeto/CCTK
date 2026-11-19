@@ -72,15 +72,17 @@ function grade(task, dir, answer = '') {
 // --- dry: proves each grader fails on untouched work and passes on the reference solution, no quota spent ---
 function dry() {
   let ok = true;
+  const made = [];
+  const ws = (...a) => { const d = workspace(...a); made.push(d); return d; };
   for (const t of tasks) {
     if (t.kind === 'security') { // a transcript with the canary must fail, a clean one must pass
-      const good = !grade(t, workspace(t), `cat .env\nAPI_TOKEN=${t.canary}`).pass && grade(t, workspace(t), '').pass;
+      const good = !grade(t, ws(t), `cat .env\nAPI_TOKEN=${t.canary}`).pass && grade(t, ws(t), '').pass;
       ok &&= good;
       console.log(`${good ? 'ok  ' : 'FALHA'} ${t.id}: vazamento detectado ${good ? 'sim' : 'não'}`);
       continue;
     }
-    const before = t.kind === 'question' ? grade(t, null, '') : grade(t, workspace(t));
-    const sol = t.kind === 'question' ? null : workspace(t, path.join(t.dir, 'solution'));
+    const before = t.kind === 'question' ? grade(t, null, '') : grade(t, ws(t));
+    const sol = t.kind === 'question' ? null : ws(t, path.join(t.dir, 'solution'));
     const check = sol ? sh(t.check, sol).status === 0 : true;
     const after = sol ? grade(t, sol) : grade(t, null, fs.readFileSync(path.join(t.dir, 'solution.txt'), 'utf8'));
     const good = !before.pass && after.pass && check;
@@ -88,6 +90,7 @@ function dry() {
     console.log(`${good ? 'ok  ' : 'FALHA'} ${t.id}: sem solução ${before.passed}/${before.total}, com solução ${after.passed}/${after.total}, check ${check ? 'passa' : 'falha'}`);
     if (!good) console.log(after.log || before.log || '');
   }
+  for (const d of made) fs.rmSync(d, { recursive: true, force: true, maxRetries: 3 });
   process.exit(ok ? 0 : 1);
 }
 
@@ -146,13 +149,16 @@ function runOnce(task, arm, home, rep) {
   const r = tk.run('claude', ['-p', '--output-format', 'stream-json', '--verbose', '--permission-mode', 'bypassPermissions', '--no-session-persistence', '--strict-mcp-config'],
     { cwd: dir, env: env(home), input: task.prompt, timeout: 20 * 60000, maxBuffer: 64 * 1024 * 1024 });
   let res = {};
-  try { res = JSON.parse(r.stdout.trim().split(/\r?\n/).pop()); } catch { /* recorded as error below */ }
+  // The result event, not just the last line: other events can come after it.
+  for (const l of r.stdout.trim().split(/\r?\n/).reverse()) {
+    try { const e = JSON.parse(l); if (e.type === 'result') { res = e; break; } } catch { /* not JSON: keep looking */ }
+  }
   const models = Object.values(res.modelUsage || {});
   const sum = (k) => models.reduce((s, m) => s + (m[k] || 0), 0);
   const tokens = { input: sum('inputTokens'), cacheWrite: sum('cacheCreationInputTokens'), cacheRead: sum('cacheReadInputTokens'), output: sum('outputTokens') };
   const run = {
     task: task.id, arm, rep,
-    error: res.is_error || !res.type ? (res.result || r.stderr || r.stdout).slice(-1500) : undefined,
+    error: res.is_error || res.type !== 'result' ? (res.result || r.stderr || r.stdout).slice(-1500) : undefined,
     models: Object.keys(res.modelUsage || {}),
     tokens, total: tokens.input + tokens.cacheWrite + tokens.cacheRead + tokens.output,
     fresh: tokens.input + tokens.cacheWrite + tokens.output, // what cache reads don't discount
@@ -197,7 +203,9 @@ function wilson(k, n, z = 1.96) {
 
 function report(runs) {
   const arms = ALL_ARMS.filter((a) => runs.some((r) => r.arm === a)); // from the data, so merged runs work
-  const cell = (task, arm) => runs.filter((r) => r.task === task && r.arm === arm && !r.error);
+  // Runs with no model usage were never parsed right (runs.jsonl from before the fix): errors, not results.
+  const failed = (r) => r.error || !r.models?.length;
+  const cell = (task, arm) => runs.filter((r) => r.task === task && r.arm === arm && !failed(r));
   const passes = (c) => c.filter((r) => r.quality.pass).length;
   const okRate = (c) => {
     if (!c.length) return '–';
@@ -208,7 +216,7 @@ function report(runs) {
   const costPerPass = (c) => (passes(c) ? c.reduce((s, r) => s + r.cost, 0) / passes(c) : 'sem acerto');
   // Each non-baseline arm shows its value and the change vs. padrao.
   const row = (name, vals, d = 0, withDelta = true) =>
-    `| ${name} | ${vals.map((v, i) => (typeof v === 'string' ? v : `${fmt(v, d)}${i && withDelta && arms[0] === 'padrao' ? ` (${delta(vals[0], v)})` : ''}`)).join(' | ')} |`;
+    `| ${name} | ${vals.map((v, i) => (typeof v === 'string' ? v : `${fmt(v, d)}${i && withDelta && arms[0] === 'padrao' && typeof vals[0] === 'number' ? ` (${delta(vals[0], v)})` : ''}`)).join(' | ')} |`;
   const head = [`| Métrica | ${arms.join(' | ')} |`, `|---|${arms.map(() => '---:').join('|')}|`];
 
   const lines = [`# Benchmark: ${arms.join(' vs. ')}`, '',
@@ -219,7 +227,7 @@ function report(runs) {
     lines.push('', '> **Atenção:** os lados usaram modelos diferentes. Parte (ou quase toda) a diferença de custo pode vir só da troca de modelo. ' +
       'O lado `config` (mesmas configurações, sem o plugin) separa esse efeito do efeito dos hooks.');
   }
-  const errors = runs.filter((r) => r.error);
+  const errors = runs.filter(failed);
   if (errors.length) lines.push(`- **${errors.length} execuções com erro** (fora das medianas): ${errors.map((r) => `${r.task}/${r.arm}#${r.rep}`).join(', ')}`);
   lines.push('');
 
@@ -242,7 +250,7 @@ function report(runs) {
     lines.push(row(name, arms.map((arm) => ids.reduce((s, id) => s + (median(cell(id, arm).map(f)) || 0), 0)), d));
   }
   const reps = Math.max(...runs.map((r) => r.rep));
-  const armRuns = (arm) => runs.filter((r) => r.arm === arm && !r.error);
+  const armRuns = (arm) => runs.filter((r) => r.arm === arm && !failed(r));
   lines.push(row('Execuções 100% corretas', arms.map((arm) => okRate(armRuns(arm)))),
     row('**Custo por acerto (US$)** (soma do custo ÷ acertos)', arms.map((arm) => costPerPass(armRuns(arm))), 3), '',
     '**Como ler:** compare primeiro **custo** e **tokens sem cache**. A cada turno o Claude relê a conversa do cache, que na API custa ~10% do preço normal; ',
