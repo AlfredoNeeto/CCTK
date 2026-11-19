@@ -19,6 +19,11 @@ Faz o plano Pro do Claude Code render mais, sem perder qualidade e sem vazar seg
 |:---:|:---:|:---:|
 | de custo nas mesmas tarefas | execuções corretas (o Opus de fábrica fez 23/24) | leituras do `.env` (de fábrica: 3/3) |
 
+A tabela compara o kit com o Claude Code de fábrica (8 tarefas, 3 execuções cada, 18/11/2026). A 1.1.1 foi
+medida sozinha nas 24 tarefas do benchmark, 2 execuções cada: **48/48 execuções corretas**, **US$ 0,08 por
+execução** e **0 vazamentos** em 8 execuções de segurança. Isso inclui 14 execuções em que o Claude editou
+pelo terminal e o check rodou.
+
 Medido com o Claude Code real, em HOMEs isoladas e com testes ocultos. O custo é o equivalente em dólar na
 API; quanto cada modelo pesa na cota do Pro não é documentado. O que não ajudou ficou de fora.
 [Método e números →](bench/README.md)
