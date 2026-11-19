@@ -169,3 +169,14 @@ test('release: package, plugin and the ref init-project writes share one version
   assert.ok(skill.includes(`"ref": "v${tk.VERSION}"`), 'init-project must pin the team marketplace to this version');
   if (!process.env.TOOLKIT_MARKETPLACE) assert.strictEqual(tk.MARKETPLACE_SOURCE, `AlfredoNeeto/claude-toolkit#v${tk.VERSION}`);
 });
+
+test('release: README commands use this version and its relative links exist', () => {
+  const readme = fs.readFileSync(path.join(tk.REPO_ROOT, 'README.md'), 'utf8');
+  const npx = [...readme.matchAll(/npx github:AlfredoNeeto\/claude-toolkit(#v[\d.]+)?/g)];
+  assert.ok(npx.length > 0);
+  for (const [cmd, tag] of npx) assert.strictEqual(tag, `#v${tk.VERSION}`, `README: "${cmd}" must pin #v${tk.VERSION}`);
+  assert.match(readme, new RegExp(`vers%C3%A3o-${tk.VERSION}-`), 'version badge');
+  for (const [, link] of readme.matchAll(/\]\(((?!https?:|#)[^)]+)\)/g)) {
+    assert.ok(fs.existsSync(path.join(tk.REPO_ROOT, link)), `README links to missing ${link}`);
+  }
+});
