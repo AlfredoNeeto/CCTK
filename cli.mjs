@@ -39,10 +39,8 @@ function checkPrereqs() {
   if (maj < 22 || (maj === 22 && min < 20)) missing.push(`Node 22.20 ou mais novo (você tem ${process.versions.node}): https://nodejs.org`);
   if (tk.run('claude', ['--version']).status !== 0) missing.push('Claude Code: https://code.claude.com');
   if (tk.run('git', ['--version']).status !== 0) missing.push('git: https://git-scm.com');
-  // uv only runs MarkItDown/Docling for /toolkit-dev:convert: warn, don't block the install.
-  if (tk.run('uv', ['--version']).status !== 0) {
-    console.log('⚠ Sem o uv, o /toolkit-dev:convert não funciona. Instale quando precisar: https://docs.astral.sh/uv/getting-started/installation/');
-  }
+  // The kit ships whole: without uv, /toolkit-dev:convert (MarkItDown/Docling via uvx) would only fail when needed.
+  if (tk.run('uv', ['--version']).status !== 0) missing.push('uv (para o /toolkit-dev:convert): https://docs.astral.sh/uv/getting-started/installation/');
   return missing;
 }
 

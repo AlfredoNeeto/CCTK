@@ -127,10 +127,11 @@ test('install refuses: inside Claude Code, missing prerequisite, user says no', 
   assert.match(noGit.err, /Falta instalar:[\s\S]*git:/);
   assert.doesNotMatch(noGit.err, /uv:|Claude Code:/);
 
-  // uv only serves /toolkit-dev:convert: a warning, not a blocker
-  const noUv = await drive(['install'], [[/Continuar\?/, 'n']], env(home, { SHIM_FAIL: 'uv' }));
-  assert.strictEqual(noUv.code, 0, noUv.err);
-  assert.match(noUv.out + noUv.err, /convert[\s\S]*uv/);
+  // uv is part of the kit (/toolkit-dev:convert): missing it blocks the install like the others
+  const noUv = await drive(['install'], [], env(home, { SHIM_FAIL: 'uv' }));
+  assert.strictEqual(noUv.code, 1);
+  assert.match(noUv.err, /Falta instalar:[\s\S]*uv \(para o \/toolkit-dev:convert\):/);
+  assert.doesNotMatch(noUv.err, /git:|Claude Code:/);
 
   const no = await drive(['install'], [[/Continuar\?/, 'n']], env(home));
   assert.strictEqual(no.code, 0, no.err);

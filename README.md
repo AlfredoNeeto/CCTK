@@ -2,7 +2,7 @@
 
 Faz o plano Pro do Claude Code render mais, sem perder qualidade.
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-1.0.0-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-plugin-D97757)
+![versão](https://img.shields.io/badge/vers%C3%A3o-1.0.1-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-plugin-D97757)
 
 [Instalar](#instalar) · [Primeiros passos](#primeiros-passos) · [Comandos](#comandos) · [Desinstalar](#desinstalar-ou-voltar-atrás) · [Benchmark](bench/README.md)
 
@@ -11,7 +11,7 @@ Faz o plano Pro do Claude Code render mais, sem perder qualidade.
 Sonnet | ctx 12% | 5h 8% (reset 14:30) | 7d 21% (reset 24/11 09:00)
 Opus ⚠ mais caro | ctx 40% | 5h 81%! (reset 14:30) | 7d 55% (reset 24/11 09:00)
 
-# npx github:AlfredoNeeto/claude-toolkit#v1.0.0 stats   (números de exemplo)
+# npx github:AlfredoNeeto/claude-toolkit#v1.0.1 stats   (números de exemplo)
 Semana de 16/11/2026
   Sessões: 14 · tokens sem cache: 2.961.823 · releitura de cache: 66.331.239 (96% da entrada)
   Modelos (tokens sem cache): opus 72%, sonnet 28%
@@ -50,15 +50,15 @@ Tudo o que entrou foi medido ou está marcado como "ainda não medido". O que n�
 claude --version   # Claude Code, já com login feito: https://code.claude.com
 node --version     # 22.20 ou mais novo: https://nodejs.org
 git --version      # https://git-scm.com
+uv --version       # roda o conversor de documentos: https://docs.astral.sh/uv/getting-started/installation/
 ```
 
-Recomendado: o [uv](https://docs.astral.sh/uv/getting-started/installation/). Sem ele, só o
-`/toolkit-dev:convert` não funciona.
+Se algum faltar, o instalador para e diz qual instalar.
 
 **2. Feche todas as sessões do Claude Code e rode:**
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.0.0 install
+npx github:AlfredoNeeto/claude-toolkit#v1.0.1 install
 ```
 
 > [!WARNING]
@@ -74,7 +74,7 @@ npx github:AlfredoNeeto/claude-toolkit#v1.0.0 install
 3. Remove os plugins, os MCPs de usuário e as pastas de skills, agents, commands e output styles.
 4. Grava a configuração do kit (`~/.claude/settings.json` e `~/.claude/CLAUDE.md`) e a statusline.
 5. Instala o OpenSpec e o Playwright CLI (npm global), o plugin `toolkit-dev` e o plugin oficial
-   `security-guidance`. O plugin fica fixado na versão `v1.0.0`.
+   `security-guidance`. O plugin fica fixado na versão `v1.0.1`.
 6. Pergunta se você usa Azure DevOps Server (on-premises). Se não usa, responda `n`.
 
 </details>
@@ -162,7 +162,7 @@ Faça uma mudança por sessão de implementação.
 
 ## Comandos
 
-**No terminal** (troque `...` por `npx github:AlfredoNeeto/claude-toolkit#v1.0.0`):
+**No terminal** (troque `...` por `npx github:AlfredoNeeto/claude-toolkit#v1.0.1`):
 
 | Comando | Para quê |
 |---|---|
@@ -206,9 +206,9 @@ Faça uma mudança por sessão de implementação.
 <summary>Usar tokens e senhas de desenvolvimento sem a IA ver o valor</summary>
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.0.0 secret set API_TOKEN   # pede o valor sem mostrar
-npx github:AlfredoNeeto/claude-toolkit#v1.0.0 secret list
-npx github:AlfredoNeeto/claude-toolkit#v1.0.0 secret rm API_TOKEN
+npx github:AlfredoNeeto/claude-toolkit#v1.0.1 secret set API_TOKEN   # pede o valor sem mostrar
+npx github:AlfredoNeeto/claude-toolkit#v1.0.1 secret list
+npx github:AlfredoNeeto/claude-toolkit#v1.0.1 secret rm API_TOKEN
 ```
 
 No início de cada sessão, a IA recebe só os nomes e usa `$API_TOKEN` nos comandos. Limites:
@@ -225,7 +225,7 @@ No início de cada sessão, a IA recebe só os nomes e usa `$API_TOKEN` nos coma
 <summary>Conectar uma ou mais collections on-premises</summary>
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.0.0 ado add https://servidor/tfs/MinhaCollection
+npx github:AlfredoNeeto/claude-toolkit#v1.0.1 ado add https://servidor/tfs/MinhaCollection
 ```
 
 - Cada collection vira um MCP `ado-<collection>`. Pode cadastrar quantas quiser.
@@ -242,8 +242,8 @@ npx github:AlfredoNeeto/claude-toolkit#v1.0.0 ado add https://servidor/tfs/Minha
 ## Desinstalar ou voltar atrás
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.0.0 restore              # backup mais recente
-npx github:AlfredoNeeto/claude-toolkit#v1.0.0 restore <data>       # um backup específico
+npx github:AlfredoNeeto/claude-toolkit#v1.0.1 restore              # backup mais recente
+npx github:AlfredoNeeto/claude-toolkit#v1.0.1 restore <data>       # um backup específico
 ```
 
 O `restore`:
