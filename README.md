@@ -127,7 +127,7 @@ E2E_REAL=1 npm test                                  # + claude real numa HOME i
 TOOLKIT_MARKETPLACE=/caminho/do/clone node cli.mjs install   # instala a partir do clone local
 node bench/run.mjs --dry                             # benchmark: veja bench/README.md
 node docs/charts.mjs                                 # regera o gráfico do README
-vhs demo/toolkit.tape                                # regera o GIF (terminal comum, com login feito)
+vhs demo/toolkit.tape                                # regera o GIF: siga os passos no topo do toolkit.tape
 ```
 
 **Para lançar uma versão:**

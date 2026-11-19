@@ -1,11 +1,16 @@
 # Demo GIF do README: o Claude Code de verdade, com o kit, numa HOME temporária (nunca na real: o install
-# remove plugins). Na raiz do repo, num terminal comum (PowerShell) e com login feito: vhs demo/toolkit.tape
-Output demo/toolkit.gif
+# remove plugins). Na raiz do repo, num terminal comum (PowerShell) e com login feito:
+#   vhs demo/toolkit.tape
+#   ffmpeg -y -i demo/raw.gif -filter_complex "[0]split[a][b];[a]crop=iw:62:0:0[t];[b]crop=iw:ih-318:0:318[c];[t][c]vstack,split[s1][s2];[s1]palettegen[p];[s2][p]paletteuse" demo/toolkit.gif
+#   Remove-Item demo/raw.gif
+# O ffmpeg corta a faixa y 62-318: o cabeçalho do Claude Code (mostra o plano da conta) e os avisos de abertura.
+# A janela é alta para nada rolar e a faixa ficar sempre no mesmo lugar. Confira os quadros antes de commitar.
+Output demo/raw.gif
 
 Set Shell "pwsh"
 Set FontSize 16
 Set Width 1200
-Set Height 660
+Set Height 780
 Set Padding 16
 Set Margin 24
 Set MarginFill "#D97757"
@@ -44,9 +49,10 @@ Sleep 5s
 # 2. Sai e mostra o uso da semana.
 Type "/exit"
 Enter
-Wait@30s
 Hide
-Type "Clear-Host"
+Wait@30s
+# Blank lines push the output below the band that the crop removes (see the top of this file).
+Type "Clear-Host; 1..12 | % { '' }"
 Enter
 Wait
 Show
