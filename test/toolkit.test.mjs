@@ -154,3 +154,10 @@ test('stats: dedupes messages, ignores subagents for switches, counts gate catch
   assert.deepStrictEqual([sum((w) => w.gate.fail), sum((w) => w.gate.caught), sum((w) => w.gate.giveup)], [2, 1, 1]);
   assert.ok(Object.keys(weeks.at(-1).models).includes('claude-haiku-5-5'));
 });
+
+test('stats: warns when Opus is over 30% of the week', async () => {
+  const { format } = await import('../lib/stats.mjs');
+  const week = (models) => [{ week: '2026-11-16', sessions: 1, fresh: 100, cacheRead: 0, cacheHit: 0, models, switches: 0, gate: { fail: 0, caught: 0, giveup: 0 } }];
+  assert.match(format(week({ 'claude-opus-5-5': 80, 'claude-sonnet-5-5': 20 }), 7), /80% no Opus/);
+  assert.doesNotMatch(format(week({ 'claude-opus-5-5': 20, 'claude-sonnet-5-5': 80 }), 7), /no Opus/);
+});

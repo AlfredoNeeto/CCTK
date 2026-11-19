@@ -302,6 +302,7 @@ test('statusline: full input and garbage input', () => {
     rate_limits: { five_hour: { used_percentage: 40, resets_at: 1763500000 }, seven_day: { used_percentage: 12.4, resets_at: '2026-11-20T10:00:00Z' } },
   }));
   assert.match(r.stdout, /^Sonnet \| ctx 85%! \| 5h 40% \(reset \d{2}:\d{2}\) \| 7d 12% \(reset \d{2}\/\d{2} \d{2}:\d{2}\)$/);
+  assert.match(sl(JSON.stringify({ model: { id: 'claude-opus-5-5', display_name: 'Opus' } })).stdout, /^Opus ⚠ ~2x cota$/);
   const g = sl('isto não é json');
   assert.strictEqual(g.status, 0);
   assert.strictEqual(g.stdout, '');

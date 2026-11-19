@@ -1,4 +1,4 @@
-// Status line: model | context used | 5h and 7-day plan usage with reset time.
+// Status line: model (warning on Opus) | context used | 5h and 7-day plan usage with reset time.
 let raw = '';
 process.stdin.on('data', (d) => (raw += d)).on('end', () => {
   let j = {};
@@ -10,7 +10,9 @@ process.stdin.on('data', (d) => (raw += d)).on('end', () => {
     const hm = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     return long ? `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} ${hm}` : hm;
   };
-  const parts = [j.model?.display_name];
+  // Opus spends about twice the quota of Sonnet for the same task (bench/): flag it where the user looks.
+  const opus = /opus/i.test(`${j.model?.id || ''} ${j.model?.display_name || ''}`);
+  const parts = [j.model?.display_name && `${j.model.display_name}${opus ? ' ⚠ ~2x cota' : ''}`];
   if (j.context_window?.used_percentage != null) parts.push(`ctx ${pct(j.context_window.used_percentage)}`);
   for (const [key, label, long] of [['five_hour', '5h', false], ['seven_day', '7d', true]]) {
     const r = j.rate_limits?.[key];

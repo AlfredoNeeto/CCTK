@@ -32,7 +32,7 @@ Depois, em cada repositório: abra o Claude Code na pasta do projeto e rode `/to
 | Tipo | Item | Para quê |
 |---|---|---|
 | Configuração | Sonnet, esforço medium, estilo Concise, subagentes em Sonnet, sem sugestões de prompt | Custo menor por mensagem. As sugestões de prompt fazem uma requisição extra depois de cada resposta |
-| Statusline | contexto %, uso de 5h e 7 dias com hora do reset | Ver a cota antes de ela acabar |
+| Statusline | modelo (com aviso no Opus, que gasta ~2x a cota), contexto %, uso de 5h e 7 dias com hora do reset | Ver a cota antes de ela acabar e notar quando a sessão está no modelo caro |
 | Hook | **check obrigatório** | Se houve edição, o Claude só encerra com o check do projeto (`.claude/toolkit.json`) passando |
 | Hook | **cofre de variáveis** | A IA usa `$NOME` sem ver o valor |
 | Hook | **guarda de segredos** | Bloqueia `echo $SEGREDO`, `printenv`, `Get-ChildItem env:` e leitura do cofre |
@@ -43,7 +43,7 @@ Depois, em cada repositório: abra o Claude Code na pasta do projeto e rode `/to
 | MCP | Banco somente leitura (por projeto) | DBHub, oferecido pelo `init-project` |
 | SDD | OpenSpec 2.1 com `verify` | Spec antes do código, spec viva depois |
 | CLI + skill | Playwright CLI 0.1.25 (por projeto web) | O Claude abre o app no Chrome e confere a tela antes de dizer "pronto" |
-| Skill | `/toolkit-dev:init-project` | Prepara o repositório (AGENTS.md, check, OpenSpec, integrações) |
+| Skill | `/toolkit-dev:init-project` | Prepara o repositório (AGENTS.md, check, OpenSpec, modelo Sonnet no projeto, integrações) |
 | Skill | `/toolkit-dev:audit <url>` | Diz se uma skill, plugin, MCP ou repo é seguro **antes** de instalar |
 | Skill | `/toolkit-dev:convert <arquivo>` | PDF/DOCX/XLSX → Markdown |
 | Skill | `/toolkit-dev:secret` | Ajuda do cofre |

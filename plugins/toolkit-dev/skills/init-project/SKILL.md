@@ -1,6 +1,6 @@
 ---
 name: init-project
-description: Prepara um repositório para o Claude Toolkit Dev. Detecta a stack, cria ou atualiza AGENTS.md e CLAUDE.md, grava o check obrigatório em .claude/toolkit.json, inicializa o OpenSpec e oferece Azure DevOps, banco somente leitura e LSP. Use quando pedirem "init-project", "preparar o repositório para IA", "configurar o toolkit neste projeto" ou para criar/atualizar o AGENTS.md. Prefira esta skill ao /init nativo.
+description: Prepara um repositório para o Claude Toolkit Dev. Detecta a stack, cria ou atualiza AGENTS.md e CLAUDE.md, grava o check obrigatório em .claude/toolkit.json, inicializa o OpenSpec, deixa o projeto em Sonnet e oferece Azure DevOps e banco somente leitura. Use quando pedirem "init-project", "preparar o repositório para IA", "configurar o toolkit neste projeto" ou para criar/atualizar o AGENTS.md. Prefira esta skill ao /init nativo.
 disable-model-invocation: true
 ---
 
@@ -84,17 +84,21 @@ Grave em `.claude/toolkit.json`:
    `playwright-cli install --skills` na raiz. A skill fica em `.claude/skills/playwright-cli/` e vai
    para o git, então o time inteiro recebe. Ela usa o Chrome já instalado. Use o CLI, não o MCP do
    Playwright: o CLI não carrega esquemas nem árvores de acessibilidade no contexto.
-5. **LSP:** sugira o plugin oficial da linguagem: `csharp-lsp` (C#) e `typescript-lsp`
-   (TypeScript/Angular/React), ambos de `claude-plugins-official`. Para Dart/Flutter, use o MCP `dart`
-   (`dart mcp-server`).
-6. **Time:** em `.claude/settings.json` do projeto, mescle (sem apagar o que existe):
+5. **LSP:** não instale os plugins LSP (`csharp-lsp`, `typescript-lsp`). No benchmark do toolkit, o
+   Claude não chamou a ferramenta LSP nenhuma vez num rastreio por 5 arquivos (preferiu `Grep`) e o custo
+   por acerto subiu 11%. Para Dart/Flutter, use o MCP `dart` (`dart mcp-server`).
+6. **Time:** em `.claude/settings.json` do projeto, mescle (sem apagar o que existe; se já houver
+   `model`, mantenha o do time):
    ```json
    {
+     "model": "sonnet",
      "extraKnownMarketplaces": { "claude-toolkit": { "source": { "source": "github", "repo": "AlfredoNeeto/claude-toolkit" } } },
      "enabledPlugins": { "toolkit-dev@claude-toolkit": true }
    }
    ```
-   Assim, quem clonar o repositório recebe a sugestão de instalar o toolkit.
+   Assim, quem clonar o repositório recebe a sugestão de instalar o toolkit e trabalha em Sonnet, que no
+   benchmark custou cerca de metade do Opus pela mesma qualidade. Para planejar, `claude --model opus`
+   continua valendo, porque a opção de linha de comando tem precedência sobre o `settings.json`.
 
 ## 7. Modo atualizar (AGENTS.md já existe)
 
