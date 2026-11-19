@@ -17,7 +17,8 @@ Arquivos de apoio: [AGENTS.template.md](references/AGENTS.template.md) (modelo) 
 1. Ache a raiz com `git rev-parse --show-toplevel` e trabalhe sempre nela.
 2. Procure `AGENTS.md`, `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md`, `.cursorrules`,
    `.github/copilot-instructions.md`, `.claude/toolkit.json`, `openspec/` e `.mcp.json`.
-   - Se o `AGENTS.md` existe, siga o **modo atualizar** (seção 7).
+   - Se o `AGENTS.md` existe, a seção 5 usa o **modo atualizar** (seção 7). Todas as outras seções
+     (check, OpenSpec, time) valem do mesmo jeito: siga de 2 a 8 em ordem.
    - Se existe um `CLAUDE.md` sem `@AGENTS.md`, o Claude Code lê só ele. Proponha mover o conteúdo
      útil para o AGENTS.md e deixar no CLAUDE.md só `@AGENTS.md`. Nada é apagado sem um "ok".
 
@@ -67,10 +68,14 @@ mesmo: o comando é bloqueado dentro do Claude Code.
 - Não copie o README e não escreva conselho genérico. Alvo: ~100 linhas. Limite: 200.
 - O `CLAUDE.md` da raiz fica só com `@AGENTS.md`.
 
-## 6. Integrações (ofereça só o que se aplica)
+## 6. Integrações
 
-1. **OpenSpec:** se não houver `openspec/`, rode
+O OpenSpec (1) e o time (6) são **sempre** feitos. Os outros itens, só quando se aplicam ao projeto.
+
+1. **OpenSpec (sempre):** se não houver `openspec/`, rode
    `openspec init --tools claude --scope project --language pt-BR --no-animation .`
+   Se o comando `openspec` não existir, não pule: diga ao usuário para rodar o `install` do kit de novo
+   (`npx github:AlfredoNeeto/claude-toolkit install`) e depois o `/toolkit-dev:init-project`.
 2. **Azure DevOps:** se o remote for de um servidor Azure DevOps, escreva no AGENTS.md:
    "Este repo está na collection `<Collection>`, projeto `<Projeto>`: use o MCP `ado-<collection>`."
    O nome segue a regra do instalador: a collection em minúsculas, com tudo que não é letra ou número
@@ -92,7 +97,7 @@ mesmo: o comando é bloqueado dentro do Claude Code.
 5. **LSP:** não instale os plugins LSP (`csharp-lsp`, `typescript-lsp`). No benchmark do toolkit, o
    Claude não chamou a ferramenta LSP nenhuma vez num rastreio por 5 arquivos (preferiu `Grep`) e o custo
    por acerto subiu 11%. Para Dart/Flutter, use o MCP `dart` (`dart mcp-server`).
-6. **Time:** em `.claude/settings.json` do projeto, mescle (sem apagar o que existe; se já houver
+6. **Time (sempre):** em `.claude/settings.json` do projeto, mescle (sem apagar o que existe; se já houver
    `model`, mantenha o do time):
    ```json
    {
@@ -105,16 +110,18 @@ mesmo: o comando é bloqueado dentro do Claude Code.
    benchmark custou cerca de metade do Opus em custo de API, pela mesma qualidade. Para planejar, `claude --model opus`
    continua valendo, porque a opção de linha de comando tem precedência sobre o `settings.json`.
 
-## 7. Modo atualizar (AGENTS.md já existe)
+## 7. Modo atualizar (só o AGENTS.md, quando ele já existe)
 
-Nunca sobrescreva o que o time escreveu. Compare o arquivo com o modelo e com o que você descobriu.
+Vale só para a seção 5. Nunca sobrescreva o que o time escreveu. Compare o arquivo com o modelo e com o que você descobriu.
 Proponha só o que falta ou está desatualizado, mostre como diff resumido e aplique depois do "ok".
 
 ## 8. Verificar antes de entregar
 
 1. O check do `.claude/toolkit.json` rodou e o resultado foi mostrado.
-2. Não sobrou placeholder: `grep -nE '<[^>]+>' AGENTS.md` não deve achar nada além dos padrões de
+2. `openspec/` e `.claude/skills/openspec-propose/` existem, e o `.claude/settings.json` do projeto tem o
+   `model` e o `toolkit-dev@claude-toolkit`. Se algo faltar, volte à seção 6.
+3. Não sobrou placeholder: `grep -nE '<[^>]+>' AGENTS.md` não deve achar nada além dos padrões de
    commit e branch (`<tipo>`, `<resumo>`, `<id>`, `<slug>`).
-3. Conte as linhas do AGENTS.md.
-4. Termine com 3 linhas: o que foi detectado, o que foi perguntado ou assumido e o que o usuário deve
+4. Conte as linhas do AGENTS.md.
+5. Termine com 3 linhas: o que foi detectado, o que foi perguntado ou assumido e o que o usuário deve
    revisar, incluindo aprovar o check com o `trust`. Não faça commit sem pedido.
