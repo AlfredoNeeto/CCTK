@@ -204,10 +204,13 @@ Resultados de 19/11/2026:
   contra 13/16 (n=3, rodada interrompida), com o mesmo custo por acerto e +21% por execução, inclusive em
   tarefas em que não mudou nada (conciliação: +35%). Das 3 falhas sem ela, 2 foram de novo o teste do
   nascimento no futuro. A skill ficou fora.
-- **Navegação por símbolo (LSP) e subagentes em Haiku: inconclusivo.** Nas tarefas de repositório grande
-  (ky e Humanizer, com commit fixo), o `config` achou a resposta com mediana de 3 a 4 leituras e buscas, e
-  todos os lados acertaram. Sem exploração, não há o que economizar: as tarefas não mediram o que deviam.
-  Custo por acerto: `lsp` US$ 0,111, `haiku` 0,119, `config` 0,116.
+- **Navegação por símbolo (LSP) não compensou:** na `dotnet-humanizer-trace`, que obriga a rastrear 5
+  arquivos em dois projetos (mediana de 16 leituras e buscas), os plugins `csharp-lsp` e `typescript-lsp`
+  ficaram disponíveis nas 5 execuções e o Claude não chamou a ferramenta LSP nenhuma vez: preferiu `Grep`.
+  O plugin só acrescentou custo (US$ 0,178 contra 0,160 por acerto). Ficou fora.
+- **Subagentes em Haiku: sem efeito medido.** Na mesma tarefa, o Claude não delegou a nenhum subagente em
+  nenhum lado, então `CLAUDE_CODE_SUBAGENT_MODEL=haiku` não chegou a rodar (US$ 0,165 contra 0,160 por
+  acerto, ruído). Ficou fora até haver um fluxo que delegue de fato.
 - **Regras curtas de economia (`claude-token-efficient`) não compensaram:** mais turnos (31 contra 23) e
   custo por acerto um pouco maior (US$ 0,121 contra 0,116), n=3.
 - **Teste antes do código (`tdd`) não compensou:** custou 58% a mais que o `config` sem acertar mais

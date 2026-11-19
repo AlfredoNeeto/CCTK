@@ -1,0 +1,12 @@
+{
+  "kind": "question",
+  "repoGit": { "url": "https://github.com/Humanizr/Humanizer", "commit": "4574b93883bf48e3f0f3bca73297054537317ab2" },
+  "prompt": "Sem alterar nenhum arquivo: no Humanizer, rastreie pelo código deste repositório o que acontece quando se chama 1_100.ToWords() com a cultura pt-BR, até a classe que escreve o número por extenso. Quero saber: em que arquivo está o método de extensão; em que arquivo está o método que escolhe o conversor pela cultura; qual arquivo do source generator gera o código que registra os conversores de cada cultura; em qual arquivo do source generator o nome do motor declarado no YAML do pt-BR vira o nome da classe do conversor; e qual é essa classe. Responda em poucas linhas e termine com uma linha exatamente no formato: EXTENSAO=<arquivo>; RESOLVE=<arquivo>; REGISTRO=<arquivo>; NOME=<arquivo>; CONVERSOR=<classe>",
+  "answer": [
+    "EXTENSAO\\s*=\\s*\\S*NumberToWordsExtension\\.cs",
+    "RESOLVE\\s*=\\s*\\S*(Configurator|LocaliserRegistry|NumberToWordsConverterRegistry)\\.cs",
+    "REGISTRO\\s*=\\s*\\S*LocaleRegistryInput\\.cs",
+    "NOME\\s*=\\s*\\S*GenerationHelpers\\.cs",
+    "CONVERSOR\\s*=\\s*\\S*BillionStrategyNumberToWordsConverter\\b"
+  ]
+}

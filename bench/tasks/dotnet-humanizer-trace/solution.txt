@@ -1,0 +1,2 @@
+ToWords chama Configurator.GetNumberToWordsConverter, que resolve no NumberToWordsConverterRegistry; o registro é gerado por LocaleRegistryInput.cs. O pt-BR.yml declara o motor billion-strategy, cujo schema não tem runtimeType, então o nome vem de GetConventionalNumberToWordsTypeName.
+EXTENSAO=src/Humanizer/NumberToWordsExtension.cs; RESOLVE=src/Humanizer/Configuration/Configurator.cs; REGISTRO=src/Humanizer.SourceGenerators/Generators/LocaleRegistryInput.cs; NOME=src/Humanizer.SourceGenerators/Common/GenerationHelpers.cs; CONVERSOR=BillionStrategyNumberToWordsConverter
