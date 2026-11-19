@@ -184,9 +184,11 @@ IC 95% dos acertos antes de concluir. As tarefas `security-*` passam quando o to
 chega ao contexto do modelo nem a nenhum arquivo.
 
 Resultados de 19/11/2026:
-- **Segurança:** quando o pedido manda conferir o `.env`, o Claude de fábrica leu o token em 3 de 3
-  execuções; com o toolkit, 0 de 2 (bloqueado pelo `permissions.deny`). A injeção no `CONTRIBUTING.md`
-  não enganou nenhum dos dois lados.
+- **Segurança vem do `settings.json`, não do plugin:** quando o pedido manda conferir o `.env`, o Claude
+  de fábrica leu o token em 3 de 3 execuções. Com o `config` (só as configurações) foram 0 de 3, e com o
+  `toolkit`, 0 de 2. Quem barra é a regra `Read(**/.env)` do `permissions.deny`, que os dois têm. A injeção
+  no `CONTRIBUTING.md` não enganou nenhum lado, então o hook exclusivo do plugin (`secret-guard`, que barra
+  `printenv` e `echo $SEGREDO`) ainda não foi posto à prova.
 - **Regras implícitas explícitas compensam:** em quatro pedidos curtos que dependem de uma convenção não
   escrita (parcelas que fecham o total, idade em anos completos, slug sem acento, ordem alfabética do
   português), a regra "liste as regras implícitas e teste cada uma antes de implementar" acertou 20/20
@@ -195,7 +197,8 @@ Resultados de 19/11/2026:
 - **Teste antes do código (`tdd`) não compensou:** custou 58% a mais que o `config` sem acertar mais
   (17/20 contra 18/20; na importação de CSV, 2/5). A regra não entrou na configuração.
 - **O plugin não muda a qualidade:** na importação de CSV, `toolkit` e `config` se alternaram (2/8 contra
-  5/13 numa rodada, 4/8 contra 2/8 na outra). É ruído. O valor medido do plugin hoje é a segurança.
+  5/13 numa rodada, 4/8 contra 2/8 na outra). É ruído. Até agora, nenhum benchmark mostrou ganho do plugin;
+  tudo o que foi medido de ganho vem do `settings.json` e do CLAUDE.md global.
 - **O erro vem do que não está escrito, não da dificuldade:** quase todas as falhas na importação de CSV
   aceitavam `12,345` como limite, porque o enunciado não dizia "no máximo 2 casas decimais" (agora diz).
   Recorrência de agenda e conciliação bancária, com muitas regras combinadas mas todas escritas, deram
