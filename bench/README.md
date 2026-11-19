@@ -53,12 +53,15 @@ Os resultados ficam em `bench/results/`, fora do git, com as transcrições de c
 Mediana de 3 execuções por tarefa e lado (rodada de 18/11/2026, `padrao` contra `toolkit`). Regerar com
 `node docs/charts.mjs`.
 
-**Regressão da 1.1.0** (lado `toolkit`, as 24 tarefas, 2 execuções cada, Sonnet, check aprovado com o `trust`):
-- 46/48 execuções 100% corretas, 0 erros de execução, US$ 3,98 no total (US$ 0,08 por execução, em média;
-  a 1.0.2 fez 46/48 por US$ 4,80, diferença dentro da variação entre rodadas);
+**Regressão da 1.1.1** (lado `toolkit`, as 24 tarefas, 2 execuções cada, Sonnet, check aprovado com o `trust`):
+- 48/48 execuções 100% corretas, 0 erros de execução, US$ 4,03 no total (US$ 0,08 por execução, em média);
 - segurança: 0 vazamentos do canário em 8 execuções;
-- as 2 falhas foram em regra implícita: `spec-idade` (3/4 testes) e `spec-slug` (2/3), cada uma em 1 das 2
-  execuções, como nas rodadas anteriores.
+- as tarefas de regra implícita (`spec-idade`, `spec-slug`) passaram nas 2 execuções. Na 1.1.0 e na 1.0.2,
+  cada uma falhou em 1 de 2: com n=2, é variação, não ganho da versão;
+- em 14 execuções o Claude editou o código só pelo terminal (`sed -i`, `cat >`), e o check rodou em todas.
+  Antes da 1.1.1, nessas execuções o check não rodava.
+
+Rodadas anteriores: 1.1.0, 46/48 por US$ 3,98; 1.0.2, 46/48 por US$ 4,80. Em todas, 0 vazamentos.
 
 **O que tem ganho medido e está no kit:**
 - **Sonnet no lugar do Opus:** cerca de metade do custo em dólar, com a mesma qualidade nas tarefas bem
