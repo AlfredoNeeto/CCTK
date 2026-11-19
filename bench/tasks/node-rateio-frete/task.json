@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "Implemente ratearFrete(frete, itens) em src/frete.js. frete é o valor do frete em reais; itens é uma lista de { sku, peso, valor }. Regras: (1) Rateie o frete proporcionalmente ao peso. Se todos os pesos forem 0, rateie proporcionalmente ao valor. Se todos os valores também forem 0, divida igualmente. (2) Trabalhe em centavos: cada item recebe o piso (floor) da sua cota em centavos; os centavos que sobrarem vão, um por item, para os itens com a maior parte fracionária descartada; em empate, o que aparece primeiro na lista recebe antes. A soma do rateio tem que ser exatamente o frete. (3) Lance RangeError se o frete for negativo, não finito ou tiver mais de 2 casas decimais (10.1 e 10.10 valem; 10.105 não), se a lista estiver vazia, ou se algum peso ou valor for negativo ou não finito. (4) Lance Error se houver sku repetido. (5) Retorne [{ sku, frete }] na mesma ordem dos itens, com o frete de cada item em reais. Os testes ficam em test/.",
+  "check": "node --test",
+  "grade": "node --test --test-reporter=tap hidden.test.js"
+}

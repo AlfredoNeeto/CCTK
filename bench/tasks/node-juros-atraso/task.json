@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "Implemente calcularAtraso({ valor, vencimento, pagamento, multaPct, jurosMesPct, feriados }) em src/atraso.js, que calcula os encargos de uma fatura paga em atraso. Datas são strings 'AAAA-MM-DD'; feriados é uma lista opcional de datas. Regras: (1) Se o vencimento cair em sábado, domingo ou feriado, o prazo é prorrogado para o próximo dia útil. Pagamento até o prazo (inclusive), ou antes do vencimento, não tem encargos e diasAtraso é 0. (2) Depois do prazo: multa = valor × multaPct%, cobrada uma vez; juros de mora simples = valor × (jurosMesPct% ÷ 30) × diasAtraso, em que diasAtraso são os dias corridos do vencimento ORIGINAL (não do prorrogado) até o pagamento. (3) Arredonde a multa e os juros para centavos, cada um separadamente, com meio para cima; total = valor + multa + juros. (4) Lance RangeError se o valor não for maior que zero, não for finito ou tiver mais de 2 casas decimais; se multaPct estiver fora de 0 a 2 (limite do CDC); ou se jurosMesPct estiver fora de 0 a 1. (5) Retorne { diasAtraso, multa, juros, total }, com valores em reais (Number). Os testes ficam em test/.",
+  "check": "node --test",
+  "grade": "node --test --test-reporter=tap hidden.test.js"
+}
