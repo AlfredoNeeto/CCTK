@@ -1,0 +1,2 @@
+Os padrões ficam em source/utils/normalize.ts (defaultRetryOptions): limit 2, delay 0,3 × 2^(tentativa-1) s.
+LIMITE=2; METODOS=get, put, head, delete, options, trace, query; STATUS=408, 413, 429, 500, 502, 503, 504; ATRASOS=300,600; ARQUIVO=source/utils/normalize.ts

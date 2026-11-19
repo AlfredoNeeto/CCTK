@@ -200,6 +200,16 @@ Resultados de 19/11/2026:
   que é a "entrada inválida" que a própria regra cita. Sem ele, fica 20/20 contra 18/20 (IC sobrepostos), e
   sem a regra sai mais barato por acerto (US$ 0,084 contra 0,111). Cada execução com a regra custa 45% a
   mais. Falta medir em tarefas sem entrada inválida antes de pôr a regra no CLAUDE.md global.
+- **A mesma regra como skill sob demanda também não se pagou:** a skill `regras-implicitas` acertou 15/15
+  contra 13/16 (n=3, rodada interrompida), com o mesmo custo por acerto e +21% por execução, inclusive em
+  tarefas em que não mudou nada (conciliação: +35%). Das 3 falhas sem ela, 2 foram de novo o teste do
+  nascimento no futuro. A skill ficou fora.
+- **Navegação por símbolo (LSP) e subagentes em Haiku: inconclusivo.** Nas tarefas de repositório grande
+  (ky e Humanizer, com commit fixo), o `config` achou a resposta com mediana de 3 a 4 leituras e buscas, e
+  todos os lados acertaram. Sem exploração, não há o que economizar: as tarefas não mediram o que deviam.
+  Custo por acerto: `lsp` US$ 0,111, `haiku` 0,119, `config` 0,116.
+- **Regras curtas de economia (`claude-token-efficient`) não compensaram:** mais turnos (31 contra 23) e
+  custo por acerto um pouco maior (US$ 0,121 contra 0,116), n=3.
 - **Teste antes do código (`tdd`) não compensou:** custou 58% a mais que o `config` sem acertar mais
   (17/20 contra 18/20; na importação de CSV, 2/5). A regra não entrou na configuração.
 - **O plugin não muda a qualidade:** na importação de CSV, `toolkit` e `config` se alternaram (2/8 contra

@@ -1,0 +1,12 @@
+{
+  "kind": "question",
+  "repoGit": { "url": "https://github.com/Humanizr/Humanizer", "commit": "4574b93883bf48e3f0f3bca73297054537317ab2" },
+  "prompt": "Sem alterar nenhum arquivo: no Humanizer, com a cultura pt-BR, o que devolvem 1_100.ToWords(), 1_520.ToWords() e 15_200.ToWords(addAnd: false)? Qual classe faz essa conversão e em qual arquivo ficam as palavras (mil, milhão, cem) do pt-BR? Responda pelo código deste repositório, em poucas linhas, e termine com uma linha exatamente no formato: A=<texto>; B=<texto>; C=<texto>; CLASSE=<nome>; ARQUIVO=<caminho>",
+  "answer": [
+    "\\bA\\s*=\\s*mil e cem\\s*;",
+    "\\bB\\s*=\\s*mil quinhentos e vinte\\s*;",
+    "\\bC\\s*=\\s*quinze mil e duzentos\\s*;",
+    "CLASSE\\s*=\\s*\\S*BillionStrategyNumberToWordsConverter",
+    "ARQUIVO\\s*=\\s*\\S*pt-BR\\.yml"
+  ]
+}

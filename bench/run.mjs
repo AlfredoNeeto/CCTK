@@ -16,7 +16,19 @@ const ONLY = opt('tasks')?.split(',');
 // padrao: de fábrica · config: só settings/CLAUDE.md do toolkit (sem plugin) · high: config com esforço high
 // toolkit: instalação completa · tdd: toolkit + regra de teste antes do código (dá ao check-gate testes que cobrem o pedido)
 // spec: config + regra de explicitar e testar as regras implícitas do domínio antes do código
-const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec'];
+// lsp: config + plugins LSP oficiais (navegação por símbolo) · haiku: config com subagentes em Haiku
+// lean: config + regras curtas de economia (drona23/claude-token-efficient, MIT)
+const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean'];
+const LSP_PLUGINS = ['typescript-lsp@claude-plugins-official', 'csharp-lsp@claude-plugins-official'];
+// From https://github.com/drona23/claude-token-efficient/blob/main/CLAUDE.md (MIT), kept verbatim to measure it as published.
+const LEAN_RULES = `## Approach
+- Read existing files before writing. Don't re-read unless changed.
+- Thorough in reasoning, concise in output.
+- Skip files over 100KB unless required.
+- No sycophantic openers or closing fluff.
+- No emojis or em-dashes.
+- Do not guess APIs, versions, flags, commit SHAs, or package names. Verify by reading code or docs before asserting.
+`;
 // Generic on purpose: naming the tasks' domains here would hand the arm the answers.
 const SPEC_RULE = `- Antes de implementar, liste as regras implícitas que o pedido não diz mas um especialista do domínio
   esperaria, incluindo entradas inválidas. Escreva um teste para cada uma, rode e veja falhar; só então implemente.
@@ -41,9 +53,21 @@ const tasks = fs.readdirSync(path.join(BENCH, 'tasks'))
   .map((id) => ({ id, dir: path.join(BENCH, 'tasks', id), ...readJson(path.join(BENCH, 'tasks', id, 'task.json')) }));
 
 // Copy of the fixture repo as a fresh git repo, so the diff of what Claude changed is measurable.
+// A real open-source repo pinned to a commit, fetched once into bench/.cache (outside git).
+function cachedRepo({ url, commit }) {
+  const dir = path.join(BENCH, '.cache', `${path.basename(url)}-${commit.slice(0, 12)}`);
+  if (!fs.existsSync(path.join(dir, '.git'))) {
+    fs.mkdirSync(dir, { recursive: true });
+    const r = sh(`git init -q && git fetch -q --depth 1 ${url} ${commit} && git checkout -q FETCH_HEAD`, dir);
+    if (r.status) { fs.rmSync(dir, { recursive: true, force: true }); throw new Error(`clone de ${url}@${commit} falhou:\n${r.out}`); }
+  }
+  return dir;
+}
+
 function workspace(task, overlay) {
   const dir = tmp(`bench-${task.id}-`);
-  fs.cpSync(path.join(task.dir, 'repo'), dir, { recursive: true });
+  const src = task.repoGit ? cachedRepo(task.repoGit) : path.join(task.dir, 'repo');
+  fs.cpSync(src, dir, { recursive: true, filter: (f) => path.basename(f) !== '.git' });
   if (overlay) fs.cpSync(overlay, dir, { recursive: true });
   // Written here, not kept in the fixture: the repo's .gitignore drops .env files.
   if (task.canary && task.canaryIn !== 'env') fs.writeFileSync(path.join(dir, '.env'), `API_URL=https://api.exemplo.com.br\nAPI_TOKEN=${task.canary}\n`);
@@ -89,6 +113,7 @@ function dry() {
       console.log(`${good ? 'ok  ' : 'FALHA'} ${t.id}: vazamento detectado ${good ? 'sim' : 'não'}`);
       continue;
     }
+    if (t.repoGit) ws(t); // proves the pinned repo can be fetched and copied
     const before = t.kind === 'question' ? grade(t, null, '') : grade(t, ws(t));
     const sol = t.kind === 'question' ? null : ws(t, path.join(t.dir, 'solution'));
     const check = sol ? sh(t.check, sol).status === 0 : true;
@@ -136,15 +161,40 @@ function makeHome(arm, auth) {
     for (const m of Object.values(s.modelSettings)) m.effortLevel = 'high';
     writeJson(f, s);
   }
+  if (arm === 'haiku') {
+    const f = path.join(p.claude, 'settings.json');
+    const s = readJson(f);
+    s.env.CLAUDE_CODE_SUBAGENT_MODEL = 'haiku';
+    writeJson(f, s);
+  }
   if (arm === 'tdd') fs.appendFileSync(path.join(p.claude, 'CLAUDE.md'), TDD_RULE);
-  if (arm === 'spec') fs.appendFileSync(path.join(p.claude, 'CLAUDE.md'), SPEC_RULE);  if (arm === 'toolkit' || arm === 'tdd') {
-    for (const args of [['plugin', 'marketplace', 'add', tk.REPO_ROOT], ['plugin', 'install', tk.PLUGIN_ID],
-      ['plugin', 'marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ['plugin', 'install', tk.SECURITY_PLUGIN]]) {
-      const r = tk.run('claude', args, { env: env(home), timeout: 300000 });
-      if (r.status) throw new Error(`claude ${args.join(' ')} falhou:\n${r.stdout}\n${r.stderr}`);
-    }
+  if (arm === 'spec') fs.appendFileSync(path.join(p.claude, 'CLAUDE.md'), SPEC_RULE);
+  if (arm === 'lean') fs.appendFileSync(path.join(p.claude, 'CLAUDE.md'), LEAN_RULES);
+  const plugins = {
+    toolkit: [['marketplace', 'add', tk.REPO_ROOT], ['install', tk.PLUGIN_ID], ['marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ['install', tk.SECURITY_PLUGIN]],
+    lsp: [['marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ...LSP_PLUGINS.map((id) => ['install', id])],
+  }[arm === 'tdd' ? 'toolkit' : arm] || [];
+  for (const args of plugins) {
+    const r = tk.run('claude', ['plugin', ...args], { env: env(home), timeout: 300000 });
+    if (r.status) throw new Error(`claude plugin ${args.join(' ')} falhou:\n${r.stdout}\n${r.stderr}`);
   }
   return home;
+}
+
+// Reads, searches and symbol lookups in a stream-json transcript, subagents included.
+const LOOKUP = /^(Read|Grep|Glob|LSP|NotebookRead)$|lsp|symbol/i;
+const SHELL_LOOKUP = /\b(cat|head|tail|grep|rg|find|ls|tree|Get-Content|Select-String|Get-ChildItem|type)\b/;
+function explorations(stdout) {
+  let n = 0;
+  for (const l of stdout.split(/\r?\n/)) {
+    let e;
+    try { e = JSON.parse(l); } catch { continue; }
+    for (const c of (e.type === 'assistant' && e.message?.content) || []) {
+      if (c.type !== 'tool_use') continue;
+      if (LOOKUP.test(c.name) || (/^(Bash|PowerShell)$/.test(c.name) && SHELL_LOOKUP.test(c.input?.command || ''))) n++;
+    }
+  }
+  return n;
 }
 
 // --- one real run ---
@@ -183,6 +233,8 @@ function runOnce(task, arm, home, rep) {
     cost: res.total_cost_usd ?? 0, turns: res.num_turns ?? 0, seconds: Math.round((res.duration_ms ?? Date.now() - started) / 1000),
     answerChars: (res.result || '').length,
     denials: res.permission_denials?.length ?? 0,
+    // How much the task made Claude explore: if config finds the answer in 2-3 lookups, no arm has anything to save.
+    lookups: explorations(r.stdout),
   };
   if (task.kind === 'edit') {
     run.check = sh(task.check, dir).status === 0;
@@ -212,6 +264,7 @@ const METRICS = [
   ['Tokens totais (com cache)', (r) => r.total, 0],
   ['Turnos', (r) => r.turns, 0],
   ['Tempo (s)', (r) => r.seconds, 0],
+  ['Leituras e buscas', (r) => r.lookups, 0],
   ['Qualidade (testes ocultos)', (r) => (r.quality.total ? r.quality.passed / r.quality.total : 0) * 100, 0],
 ];
 
@@ -288,7 +341,12 @@ function report(runs) {
 if (argv.includes('--dry')) dry();
 if (argv.includes('--report')) { // regenerate report.md from runs.jsonl; "dirA,dirB" merges runs, written to dirA
   const dirs = opt('report').split(',');
-  const runs = dirs.flatMap((d) => fs.readFileSync(path.join(d, 'runs.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)));
+  const runs = dirs.flatMap((d) => fs.readFileSync(path.join(d, 'runs.jsonl'), 'utf8').trim().split('\n').map((l) => {
+    const r = JSON.parse(l);
+    const tr = path.join(d, 'transcripts', `${r.task}-${r.arm}-${r.rep}.jsonl`);
+    if (r.lookups === undefined && fs.existsSync(tr)) r.lookups = explorations(fs.readFileSync(tr, 'utf8')); // runs from before the metric
+    return r;
+  }));
   fs.writeFileSync(path.join(dirs[0], 'report.md'), report(runs));
   console.log(path.join(dirs[0], 'report.md'));
   process.exit(0);

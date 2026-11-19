@@ -4,3 +4,4 @@ node_modules/
 dbhub.toml
 Claude Toolkit Dev — Pesquisa*.md
 bench/results/
+bench/.cache/

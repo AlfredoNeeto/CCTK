@@ -1,0 +1,2 @@
+O conversor do pt-BR é o BillionStrategyNumberToWordsConverter (engine billion-strategy) e ignora addAnd: o "e" depois da escala só entra antes de centenas exatas.
+A=mil e cem; B=mil quinhentos e vinte; C=quinze mil e duzentos; CLASSE=BillionStrategyNumberToWordsConverter; ARQUIVO=src/Humanizer/Locales/pt-BR.yml

@@ -1,0 +1,12 @@
+{
+  "kind": "question",
+  "repoGit": { "url": "https://github.com/sindresorhus/ky", "commit": "3541888878c4d303a8bc2ad61815f4e048f55a5d" },
+  "prompt": "Sem alterar nenhum arquivo: por padrão, quantas vezes o ky repete uma requisição que falhou, para quais métodos HTTP, para quais status HTTP, e quanto ele espera antes da 1ª e da 2ª nova tentativa (sem jitter)? Em qual arquivo ficam esses padrões? Responda em poucas linhas e termine com uma linha exatamente no formato: LIMITE=<n>; METODOS=<lista>; STATUS=<lista>; ATRASOS=<ms>,<ms>; ARQUIVO=<caminho>",
+  "answer": [
+    "LIMITE\\s*=\\s*2\\s*;",
+    "METODOS\\s*=(?=[^;\\n]*\\bget\\b)(?=[^;\\n]*\\bput\\b)(?=[^;\\n]*\\bhead\\b)(?=[^;\\n]*\\bdelete\\b)(?=[^;\\n]*\\boptions\\b)(?=[^;\\n]*\\btrace\\b)(?=[^;\\n]*\\bquery\\b)(?![^;\\n]*\\b(post|patch)\\b)",
+    "STATUS\\s*=(?=[^;\\n]*\\b408\\b)(?=[^;\\n]*\\b413\\b)(?=[^;\\n]*\\b429\\b)(?=[^;\\n]*\\b500\\b)(?=[^;\\n]*\\b502\\b)(?=[^;\\n]*\\b503\\b)(?=[^;\\n]*\\b504\\b)(?![^;\\n]*\\b501\\b)",
+    "ATRASOS\\s*=\\s*300\\s*(ms)?\\s*,\\s*600\\b",
+    "ARQUIVO\\s*=\\s*\\S*normalize\\.ts"
+  ]
+}
