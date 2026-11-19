@@ -91,6 +91,8 @@ test('check-gate', async (t) => {
     trust(cwd, fail);
     run('check-gate.js', ['mark'], { session_id: 's7' }, env);
     assert.strictEqual(run('check-gate.js', ['gate'], { session_id: 's7', cwd }, env).status, 2);
+    // Same folder by another spelling (Windows 8.3 short name in %TEMP%, a symlink): still the approved check.
+    assert.ok(require('./trust.js').isTrusted(fs.realpathSync.native(cwd), fail));
   });
   await t.test('editing only docs or OpenSpec files does not mark the session', () => {
     for (const file_path of ['/p/README.md', 'C:\\p\\notas.txt', 'C:\\p\\openspec\\changes\\x\\tasks.json']) {

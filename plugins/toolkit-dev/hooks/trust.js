@@ -10,7 +10,9 @@ const path = require('path');
 
 const trustFile = () => path.join(os.homedir(), '.claude-toolkit', 'trusted-checks.json');
 const key = (dir, check) => {
-  const d = path.resolve(dir);
+  // realpath: the same folder can arrive as C:\Users\ALFRED~1\... or via a symlink; the key must not depend on that.
+  let d = path.resolve(dir);
+  try { d = fs.realpathSync.native(d); } catch { /* folder gone: the plain path still works as a key */ }
   return crypto.createHash('sha256').update(`${process.platform === 'win32' ? d.toLowerCase() : d}\n${check}`).digest('hex');
 };
 const list = () => { try { return JSON.parse(fs.readFileSync(trustFile(), 'utf8')); } catch { return []; } };

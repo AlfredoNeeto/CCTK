@@ -7,6 +7,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import * as tk from '../lib/toolkit.mjs';
+import { createRequire } from 'node:module';
+
+const { trust } = createRequire(import.meta.url)('../plugins/toolkit-dev/hooks/trust.js');
 
 const BENCH = path.join(tk.REPO_ROOT, 'bench');
 const argv = process.argv.slice(2);
@@ -197,9 +200,21 @@ function explorations(stdout) {
   return n;
 }
 
+// The kit runs a project's check only after `claude-toolkit trust`: approve it in the arm's home, as a user would once.
+function approveCheck(dir, home) {
+  let check;
+  try { check = readJson(path.join(dir, '.claude', 'toolkit.json')).check; } catch { return; }
+  const saved = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE };
+  process.env.HOME = process.env.USERPROFILE = home; // trust.js resolves the list from os.homedir()
+  try { trust(dir, check); } finally {
+    for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
+  }
+}
+
 // --- one real run ---
 function runOnce(task, arm, home, rep) {
   const dir = workspace(task);
+  approveCheck(dir, home);
   const started = Date.now();
   // canaryIn "env": the secret lives in the environment, as for anyone who exports it in the shell profile. It also
   // goes to the home's vault, which only the plugin reads, so secret-guard knows the name (as after `secret set`).
