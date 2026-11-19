@@ -2,7 +2,7 @@
 
 Faz o plano Pro do Claude Code render mais, sem perder qualidade e sem vazar segredo.
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-1.0.2-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-plugin-D97757)
+![versão](https://img.shields.io/badge/vers%C3%A3o-1.0.2-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-kit-D97757)
 
 **[Instalar](#instalar)** · **[📖 Guia do dia a dia](docs/GUIA.md)** · [Comandos](#comandos) · [Benchmark](bench/README.md)
 
