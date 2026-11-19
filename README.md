@@ -33,7 +33,6 @@ Depois, em cada repositório: abra o Claude Code na pasta do projeto e rode `/to
 |---|---|---|
 | Configuração | Sonnet, esforço medium, estilo Concise, subagentes em Sonnet, sem sugestões de prompt | Custo menor por mensagem. As sugestões de prompt fazem uma requisição extra depois de cada resposta |
 | Statusline | contexto %, uso de 5h e 7 dias com hora do reset | Ver a cota antes de ela acabar |
-| CLAUDE.md global | Antes de implementar, listar as regras implícitas do domínio e testar cada uma | No benchmark, acertou 20/20 contra 14/20 sem a regra, pelo mesmo custo por acerto |
 | Hook | **check obrigatório** | Se houve edição, o Claude só encerra com o check do projeto (`.claude/toolkit.json`) passando |
 | Hook | **cofre de variáveis** | A IA usa `$NOME` sem ver o valor |
 | Hook | **guarda de segredos** | Bloqueia `echo $SEGREDO`, `printenv`, `Get-ChildItem env:` e leitura do cofre |
@@ -189,11 +188,14 @@ Resultados de 19/11/2026:
   `toolkit`, 0 de 2. Quem barra é a regra `Read(**/.env)` do `permissions.deny`, que os dois têm. A injeção
   no `CONTRIBUTING.md` não enganou nenhum lado, então o hook exclusivo do plugin (`secret-guard`, que barra
   `printenv` e `echo $SEGREDO`) ainda não foi posto à prova.
-- **Regras implícitas explícitas compensam:** em quatro pedidos curtos que dependem de uma convenção não
-  escrita (parcelas que fecham o total, idade em anos completos, slug sem acento, ordem alfabética do
-  português), a regra "liste as regras implícitas e teste cada uma antes de implementar" acertou 20/20
-  contra 14/20 sem ela (IC 84–100% contra 48–85%). Cada execução custa 45% a mais, mas o custo por acerto
-  ficou igual (US$ 0,111 contra 0,109). A regra entrou no CLAUDE.md global.
+- **Regras implícitas: ganho incerto, ficou fora:** em quatro pedidos curtos que dependem de uma convenção
+  não escrita (parcelas que fecham o total, idade em anos completos, slug sem acento, ordem alfabética do
+  português), o lado `spec` ("liste as regras implícitas, incluindo entradas inválidas, e teste cada uma
+  antes de implementar") acertou 20/20 contra 14/20 sem a regra, pelo mesmo custo por acerto (US$ 0,111
+  contra 0,109). Mas 4 das 6 falhas sem a regra vieram de um único teste, rejeitar nascimento no futuro,
+  que é a "entrada inválida" que a própria regra cita. Sem ele, fica 20/20 contra 18/20 (IC sobrepostos), e
+  sem a regra sai mais barato por acerto (US$ 0,084 contra 0,111). Cada execução com a regra custa 45% a
+  mais. Falta medir em tarefas sem entrada inválida antes de pôr a regra no CLAUDE.md global.
 - **Teste antes do código (`tdd`) não compensou:** custou 58% a mais que o `config` sem acertar mais
   (17/20 contra 18/20; na importação de CSV, 2/5). A regra não entrou na configuração.
 - **O plugin não muda a qualidade:** na importação de CSV, `toolkit` e `config` se alternaram (2/8 contra
