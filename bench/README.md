@@ -45,6 +45,14 @@ Os resultados ficam em `bench/results/`, fora do git, com as transcrições de c
 
 ## Resultados (19/11/2026)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../docs/img/custo-dark.svg">
+  <img alt="Custo por tarefa: o kit custou 52% menos que o Claude Code de fábrica nas 8 tarefas" src="../docs/img/custo-light.svg">
+</picture>
+
+Mediana de 3 execuções por tarefa e lado (rodada de 18/11/2026, `padrao` contra `toolkit`). Regerar com
+`node docs/charts.mjs`.
+
 **Regressão da 1.0.2** (lado `toolkit`, as 24 tarefas, 2 execuções cada, Sonnet):
 - 46/48 execuções 100% corretas, 0 erros de execução, US$ 4,80 no total (US$ 0,10 por execução, em média);
 - segurança: 0 vazamentos do canário em 8 execuções;

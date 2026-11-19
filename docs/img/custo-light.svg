@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="446" viewBox="0 0 760 446" role="img" aria-label="Custo por tarefa: o kit custou 52% menos que o Claude Code de fábrica">
+<style>text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;fill:#1f2328}.m{fill:#59636e}</style>
+<text x="0" y="22" font-size="18" font-weight="600">Mesma tarefa, metade do custo</text>
+<text x="0" y="44" font-size="13" class="m">Custo por tarefa em US$ (equivalente na API). Total: US$ 1,71 → US$ 0,81 (−52%), 23/24 e 22/24 execuções corretas.</text>
+<rect x="0" y="60" width="12" height="12" rx="2" fill="#eb6834"/><text x="18" y="70.5" font-size="13">Claude Code de fábrica (Opus)</text>
+<rect x="230" y="60" width="12" height="12" rx="2" fill="#2a78d6"/><text x="248" y="70.5" font-size="13">Com o kit (Sonnet)</text>
+<line x1="190" x2="190" y1="86" y2="418" stroke="#d1d9e0" stroke-width="1"/>
+<text x="190" y="436" font-size="12" class="m" text-anchor="middle">0</text>
+<line x1="318.5" x2="318.5" y1="86" y2="418" stroke="#d1d9e0" stroke-width="1"/>
+<text x="318.5" y="436" font-size="12" class="m" text-anchor="middle">0,10</text>
+<line x1="447" x2="447" y1="86" y2="418" stroke="#d1d9e0" stroke-width="1"/>
+<text x="447" y="436" font-size="12" class="m" text-anchor="middle">0,20</text>
+<line x1="575.5" x2="575.5" y1="86" y2="418" stroke="#d1d9e0" stroke-width="1"/>
+<text x="575.5" y="436" font-size="12" class="m" text-anchor="middle">0,30</text>
+<line x1="704" x2="704" y1="86" y2="418" stroke="#d1d9e0" stroke-width="1"/>
+<text x="704" y="436" font-size="12" class="m" text-anchor="middle">0,40</text>
+<text x="178" y="113" font-size="13" text-anchor="end">Dias úteis (.NET)</text>
+<path d="M190 96H629.325Q633.325 96 633.325 100V104Q633.325 108 629.325 108H190Z" fill="#eb6834"/>
+<path d="M190 110H386.46Q390.46 110 390.46 114V118Q390.46 122 386.46 122H190Z" fill="#2a78d6"/>
+<text x="396.46" y="120" font-size="12" font-weight="600">−55%</text>
+<text x="178" y="153" font-size="13" text-anchor="end">Importar CSV</text>
+<path d="M190 136H550.9399999999999Q554.9399999999999 136 554.9399999999999 140V144Q554.9399999999999 148 550.9399999999999 148H190Z" fill="#eb6834"/>
+<path d="M190 150H345.34000000000003Q349.34000000000003 150 349.34000000000003 154V158Q349.34000000000003 162 345.34000000000003 162H190Z" fill="#2a78d6"/>
+<text x="355.34000000000003" y="160" font-size="12" font-weight="600">−56%</text>
+<text x="178" y="193" font-size="13" text-anchor="end">Condição de corrida</text>
+<path d="M190 176H545.8Q549.8 176 549.8 180V184Q549.8 188 545.8 188H190Z" fill="#eb6834"/>
+<path d="M190 190H340.2Q344.2 190 344.2 194V198Q344.2 202 340.2 202H190Z" fill="#2a78d6"/>
+<text x="350.2" y="200" font-size="12" font-weight="600">−57%</text>
+<text x="178" y="233" font-size="13" text-anchor="end">Feature .NET</text>
+<path d="M190 216H448.13999999999993Q452.13999999999993 216 452.13999999999993 220V224Q452.13999999999993 228 448.13999999999993 228H190Z" fill="#eb6834"/>
+<path d="M190 230H318.35499999999996Q322.35499999999996 230 322.35499999999996 234V238Q322.35499999999996 242 318.35499999999996 242H190Z" fill="#2a78d6"/>
+<text x="328.35499999999996" y="240" font-size="12" font-weight="600">−50%</text>
+<text x="178" y="273" font-size="13" text-anchor="end">Feature Node</text>
+<path d="M190 256H434.005Q438.005 256 438.005 260V264Q438.005 268 434.005 268H190Z" fill="#eb6834"/>
+<path d="M190 270H299.08Q303.08 270 303.08 274V278Q303.08 282 299.08 282H190Z" fill="#2a78d6"/>
+<text x="309.08" y="280" font-size="12" font-weight="600">−54%</text>
+<text x="178" y="313" font-size="13" text-anchor="end">Pergunta sobre o código</text>
+<path d="M190 296H382.60499999999996Q386.60499999999996 296 386.60499999999996 300V304Q386.60499999999996 308 382.60499999999996 308H190Z" fill="#eb6834"/>
+<path d="M190 310H275.95Q279.95 310 279.95 314V318Q279.95 322 275.95 322H190Z" fill="#2a78d6"/>
+<text x="285.95" y="320" font-size="12" font-weight="600">−54%</text>
+<text x="178" y="353" font-size="13" text-anchor="end">Corrigir bug</text>
+<path d="M190 336H349.195Q353.195 336 353.195 340V344Q353.195 348 349.195 348H190Z" fill="#eb6834"/>
+<path d="M190 350H281.09Q285.09 350 285.09 354V358Q285.09 362 281.09 362H190Z" fill="#2a78d6"/>
+<text x="291.09" y="360" font-size="12" font-weight="600">−42%</text>
+<text x="178" y="393" font-size="13" text-anchor="end">Pergunta com pegadinha</text>
+<path d="M190 376H341.485Q345.485 376 345.485 380V384Q345.485 388 341.485 388H190Z" fill="#eb6834"/>
+<path d="M190 390H286.23Q290.23 390 290.23 394V398Q290.23 402 286.23 402H190Z" fill="#2a78d6"/>
+<text x="296.23" y="400" font-size="12" font-weight="600">−36%</text>
+</svg>

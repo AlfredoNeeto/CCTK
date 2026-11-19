@@ -170,13 +170,17 @@ test('release: package, plugin and the ref init-project writes share one version
   if (!process.env.TOOLKIT_MARKETPLACE) assert.strictEqual(tk.MARKETPLACE_SOURCE, `AlfredoNeeto/claude-toolkit#v${tk.VERSION}`);
 });
 
-test('release: README commands use this version and its relative links exist', () => {
-  const readme = fs.readFileSync(path.join(tk.REPO_ROOT, 'README.md'), 'utf8');
-  const npx = [...readme.matchAll(/npx github:AlfredoNeeto\/claude-toolkit(#v[\d.]+)?/g)];
-  assert.ok(npx.length > 0);
-  for (const [cmd, tag] of npx) assert.strictEqual(tag, `#v${tk.VERSION}`, `README: "${cmd}" must pin #v${tk.VERSION}`);
-  assert.match(readme, new RegExp(`vers%C3%A3o-${tk.VERSION}-`), 'version badge');
-  for (const [, link] of readme.matchAll(/\]\(((?!https?:|#)[^)]+)\)/g)) {
-    assert.ok(fs.existsSync(path.join(tk.REPO_ROOT, link)), `README links to missing ${link}`);
+test('release: README and guide commands use this version and their relative links exist', () => {
+  for (const doc of ['README.md', 'docs/GUIA.md']) {
+    const text = fs.readFileSync(path.join(tk.REPO_ROOT, doc), 'utf8');
+    const npx = [...text.matchAll(/npx github:AlfredoNeeto\/claude-toolkit(#v[\d.]+)?/g)];
+    assert.ok(npx.length > 0);
+    for (const [cmd, tag] of npx) assert.strictEqual(tag, `#v${tk.VERSION}`, `${doc}: "${cmd}" must pin #v${tk.VERSION}`);
+    const links = [...text.matchAll(/\]\(((?!https?:|#)[^)#]+)[^)]*\)|\b(?:src|srcset)="((?!https?:)[^"]+)"/g)];
+    for (const [, md, html] of links) {
+      const link = md || html;
+      assert.ok(fs.existsSync(path.join(tk.REPO_ROOT, path.dirname(doc), link)), `${doc} links to missing ${link}`);
+    }
   }
+  assert.match(fs.readFileSync(path.join(tk.REPO_ROOT, 'README.md'), 'utf8'), new RegExp(`vers%C3%A3o-${tk.VERSION}-`), 'version badge');
 });
