@@ -7,6 +7,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
+const { isTrusted } = require(path.join(__dirname, 'trust.js'));
 
 const LIMIT_MS = Number(process.env.TOOLKIT_CHECK_TIMEOUT_MS) || 180000;
 
@@ -22,6 +23,9 @@ const log = (result) => {
 };
 
 if (process.argv.includes('mark')) {
+  // Docs and OpenSpec artifacts can't break the build: writing a proposal shouldn't cost a full check.
+  const file = String(input.tool_input?.file_path || input.tool_input?.notebook_path || '');
+  if (/\.(md|mdx|txt)$/i.test(file) || /(^|[\\/])openspec[\\/]/i.test(file)) process.exit(0);
   fs.mkdirSync(dataDir, { recursive: true });
   fs.writeFileSync(marker, 'dirty');
   process.exit(0);
@@ -36,6 +40,17 @@ try {
   process.exit(0); // project has no check configured
 }
 if (!check) process.exit(0);
+
+// The command comes from the repository: run it only once the user approved it for this folder.
+if (!isTrusted(cwd, check)) {
+  fs.rmSync(marker, { force: true });
+  log('untrusted');
+  process.stdout.write(JSON.stringify({
+    systemMessage: `O check deste projeto ainda não foi aprovado e não rodou: ${check}\n` +
+      'Se o comando for seguro, aprove num terminal, na pasta do projeto: npx github:AlfredoNeeto/claude-toolkit trust',
+  }));
+  process.exit(0);
+}
 
 // Already blocked once and Claude stopped again without editing: don't loop on a failure it can't fix.
 if (input.stop_hook_active && fs.readFileSync(marker, 'utf8') === 'failed') {

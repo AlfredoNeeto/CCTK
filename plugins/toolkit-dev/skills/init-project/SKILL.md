@@ -43,7 +43,7 @@ Faça uma única rodada, com no máximo 4 perguntas, cada uma já com a sua suge
 
 Monte o comando com [stacks.md](references/stacks.md). Ele precisa:
 - **sair com código diferente de 0 quando algo quebra** e
-- terminar em poucos minutos, porque roda a cada fim de turno em que houve edição. O hook interrompe o
+- terminar em poucos minutos, porque roda a cada fim de turno em que houve edição de código. O hook interrompe o
   check que passa de 3 minutos (ou que fica em modo watch) e libera o encerramento só com um aviso.
 
 Rode o comando uma vez e cronometre. Se passar de 2 minutos, grave a versão rápida (só build e typecheck,
@@ -54,6 +54,10 @@ Grave em `.claude/toolkit.json`:
 ```json
 { "check": "<comando>" }
 ```
+
+O hook só roda um check que o usuário aprovou, porque o comando vem do repositório. Diga a ele para aprovar
+num terminal, na raiz do projeto: `npx github:AlfredoNeeto/claude-toolkit trust`. Não tente aprovar você
+mesmo: o comando é bloqueado dentro do Claude Code.
 
 ## 5. Escrever AGENTS.md e CLAUDE.md
 
@@ -93,7 +97,7 @@ Grave em `.claude/toolkit.json`:
    ```json
    {
      "model": "sonnet",
-     "extraKnownMarketplaces": { "claude-toolkit": { "source": { "source": "github", "repo": "AlfredoNeeto/claude-toolkit", "ref": "v1.0.2" } } },
+     "extraKnownMarketplaces": { "claude-toolkit": { "source": { "source": "github", "repo": "AlfredoNeeto/claude-toolkit", "ref": "v1.1.0" } } },
      "enabledPlugins": { "toolkit-dev@claude-toolkit": true }
    }
    ```
@@ -113,4 +117,4 @@ Proponha só o que falta ou está desatualizado, mostre como diff resumido e apl
    commit e branch (`<tipo>`, `<resumo>`, `<id>`, `<slug>`).
 3. Conte as linhas do AGENTS.md.
 4. Termine com 3 linhas: o que foi detectado, o que foi perguntado ou assumido e o que o usuário deve
-   revisar. Não faça commit sem pedido.
+   revisar, incluindo aprovar o check com o `trust`. Não faça commit sem pedido.

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// npx github:AlfredoNeeto/claude-toolkit <install | restore [backup] | secret set|list|rm NAME | ado add URL | stats [dias]>
+// npx github:AlfredoNeeto/claude-toolkit <install | restore [backup] | doctor | trust | secret set|list|rm NAME | ado add URL | stats [dias]>
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
@@ -8,7 +8,8 @@ import * as tk from './lib/toolkit.mjs';
 import { stats, format } from './lib/stats.mjs';
 
 const require = createRequire(import.meta.url);
-const { setCred } = require('./runtime/creds.js');
+const { setCred, getCred } = require('./runtime/creds.js');
+const { trust, isTrusted } = require('./plugins/toolkit-dev/hooks/trust.js');
 const p = tk.paths();
 
 let piped; // one reader for piped stdin: a readline per question would drop answers sent together
@@ -61,6 +62,62 @@ async function adoAdd(firstUrl) {
   }
 }
 
+// Approves the project's check for this folder. Never from inside Claude Code: the repository picks the command.
+async function trustCheck() {
+  if (process.env.CLAUDECODE) throw new Error('Aprove o check num terminal comum, fora do Claude Code.');
+  let check;
+  try { check = JSON.parse(fs.readFileSync(path.join(process.cwd(), '.claude', 'toolkit.json'), 'utf8')).check; } catch {}
+  if (!check) throw new Error('Nenhum check em .claude/toolkit.json nesta pasta. Rode na raiz do projeto.');
+  console.log(`O kit vai rodar este comando em ${process.cwd()} sempre que o Claude editar código:\n\n  ${check}\n`);
+  if (!(await yes('Aprovar?'))) return;
+  trust(process.cwd(), check);
+  console.log('✔ Check aprovado. Se o comando mudar, o kit pede aprovação de novo.');
+}
+
+const newer = (a, b) => { // 'v1.10.0' > 'v1.9.2'
+  const [x, y] = [a, b].map((v) => v.replace(/^v/, '').split('.').map(Number));
+  for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0);
+  return false;
+};
+
+// One line per item, each with what to do; every probe has a time limit.
+async function doctor() {
+  let bad = 0;
+  const line = (good, label, fix) => { if (!good) bad++; console.log(`${good ? '✔' : '✖'} ${label}${good ? '' : `\n    → ${fix}`}`); };
+  const missing = checkPrereqs();
+  line(!missing.length, 'Pré-requisitos (Node, Claude Code, git, uv)', `Instale: ${missing.join('; ')}`);
+  let settings = {};
+  try { settings = JSON.parse(fs.readFileSync(path.join(p.claude, 'settings.json'), 'utf8')); } catch {}
+  const update = `npx github:AlfredoNeeto/claude-toolkit#v${tk.VERSION} install`;
+  line(tk.isKit(settings) && fs.existsSync(path.join(p.runtime, 'statusline.js')), 'Configuração do kit e statusline', `Rode: ${update}`);
+  let installed = {};
+  try { installed = JSON.parse(fs.readFileSync(path.join(p.claude, 'plugins', 'installed_plugins.json'), 'utf8')).plugins || {}; } catch {}
+  const kitVersion = installed[tk.PLUGIN_ID]?.[0]?.version;
+  line(kitVersion === tk.VERSION, `Plugin toolkit-dev ${kitVersion || 'não instalado'} (esperado ${tk.VERSION})`, `Rode: ${update}`);
+  line(!!installed[tk.SECURITY_PLUGIN], 'Plugin security-guidance', `Rode: claude plugin install ${tk.SECURITY_PLUGIN}`);
+  for (const [bin, pkg] of [['openspec', tk.OPENSPEC], ['playwright-cli', tk.PLAYWRIGHT_CLI]]) {
+    line(tk.run(bin, ['--version'], { timeout: 15000 }).status === 0, bin, `Rode: npm install -g ${pkg}`);
+  }
+  let servers = {};
+  try { servers = JSON.parse(fs.readFileSync(p.claudeJson, 'utf8')).mcpServers || {}; } catch {}
+  for (const s of Object.values(servers).filter(tk.kitMcp)) {
+    const [, url, name] = s.args;
+    const pat = getCred(name);
+    line(pat && (await tk.testPat(url, pat)), `Azure DevOps ${name}: PAT no cofre e aceito pelo servidor`,
+      `Confira a rede e a validade do PAT; para trocar: npx github:AlfredoNeeto/claude-toolkit ado add ${url}`);
+  }
+  let check;
+  try { check = JSON.parse(fs.readFileSync(path.join(process.cwd(), '.claude', 'toolkit.json'), 'utf8')).check; } catch {}
+  if (check) line(isTrusted(process.cwd(), check), `Check deste projeto aprovado (${check})`, 'Rode nesta pasta: npx github:AlfredoNeeto/claude-toolkit trust');
+  else console.log('– Nenhum check nesta pasta (rode o doctor na raiz de um projeto para conferir o dele)');
+  try { // fail-open: offline or rate-limited just skips the hint
+    const res = await fetch(process.env.TOOLKIT_TAGS_URL || 'https://api.github.com/repos/AlfredoNeeto/claude-toolkit/tags', { signal: AbortSignal.timeout(3000) });
+    const latest = (await res.json()).map((t) => t.name).filter((n) => /^v\d+\.\d+\.\d+$/.test(n)).reduce((a, b) => (newer(b, a) ? b : a), `v${tk.VERSION}`);
+    if (newer(latest, `v${tk.VERSION}`)) console.log(`↑ Versão nova: ${latest}. Rode: npx github:AlfredoNeeto/claude-toolkit#${latest} install`);
+  } catch {}
+  if (bad) process.exitCode = 1;
+}
+
 async function install() {
   if (process.env.CLAUDECODE) {
     console.error('Rode o instalador num terminal comum, com todas as sessões do Claude Code fechadas.');
@@ -109,7 +166,9 @@ try {
   else if (cmd === 'secret' && sub === 'list') console.log(tk.vaultList(p).join('\n') || '(cofre vazio)');
   else if (cmd === 'secret' && sub === 'rm' && arg) { tk.vaultRm(p, arg); console.log(`✔ ${arg} removido.`); }
   else if (cmd === 'stats') { const days = Number(sub) || 28; console.log(format(stats(p, days), days)); }
-  else console.log('Uso: install | restore [backup] | secret set|list|rm NOME | ado add URL | stats [dias]');
+  else if (cmd === 'trust') await trustCheck();
+  else if (cmd === 'doctor') await doctor();
+  else console.log('Uso: install | restore [backup] | doctor | trust | secret set|list|rm NOME | ado add URL | stats [dias]');
 } catch (e) {
   console.error(`Erro: ${e.message}`);
   process.exit(1);

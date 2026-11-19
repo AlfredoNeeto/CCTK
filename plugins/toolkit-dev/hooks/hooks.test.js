@@ -6,23 +6,30 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { verdict } = require('./secret-guard.js');
+const { trust } = require('./trust.js');
 
 const run = (script, args, input, env) =>
   spawnSync(process.execPath, [path.join(__dirname, script), ...args], {
     input: JSON.stringify(input), encoding: 'utf8', env: { ...process.env, ...env },
   });
 
-function project(check) {
+// A project with a check the user already approved, unless trusted is false.
+function project(check, trusted = true) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-proj-'));
   if (check !== undefined) {
     fs.mkdirSync(path.join(dir, '.claude'));
     fs.writeFileSync(path.join(dir, '.claude', 'toolkit.json'), JSON.stringify({ check }));
+    if (trusted) trust(dir, check);
   }
   return dir;
 }
 
 test('check-gate', async (t) => {
   const data = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-data-'));
+  // Fake home for the trust list, here (trust()) and in the hook processes, which inherit process.env.
+  const realHome = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE };
+  process.env.HOME = process.env.USERPROFILE = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-home-'));
+  t.after(() => { for (const [k, v] of Object.entries(realHome)) if (v === undefined) delete process.env[k]; else process.env[k] = v; });
   const env = { CLAUDE_PLUGIN_DATA: data, CLAUDE_PROJECT_DIR: '' };
   const pass = 'node -e "process.exit(0)"';
   const fail = 'node -e "console.log(\'boom\');process.exit(1)"';
@@ -70,6 +77,29 @@ test('check-gate', async (t) => {
     const of = (s) => log.filter((e) => e.session === s).map((e) => e.result);
     assert.deepStrictEqual([of('s1'), of('s2'), of('s3'), of('s4'), of('s5'), of('s6')], [[], [], ['pass'], ['fail', 'giveup'], ['fail', 'fail'], ['timeout']]);
   });
+  await t.test('a check the user never approved does not run, and editing an approved one revokes it', () => {
+    const cwd = project(fail, false);
+    run('check-gate.js', ['mark'], { session_id: 's7' }, env);
+    const r = run('check-gate.js', ['gate'], { session_id: 's7', cwd }, env);
+    assert.strictEqual(r.status, 0);
+    assert.match(JSON.parse(r.stdout).systemMessage, /não foi aprovado[\s\S]*claude-toolkit trust/);
+    assert.ok(!fs.existsSync(path.join(data, 'toolkit-dirty-s7')), 'the warning shows once per edit, not on every stop');
+
+    trust(cwd, pass); // approved a different command than the one in toolkit.json
+    run('check-gate.js', ['mark'], { session_id: 's7' }, env);
+    assert.strictEqual(run('check-gate.js', ['gate'], { session_id: 's7', cwd }, env).status, 0);
+    trust(cwd, fail);
+    run('check-gate.js', ['mark'], { session_id: 's7' }, env);
+    assert.strictEqual(run('check-gate.js', ['gate'], { session_id: 's7', cwd }, env).status, 2);
+  });
+  await t.test('editing only docs or OpenSpec files does not mark the session', () => {
+    for (const file_path of ['/p/README.md', 'C:\\p\\notas.txt', 'C:\\p\\openspec\\changes\\x\\tasks.json']) {
+      run('check-gate.js', ['mark'], { session_id: 's8', tool_input: { file_path } }, env);
+    }
+    assert.ok(!fs.existsSync(path.join(data, 'toolkit-dirty-s8')));
+    run('check-gate.js', ['mark'], { session_id: 's8', tool_input: { file_path: '/p/src/app.ts' } }, env);
+    assert.ok(fs.existsSync(path.join(data, 'toolkit-dirty-s8')));
+  });
 });
 
 test('secret-guard', () => {
@@ -79,11 +109,12 @@ test('secret-guard', () => {
     'security find-generic-password -s claude-toolkit -a ado-x -w', 'secret-tool lookup service claude-toolkit account ado-x',
     'Get-Content C:/Users/a/creds/ado-x.dpapi | ConvertTo-SecureString',
     "[Environment]::GetEnvironmentVariable('DB_CONN')", "Write-Output [Environment]::GetEnvironmentVariable('DB_CONN')",
-    "$x = 1; [Environment]::GetEnvironmentVariable(\"DB_CONN\", 'User')", '[Environment]::GetEnvironmentVariables()']) {
+    "$x = 1; [Environment]::GetEnvironmentVariable(\"DB_CONN\", 'User')", '[Environment]::GetEnvironmentVariables()',
+    'npx github:AlfredoNeeto/claude-toolkit trust', 'npx -y github:AlfredoNeeto/claude-toolkit#v1.1.0 trust']) {
     assert.ok(verdict(cmd, n), `should block: ${cmd}`);
   }
   for (const cmd of ['curl -H "Authorization: Bearer $DB_CONN" https://x', 'sqlcmd -S "$DB_CONN" -Q "select 1"',
-    'echo ok', 'dotnet test', 'env FOO=1 npm test', 'git status',
+    'echo ok', 'dotnet test', 'env FOO=1 npm test', 'git status', 'npx github:AlfredoNeeto/claude-toolkit stats',
     // checks the variable without showing it: the 5 blocks measured in bench/ were this, each costing a turn
     "$t = [Environment]::GetEnvironmentVariable('DB_CONN'); \"definida: $([bool]$t) (tamanho: $($t.Length))\"",
     "[Environment]::GetEnvironmentVariable('PATH')"]) {

@@ -40,7 +40,7 @@ if (cmd === 'npx') rec.env = { url: process.env.AZURE_DEVOPS_ORG_URL, pat: proce
 if (process.env.SHIM_LOG) fs.appendFileSync(process.env.SHIM_LOG, JSON.stringify(rec) + '\\n');
 process.exit((process.env.SHIM_FAIL || '').split(',').includes(cmd) ? 1 : 0);
 `);
-for (const name of ['claude', 'npm', 'openspec', 'git', 'uv', 'npx']) {
+for (const name of ['claude', 'npm', 'openspec', 'git', 'uv', 'npx', 'playwright-cli']) {
   const shim = path.join(BIN, 'shim.cjs');
   if (win) fs.writeFileSync(path.join(BIN, `${name}.cmd`), `@"${process.execPath}" "${shim}" ${name} %*\r\n`);
   else fs.writeFileSync(path.join(BIN, name), `#!/bin/sh\nexec "${process.execPath}" "${shim}" ${name} "$@"\n`, { mode: 0o755 });
@@ -224,6 +224,36 @@ test('install → ado add → MCP launch → restore, full flow', async () => {
   }
 });
 
+test('update (install over the kit) keeps ado-* MCPs, and restore still returns the original setup', async () => {
+  const home = fakeHome();
+  const c = path.join(home, '.claude');
+  const original = read(path.join(c, 'settings.json'));
+  const srv = await patServer('pat-ok');
+  try {
+    const e = env(home);
+    const first = await drive(['install'], [[/Continuar\?/, 's'], [/Azure DevOps Server/, 's'], [/URL da collection/, srv.url], [/PAT para/, 'pat-ok'], [/URL da collection/, '']], e);
+    assert.strictEqual(first.code, 0, first.err);
+    // The fake claude doesn't write settings: mark both kit plugins enabled, as the real install would.
+    const s = JSON.parse(read(path.join(c, 'settings.json')));
+    fs.writeFileSync(path.join(c, 'settings.json'), JSON.stringify({ ...s, enabledPlugins: { [tk.PLUGIN_ID]: true, [tk.SECURITY_PLUGIN]: true } }));
+
+    const before = calls(home).length;
+    const update = await drive(['install'], [[/Continuar\?/, 's'], [/Azure DevOps Server/, 'n']], e);
+    assert.strictEqual(update.code, 0, update.err);
+    assert.match(update.out, /Remover plugins \(nenhum\), MCPs de usuário \(nenhum\)/);
+    assert.ok(!calls(home).slice(before).some((x) => x.includes('uninstall')), 'an update uninstalls nothing');
+    assert.deepStrictEqual(Object.keys(JSON.parse(read(path.join(home, '.claude.json'))).mcpServers), ['ado-cola']);
+    assert.strictEqual(fs.readdirSync(path.join(home, '.claude-toolkit', 'backups')).length, 2);
+
+    const back = await drive(['restore'], [], e);
+    assert.strictEqual(back.code, 0, back.err);
+    assert.strictEqual(read(path.join(c, 'settings.json')), original);
+    assert.deepStrictEqual(JSON.parse(read(path.join(home, '.claude.json'))).mcpServers, { context7: { url: 'x' } });
+  } finally {
+    srv.close();
+  }
+});
+
 test('install with every answer piped at once (scripted use)', () => {
   const home = fakeHome();
   const r = spawnSync(process.execPath, [CLI, 'install'], { input: 's\nn\n', encoding: 'utf8', env: env(home) });
@@ -294,10 +324,53 @@ test('hooks.json commands run as Claude Code runs them', () => {
   const proj = tmp('tk-e2e-proj-');
   fs.mkdirSync(path.join(proj, '.claude'));
   fs.writeFileSync(path.join(proj, '.claude', 'toolkit.json'), JSON.stringify({ check: 'node -e "console.log(\'quebrou\');process.exit(1)"' }));
-  assert.strictEqual(hook('PostToolUse', { session_id: 'h1', tool_name: 'Edit' }).status, 0);
+  const edit = () => assert.strictEqual(hook('PostToolUse', { session_id: 'h1', tool_name: 'Edit', tool_input: { file_path: path.join(proj, 'a.js') } }).status, 0);
+  edit();
+  const untrusted = hook('Stop', { session_id: 'h1', cwd: proj });
+  assert.strictEqual(untrusted.status, 0, 'a check from the repository never runs before the user approves it');
+  assert.match(JSON.parse(untrusted.stdout).systemMessage, /não foi aprovado/);
+
+  const cli = (extra) => spawnSync(process.execPath, [CLI, 'trust'], { cwd: proj, input: 's\n', encoding: 'utf8', env: { ...env(home), ...extra } });
+  const inside = cli({ CLAUDECODE: '1' });
+  assert.strictEqual(inside.status, 1);
+  assert.match(inside.stderr, /fora do Claude Code/);
+  const ok = cli();
+  assert.strictEqual(ok.status, 0, ok.stderr);
+  assert.match(ok.stdout, /quebrou[\s\S]*Check aprovado/);
+
+  edit();
   const gate = hook('Stop', { session_id: 'h1', cwd: proj });
   assert.strictEqual(gate.status, 2);
   assert.match(gate.stderr, /quebrou/);
+});
+
+test('doctor: lists what is missing, then all green after install, with the newer-version hint', async () => {
+  const home = fakeHome();
+  const tags = http.createServer((req, res) => res.end(JSON.stringify([{ name: 'v99.0.0' }, { name: 'v1.0.0' }])));
+  await new Promise((r) => tags.listen(0, '127.0.0.1', r));
+  try {
+    const e = env(home, { TOOLKIT_TAGS_URL: `http://127.0.0.1:${tags.address().port}/` });
+    const doctor = () => new Promise((resolve) => {
+      const c = spawn(process.execPath, [CLI, 'doctor'], { env: e });
+      let out = '';
+      c.stdout.on('data', (d) => (out += d));
+      c.on('close', (code) => resolve({ code, out }));
+    });
+    const before = await doctor();
+    assert.strictEqual(before.code, 1);
+    assert.match(before.out, /✖ Configuração do kit[\s\S]*→ Rode: npx/);
+    assert.match(before.out, /✖ Plugin toolkit-dev não instalado/);
+
+    assert.strictEqual(spawnSync(process.execPath, [CLI, 'install'], { input: 's\nn\n', encoding: 'utf8', env: e }).status, 0);
+    const plugins = { [tk.PLUGIN_ID]: [{ version: tk.VERSION }], [tk.SECURITY_PLUGIN]: [{ version: '1.0.0' }] };
+    fs.writeFileSync(path.join(home, '.claude', 'plugins', 'installed_plugins.json'), JSON.stringify({ version: 2, plugins }));
+    const after = await doctor();
+    assert.strictEqual(after.code, 0, after.out);
+    assert.doesNotMatch(after.out, /✖/);
+    assert.match(after.out, /↑ Versão nova: v99\.0\.0/);
+  } finally {
+    tags.close();
+  }
 });
 
 test('statusline: full input and garbage input', () => {

@@ -25,9 +25,10 @@ claude                      # abre no Sonnet: o modelo do dia a dia
 1. **Pedido pequeno?** Peça direto ([como pedir](#tarefa-pequena)).
 2. **Terminou?** `/clear` antes do próximo assunto.
 3. **Feature com regra de negócio?** Planeje no Opus, implemente no Sonnet ([fluxo](#feature-ou-bug-com-regra-de-negócio)).
-4. **No fim da semana:** `npx github:AlfredoNeeto/claude-toolkit#v1.0.2 stats` mostra para onde foi a cota.
+4. **No fim da semana:** `npx github:AlfredoNeeto/claude-toolkit#v1.1.0 stats` mostra para onde foi a cota.
 
-Primeira vez num repositório? Rode `/toolkit-dev:init-project` uma vez e commite o que ele criar.
+Primeira vez num repositório? Rode `/toolkit-dev:init-project` uma vez, commite o que ele criar e
+[aprove o check](#o-check-antes-de-encerrar).
 
 ## Ler a statusline
 
@@ -76,7 +77,17 @@ Uma mudança por sessão de implementação.
 ## O check antes de encerrar
 
 O `init-project` grava em `.claude/toolkit.json` um **check**: o comando de build e teste do projeto.
-Se o Claude editou código, ele só encerra quando o check passa.
+Se o Claude editou código, ele só encerra quando o check passa. Editar só `.md`, `.txt` ou arquivos em
+`openspec/` não dispara o check.
+
+- **Aprove o check uma vez por projeto.** O `toolkit.json` vem com o repositório, então um repo clonado
+  ou um PR poderia trazer qualquer comando. O kit só roda o check depois que você aprova, num terminal,
+  na pasta do projeto:
+  ```
+  npx github:AlfredoNeeto/claude-toolkit#v1.1.0 trust
+  ```
+  Se o comando mudar (num pull, num PR ou porque o Claude editou o arquivo), o kit avisa e pede aprovação
+  de novo. O Claude não consegue aprovar sozinho.
 
 - Limite de **3 minutos**. Passou disso (ou ficou preso em modo watch)? O check é interrompido, a sessão segue
   e aparece um aviso. Troque o `check` por algo mais rápido, como só build e typecheck.
@@ -94,9 +105,9 @@ Se o Claude editou código, ele só encerra quando o check passa.
 Dê ao Claude um token de desenvolvimento sem que ele veja o valor:
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.0.2 secret set API_TOKEN   # pede o valor sem mostrar
-npx github:AlfredoNeeto/claude-toolkit#v1.0.2 secret list
-npx github:AlfredoNeeto/claude-toolkit#v1.0.2 secret rm API_TOKEN
+npx github:AlfredoNeeto/claude-toolkit#v1.1.0 secret set API_TOKEN   # pede o valor sem mostrar
+npx github:AlfredoNeeto/claude-toolkit#v1.1.0 secret list
+npx github:AlfredoNeeto/claude-toolkit#v1.1.0 secret rm API_TOKEN
 ```
 
 Na sessão, o Claude recebe só o nome e usa `$API_TOKEN` nos comandos.
@@ -112,7 +123,7 @@ Na sessão, o Claude recebe só o nome e usa `$API_TOKEN` nos comandos.
 Para servidores on-premises (o MCP oficial da Microsoft só atende a nuvem):
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.0.2 ado add https://servidor/tfs/MinhaCollection
+npx github:AlfredoNeeto/claude-toolkit#v1.1.0 ado add https://servidor/tfs/MinhaCollection
 ```
 
 - Cada collection vira um MCP `ado-<collection>`. Pode cadastrar quantas quiser.
@@ -123,15 +134,22 @@ npx github:AlfredoNeeto/claude-toolkit#v1.0.2 ado add https://servidor/tfs/Minha
 
 ## Deu problema?
 
+Comece pelo `doctor`. Ele confere a instalação e diz o que fazer em cada item que falhou:
+
+```
+npx github:AlfredoNeeto/claude-toolkit#v1.1.0 doctor
+```
+
 | Sintoma | O que fazer |
 |---|---|
 | "Rode o instalador num terminal comum" | Feche o Claude Code e rode o `install` fora dele |
+| "O check deste projeto ainda não foi aprovado" | Confira o comando e rode o `trust` na pasta do projeto ([o check](#o-check-antes-de-encerrar)) |
 | "Falta instalar: ..." | Instale o que a mensagem lista e rode de novo |
 | Aviso de que o check passou de 3 min | Troque o `check` em `.claude/toolkit.json` por algo mais rápido |
 | O Claude insiste num check que já estava quebrado | Conserte o projeto ou ajuste o `check`. O check desiste na segunda parada sem edição |
 | "Bloqueado pelo toolkit" | O comando ia mostrar um segredo. Peça para usar a variável (`$NOME`) |
-| Quero a configuração antiga | `npx github:AlfredoNeeto/claude-toolkit#v1.0.2 restore` |
-| Atualizar o kit | Rode o `install` com a tag nova, por exemplo `#v1.1.0` |
+| Quero a configuração antiga | `npx github:AlfredoNeeto/claude-toolkit#v1.1.0 restore` |
+| Atualizar o kit | Rode o `install` com a tag nova, por exemplo `#v1.2.0`. Os MCPs do Azure DevOps continuam, e o `restore` ainda volta à configuração de antes do kit |
 | Certificado corporativo (proxy) | Defina `NODE_EXTRA_CA_CERTS=<caminho do .pem>` nas variáveis de ambiente do usuário |
 
 Não resolveu? Abra uma [issue](https://github.com/AlfredoNeeto/claude-toolkit/issues) com a saída do comando,

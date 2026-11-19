@@ -1,4 +1,4 @@
-// Shared by the hooks and the installer: where the vault lives and how to read it.
+// Shared by the hooks: where the vault lives and how to read it.
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -15,7 +15,8 @@ function readVault(file = vaultFile()) {
   return out;
 }
 
-// Names the guard protects: everything in the vault plus the Azure DevOps PATs the installer stores as user env vars.
+// Names the guard protects: everything in the vault plus Azure DevOps PATs a user set as env vars by hand
+// (the installer keeps PATs in the OS credential store, never in the environment).
 function secretNames() {
   const names = Object.keys(readVault());
   for (const k of Object.keys(process.env)) if (/^(ADO_PAT_|AZURE_DEVOPS_PAT$)/i.test(k)) names.push(k);
