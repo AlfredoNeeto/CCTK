@@ -66,7 +66,10 @@ function grade(task, dir, answer = '') {
   const tap = [/# pass (\d+)/, /# fail (\d+)/].map((re) => Number(r.out.match(re)?.[1] ?? NaN));
   const net = r.out.match(/Failed:\s*(\d+),\s*Passed:\s*(\d+)/) || r.out.match(/failed:\s*(\d+),\s*succeeded:\s*(\d+)/i);
   const [passed, failed] = net ? [Number(net[2]), Number(net[1])] : tap;
-  return { pass: r.status === 0, passed, total: passed + failed, ...(r.status && !(passed + failed) ? { log: r.out.slice(-2000) } : {}) };
+  // Names of the failing hidden tests (TAP "not ok N - name" or dotnet "Failed Name"), to see what each arm misses.
+  const failedTests = [...r.out.matchAll(/^not ok \d+ - (.+)$|^\s*Failed (\S+) \[/gm)].map((m) => (m[1] || m[2]).trim());
+  return { pass: r.status === 0, passed, total: passed + failed, ...(failedTests.length ? { failedTests } : {}),
+    ...(r.status && !(passed + failed) ? { log: r.out.slice(-2000) } : {}) };
 }
 
 // --- dry: proves each grader fails on untouched work and passes on the reference solution, no quota spent ---
@@ -172,6 +175,10 @@ function runOnce(task, arm, home, rep) {
       .reduce((s, l) => s + (Number(l.split('\t')[0]) || 0) + (Number(l.split('\t')[1]) || 0), 0);
   }
   run.quality = grade(task, dir, task.kind === 'security' ? r.stdout : res.result || '');
+  // Full transcript, to compare how arms worked (results/ is outside git).
+  const tr = path.join(out, 'transcripts', `${task.id}-${arm}-${rep}.jsonl`);
+  fs.mkdirSync(path.dirname(tr), { recursive: true });
+  fs.writeFileSync(tr, r.stdout);
   fs.rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
   return run;
 }

@@ -123,3 +123,34 @@ test('creds: OS store round trip', { skip: process.platform === 'linux' && !proc
     Object.assign(process.env, prev);
   }
 });
+
+test('stats: dedupes messages, ignores subagents for switches, counts gate catches', async () => {
+  const { stats } = await import('../lib/stats.mjs');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-stats-'));
+  const p = tk.paths(home);
+  const now = Date.now();
+  const ts = (h) => new Date(now - h * 3600000).toISOString();
+  const msg = (id, model, h, session = 'S1') => JSON.stringify({ type: 'assistant', timestamp: ts(h), sessionId: session,
+    message: { id, model, usage: { input_tokens: 10, cache_creation_input_tokens: 100, cache_read_input_tokens: 1000, output_tokens: 5 } } });
+  const proj = path.join(p.claude, 'projects', 'D--repo');
+  fs.mkdirSync(path.join(proj, 'S1', 'subagents'), { recursive: true });
+  // m1 spans two lines (same id): counted once. S1 switches sonnet → opus; S2 stays on sonnet.
+  fs.writeFileSync(path.join(proj, 'S1.jsonl'), [msg('m1', 'claude-sonnet-5-5', 3), msg('m1', 'claude-sonnet-5-5', 3),
+    msg('m2', 'claude-opus-5-5', 2), '{"type":"user"}', 'linha parcial {'].join('\n'));
+  fs.writeFileSync(path.join(proj, 'S2.jsonl'), msg('m3', 'claude-sonnet-5-5', 2, 'S2'));
+  // A subagent on haiku inside S2 is not a switch.
+  fs.writeFileSync(path.join(proj, 'S1', 'subagents', 'agent-x.jsonl'), msg('m4', 'claude-haiku-5-5', 2, 'S2'));
+  const gate = path.join(p.claude, 'plugins', 'data', 'toolkit-dev-claude-toolkit', 'gate.log');
+  fs.mkdirSync(path.dirname(gate), { recursive: true });
+  fs.writeFileSync(gate, [['S1', 'fail', 3], ['S1', 'pass', 2], ['S2', 'fail', 2], ['S2', 'giveup', 1]]
+    .map(([session, result, h]) => JSON.stringify({ ts: ts(h), session, result })).join('\n'));
+
+  // 3h ago may fall in the previous week right after Monday 00:00 UTC: sum across weeks.
+  const weeks = stats(p, 7);
+  const sum = (f) => weeks.reduce((s, w) => s + f(w), 0);
+  assert.strictEqual(sum((w) => w.fresh), 4 * 115);
+  assert.strictEqual(sum((w) => w.cacheRead), 4 * 1000);
+  assert.strictEqual(sum((w) => w.switches), weeks.length === 1 ? 1 : 0); // a switch split across weeks isn't seen as one
+  assert.deepStrictEqual([sum((w) => w.gate.fail), sum((w) => w.gate.caught), sum((w) => w.gate.giveup)], [2, 1, 1]);
+  assert.ok(Object.keys(weeks.at(-1).models).includes('claude-haiku-5-5'));
+});

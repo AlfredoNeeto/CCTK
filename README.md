@@ -78,7 +78,10 @@ separa os lados (importação de CSV), o Sonnet em `high` acertou 8/10 a US$ 0,2
 US$ 0,40 do Opus e 5/13 a US$ 0,34 do Sonnet em `medium`. Em tarefa simples, o `high` só encarece; volte
 com `/effort medium`. Para aprofundar só uma resposta, escreva `ultrathink` no prompt.
 
-Para ver o que está gastando a cota, use `/usage` (mostra skills, plugins e MCPs).
+Para ver o que está gastando a cota, use `/usage` (mostra skills, plugins e MCPs). Para o histórico por
+semana, rode `npx github:AlfredoNeeto/claude-toolkit stats [dias]` (padrão 28). Ele lê as transcrições
+locais e mostra sessões, tokens sem cache, taxa de cache, mistura de modelos, sessões com troca de modelo no
+meio e quantas vezes o check-gate barrou um encerramento que o Claude depois corrigiu. Nada sai da máquina.
 
 ## Cofre de variáveis
 
@@ -185,7 +188,10 @@ Resultados de 19/11/2026:
   não enganou nenhum dos dois lados.
 - **Teste antes do código (`tdd`) não compensou:** custou 58% a mais que o `config` sem acertar mais
   (17/20 contra 18/20; na importação de CSV, 2/5). A regra não entrou na configuração.
-- **O plugin não melhora a qualidade:** na importação de CSV, o `toolkit` acertou 2/8 contra 5/13 do
-  `config` (IC sobrepostos). O valor medido do plugin hoje é a segurança, não a qualidade.
-- **Calibração:** rateio de frete, boleto e juros por atraso saíram saturadas (todos acertam). Faltam
-  tarefas mais difíceis para separar os lados.
+- **O plugin não muda a qualidade:** na importação de CSV, `toolkit` e `config` se alternaram (2/8 contra
+  5/13 numa rodada, 4/8 contra 2/8 na outra). É ruído. O valor medido do plugin hoje é a segurança.
+- **O erro vem do que não está escrito, não da dificuldade:** quase todas as falhas na importação de CSV
+  aceitavam `12,345` como limite, porque o enunciado não dizia "no máximo 2 casas decimais" (agora diz).
+  Recorrência de agenda e conciliação bancária, com muitas regras combinadas mas todas escritas, deram
+  10/10 com o Sonnet medium, e frete, boleto e juros também saturaram. Para qualidade, o que rende é
+  deixar as regras explícitas na spec (OpenSpec) antes do código, não esforço maior nem hooks.

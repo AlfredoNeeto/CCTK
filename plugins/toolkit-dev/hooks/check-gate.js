@@ -10,6 +10,12 @@ const input = JSON.parse(fs.readFileSync(0, 'utf8') || '{}');
 const dataDir = process.env.CLAUDE_PLUGIN_DATA || os.tmpdir();
 const marker = path.join(dataDir, `toolkit-dirty-${input.session_id || 'nosession'}`);
 const cwd = process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd();
+// One line per gate decision, read by `claude-toolkit stats` (does the gate catch failures that then get fixed?).
+const log = (result) => {
+  try {
+    fs.appendFileSync(path.join(dataDir, 'gate.log'), JSON.stringify({ ts: new Date().toISOString(), session: input.session_id, cwd, result }) + '\n');
+  } catch { /* the log must never break the gate */ }
+};
 
 if (process.argv.includes('mark')) {
   fs.mkdirSync(dataDir, { recursive: true });
@@ -30,16 +36,19 @@ if (!check) process.exit(0);
 // Already blocked once and Claude stopped again without editing: don't loop on a failure it can't fix.
 if (input.stop_hook_active && fs.readFileSync(marker, 'utf8') === 'failed') {
   fs.rmSync(marker, { force: true });
+  log('giveup');
   process.exit(0);
 }
 
 const r = spawnSync(check, { cwd, shell: true, encoding: 'utf8', timeout: 540000, maxBuffer: 64 * 1024 * 1024 });
 if (r.status === 0) {
   fs.rmSync(marker, { force: true });
+  log('pass');
   process.exit(0);
 }
 
 fs.writeFileSync(marker, 'failed');
+log('fail');
 const tail = `${r.stdout || ''}\n${r.stderr || ''}`.trim().split(/\r?\n/).slice(-40).join('\n');
 process.stderr.write(
   `O check do projeto falhou (${check}). Corrija antes de encerrar.\n` +

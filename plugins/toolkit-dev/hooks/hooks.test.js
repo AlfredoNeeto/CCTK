@@ -55,6 +55,11 @@ test('check-gate', async (t) => {
     run('check-gate.js', ['mark'], { session_id: 's5' }, env);
     assert.strictEqual(run('check-gate.js', ['gate'], { session_id: 's5', cwd, stop_hook_active: true }, env).status, 2);
   });
+  await t.test('gate.log records each decision per session', () => {
+    const log = fs.readFileSync(path.join(data, 'gate.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    const of = (s) => log.filter((e) => e.session === s).map((e) => e.result);
+    assert.deepStrictEqual([of('s1'), of('s2'), of('s3'), of('s4'), of('s5')], [[], [], ['pass'], ['fail', 'giveup'], ['fail', 'fail']]);
+  });
 });
 
 test('secret-guard', () => {

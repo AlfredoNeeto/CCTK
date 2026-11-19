@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-// npx github:AlfredoNeeto/claude-toolkit <install | restore [backup] | secret set|list|rm NAME | ado add URL>
+// npx github:AlfredoNeeto/claude-toolkit <install | restore [backup] | secret set|list|rm NAME | ado add URL | stats [dias]>
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { createRequire } from 'node:module';
 import * as tk from './lib/toolkit.mjs';
+import { stats, format } from './lib/stats.mjs';
 
 const require = createRequire(import.meta.url);
 const { setCred } = require('./runtime/creds.js');
@@ -103,7 +104,8 @@ try {
   else if (cmd === 'secret' && sub === 'set' && arg) { tk.vaultSet(p, arg, await askHidden(`Valor de ${arg} (não aparece na tela): `)); console.log(`✔ ${arg} gravado. Rode /clear no Claude Code para carregar.`); }
   else if (cmd === 'secret' && sub === 'list') console.log(tk.vaultList(p).join('\n') || '(cofre vazio)');
   else if (cmd === 'secret' && sub === 'rm' && arg) { tk.vaultRm(p, arg); console.log(`✔ ${arg} removido.`); }
-  else console.log('Uso: install | restore [backup] | secret set|list|rm NOME | ado add URL');
+  else if (cmd === 'stats') { const days = Number(sub) || 28; console.log(format(stats(p, days), days)); }
+  else console.log('Uso: install | restore [backup] | secret set|list|rm NOME | ado add URL | stats [dias]');
 } catch (e) {
   console.error(`Erro: ${e.message}`);
   process.exit(1);
