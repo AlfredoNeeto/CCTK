@@ -342,6 +342,15 @@ test('hooks.json commands run as Claude Code runs them', () => {
   const gate = hook('Stop', { session_id: 'h1', cwd: proj });
   assert.strictEqual(gate.status, 2);
   assert.match(gate.stderr, /quebrou/);
+
+  // An edit made through the shell (no Edit/Write): the SessionStart snapshot catches it.
+  assert.strictEqual(spawnSync('git init -q && git add -A && git -c user.name=t -c user.email=t@t commit -qm i', { cwd: proj, shell: true }).status, 0);
+  const snapshotHook = JSON.parse(text).hooks.SessionStart[0].hooks[1].command;
+  assert.strictEqual(spawnSync(snapshotHook, { shell: true, encoding: 'utf8', env: e, input: JSON.stringify({ session_id: 'h2', cwd: proj }) }).status, 0);
+  fs.writeFileSync(path.join(proj, 'b.js'), 'x');
+  const viaShell = hook('Stop', { session_id: 'h2', cwd: proj });
+  assert.strictEqual(viaShell.status, 2, viaShell.stderr);
+  assert.match(viaShell.stderr, /quebrou/);
 });
 
 test('doctor: lists what is missing, then all green after install, with the newer-version hint', async () => {

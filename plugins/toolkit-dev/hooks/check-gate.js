@@ -1,8 +1,11 @@
-// PostToolUse (arg "mark"): records that this session edited files.
-// Stop (arg "gate"): if there were edits, runs the project's check from .claude/toolkit.json.
+// SessionStart (arg "start"): takes a snapshot of the git working tree, to catch edits made through the shell.
+// PostToolUse (arg "mark"): records that this session edited files with Edit/Write.
+// Stop (arg "gate"): if there were edits (a mark, or a working tree that differs from the snapshot), runs the
+// project's check from .claude/toolkit.json.
 // Exit 2 + stderr blocks the stop so Claude fixes the failure; the edit marker survives until the check passes.
 // A check over the time limit (a slow suite, a watch mode that never ends) is killed with its whole process tree
 // and the stop goes through with a warning: the gate must never hang a session.
+const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -10,10 +13,13 @@ const { spawn, spawnSync } = require('child_process');
 const { isTrusted } = require(path.join(__dirname, 'trust.js'));
 
 const LIMIT_MS = Number(process.env.TOOLKIT_CHECK_TIMEOUT_MS) || 180000;
+const WEEK = 7 * 86400000;
 
 const input = JSON.parse(fs.readFileSync(0, 'utf8') || '{}');
 const dataDir = process.env.CLAUDE_PLUGIN_DATA || os.tmpdir();
-const marker = path.join(dataDir, `toolkit-dirty-${input.session_id || 'nosession'}`);
+const session = input.session_id || 'nosession';
+const marker = path.join(dataDir, `toolkit-dirty-${session}`);
+const baseFile = path.join(dataDir, `toolkit-base-${session}`);
 const cwd = process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd();
 // One line per gate decision, read by `claude-toolkit stats` (does the gate catch failures that then get fixed?).
 const log = (result) => {
@@ -21,29 +27,65 @@ const log = (result) => {
     fs.appendFileSync(path.join(dataDir, 'gate.log'), JSON.stringify({ ts: new Date().toISOString(), session: input.session_id, cwd, result }) + '\n');
   } catch { /* the log must never break the gate */ }
 };
+// Docs and OpenSpec artifacts can't break the build: writing a proposal shouldn't cost a full check.
+const isDoc = (f) => /\.(md|mdx|txt)$/i.test(f) || /(^|[\\/])openspec[\\/]/i.test(f);
 
 if (process.argv.includes('mark')) {
-  // Docs and OpenSpec artifacts can't break the build: writing a proposal shouldn't cost a full check.
-  const file = String(input.tool_input?.file_path || input.tool_input?.notebook_path || '');
-  if (/\.(md|mdx|txt)$/i.test(file) || /(^|[\\/])openspec[\\/]/i.test(file)) process.exit(0);
+  if (isDoc(String(input.tool_input?.file_path || input.tool_input?.notebook_path || ''))) process.exit(0);
   fs.mkdirSync(dataDir, { recursive: true });
   fs.writeFileSync(marker, 'dirty');
   process.exit(0);
 }
 
-if (!fs.existsSync(marker)) process.exit(0); // no edits this session: nothing to check
-
 let check;
-try {
-  check = JSON.parse(fs.readFileSync(path.join(cwd, '.claude', 'toolkit.json'), 'utf8')).check;
-} catch {
-  process.exit(0); // project has no check configured
+try { check = JSON.parse(fs.readFileSync(path.join(cwd, '.claude', 'toolkit.json'), 'utf8')).check; } catch { /* none */ }
+
+// HEAD plus every changed, deleted, staged or untracked file (docs excluded) with its size and mtime, hashed.
+// Catches `cat > f`, `sed -i`, Set-Content... that never go through Edit/Write. null outside git or if git fails;
+// each call has a short time limit so the hook stays well inside its own.
+function snapshot() {
+  const git = (...args) => spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8', timeout: 3000, windowsHide: true, maxBuffer: 16 << 20 });
+  const head = git('rev-parse', '-q', '--verify', 'HEAD');
+  const changed = git('ls-files', '-z', '-m', '-d', '-o', '--exclude-standard');
+  const staged = git('diff', '--cached', '--name-only', '--relative', '-z');
+  if (changed.status !== 0 || staged.status !== 0) return null;
+  const files = [...new Set(`${changed.stdout}\0${staged.stdout}`.split('\0'))].filter((f) => f && !isDoc(f)).sort();
+  const state = files.map((f) => {
+    try { const s = fs.statSync(path.join(cwd, f)); return `${f}:${s.size}:${s.mtimeMs}`; } catch { return `${f}:deleted`; }
+  });
+  return crypto.createHash('sha256').update([head.stdout.trim(), ...state].join('\n')).digest('hex');
 }
-if (!check) process.exit(0);
+const saveBase = (snap) => {
+  try { if (snap) fs.writeFileSync(baseFile, snap); else fs.rmSync(baseFile, { force: true }); } catch { /* fall back to the marker */ }
+};
+
+if (process.argv.includes('start')) {
+  if (check) {
+    fs.mkdirSync(dataDir, { recursive: true });
+    saveBase(snapshot());
+  }
+  // One small file per session: drop the ones older than a week.
+  try {
+    for (const f of fs.readdirSync(dataDir)) {
+      const p = path.join(dataDir, f);
+      if (/^toolkit-(base|dirty)-/.test(f) && Date.now() - fs.statSync(p).mtimeMs > WEEK) fs.rmSync(p, { force: true });
+    }
+  } catch { /* housekeeping only */ }
+  process.exit(0);
+}
+
+if (!check) process.exit(0); // project has no check configured
+
+const state = fs.existsSync(marker) ? fs.readFileSync(marker, 'utf8') : null;
+let base = null;
+try { base = fs.readFileSync(baseFile, 'utf8'); } catch { /* no snapshot: the marker alone decides */ }
+const shellEdits = base !== null && snapshot() !== base;
+if (!state && !shellEdits) process.exit(0); // no edits this turn: nothing to check
 
 // The command comes from the repository: run it only once the user approved it for this folder.
 if (!isTrusted(cwd, check)) {
   fs.rmSync(marker, { force: true });
+  saveBase(snapshot());
   log('untrusted');
   process.stdout.write(JSON.stringify({
     systemMessage: `O check deste projeto ainda não foi aprovado e não rodou: ${check}\n` +
@@ -53,7 +95,7 @@ if (!isTrusted(cwd, check)) {
 }
 
 // Already blocked once and Claude stopped again without editing: don't loop on a failure it can't fix.
-if (input.stop_hook_active && fs.readFileSync(marker, 'utf8') === 'failed') {
+if (input.stop_hook_active && state === 'failed' && !shellEdits) {
   fs.rmSync(marker, { force: true });
   log('giveup');
   process.exit(0);
@@ -80,6 +122,8 @@ function runCheck() {
 }
 
 runCheck().then((r) => {
+  // Snapshot after the check: what the check itself writes (build output) is not an edit by Claude.
+  saveBase(snapshot());
   if (r.timedOut) {
     fs.rmSync(marker, { force: true });
     log('timeout');

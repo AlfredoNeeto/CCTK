@@ -77,7 +77,8 @@ Uma mudança por sessão de implementação.
 ## O check antes de encerrar
 
 O `init-project` grava em `.claude/toolkit.json` um **check**: o comando de build e teste do projeto.
-Se o Claude editou código, ele só encerra quando o check passa. Editar só `.md`, `.txt` ou arquivos em
+Se o Claude editou código, ele só encerra quando o check passa. Isso vale também para edições feitas por
+comando no terminal (`sed -i`, `cat > arquivo`), num repositório git. Editar só `.md`, `.txt` ou arquivos em
 `openspec/` não dispara o check.
 
 - **Aprove o check uma vez por projeto.** O `toolkit.json` vem com o repositório, então um repo clonado

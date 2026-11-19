@@ -8,6 +8,11 @@
             "type": "command",
             "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT.split(String.fromCharCode(92)).join('/'), 'hooks/secrets.js'))\"",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT.split(String.fromCharCode(92)).join('/'), 'hooks/check-gate.js'))\" start",
+            "timeout": 15
           }
         ]
       }
@@ -42,7 +47,7 @@
           {
             "type": "command",
             "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT.split(String.fromCharCode(92)).join('/'), 'hooks/check-gate.js'))\" gate",
-            "timeout": 200,
+            "timeout": 220,
             "statusMessage": "Rodando o check do projeto..."
           }
         ]
