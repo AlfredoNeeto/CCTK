@@ -111,31 +111,56 @@ test('check-gate', async (t) => {
     run('check-gate.js', ['mark'], { session_id: 's8', tool_input: { file_path: '/p/src/app.ts' } }, env);
     assert.ok(fs.existsSync(path.join(data, 'toolkit-dirty-s8')));
   });
+  // The hooks of one session, as Claude Code calls them: turn = user prompt, shell = Claude ran a shell command.
+  const hooksOf = (id, cwd) => ({
+    turn: () => run('check-gate.js', ['turn'], { session_id: id, cwd }, env),
+    shell: () => run('check-gate.js', ['shell'], { session_id: id }, env),
+    gate: (extra = {}) => run('check-gate.js', ['gate'], { session_id: id, cwd, ...extra }, env),
+  });
   await t.test('edits through the shell (no Edit/Write) are caught by the git snapshot', () => {
     const cwd = gitProject(fail);
-    const gate = (extra = {}) => run('check-gate.js', ['gate'], { session_id: 's9', cwd, ...extra }, env);
-    assert.strictEqual(run('check-gate.js', ['start'], { session_id: 's9', cwd }, env).status, 0);
-    assert.strictEqual(gate().status, 0, 'nothing changed yet');
+    const h = hooksOf('s9', cwd);
+    assert.strictEqual(h.turn().status, 0);
+    h.shell();
+    assert.strictEqual(h.gate().status, 0, 'a shell command that changed nothing');
 
     fs.writeFileSync(path.join(cwd, 'README.md'), 'só documentação');
-    assert.strictEqual(gate().status, 0, 'docs written by the shell do not count');
+    h.shell();
+    assert.strictEqual(h.gate().status, 0, 'docs written by the shell do not count');
 
     fs.writeFileSync(path.join(cwd, 'app.js'), 'module.exports = 2; // sed -i'); // tracked file changed, like sed -i
-    const r = gate();
+    h.shell();
+    const r = h.gate();
     assert.strictEqual(r.status, 2);
     assert.match(r.stderr, /boom/);
-    assert.strictEqual(gate({ stop_hook_active: true }).status, 0, 'gives up when nothing changed since the failure');
+    assert.strictEqual(h.gate({ stop_hook_active: true }).status, 0, 'gives up when nothing changed since the failure');
 
     fs.writeFileSync(path.join(cwd, 'novo.js'), 'x'); // new untracked file, like cat > novo.js
-    assert.strictEqual(gate({ stop_hook_active: true }).status, 2, 'a new shell edit after the failure runs it again');
+    h.shell();
+    assert.strictEqual(h.gate({ stop_hook_active: true }).status, 2, 'a new shell edit after the failure runs it again');
+  });
+  await t.test('what the user changes (IDE, pull, branch switch) is not taken for an edit by Claude', () => {
+    const cwd = gitProject(fail);
+    const h = hooksOf('s11', cwd);
+    h.turn();
+    fs.writeFileSync(path.join(cwd, 'app.js'), 'module.exports = 4; // meio do caminho');
+    assert.strictEqual(h.gate().status, 0, 'user edit during a turn in which Claude ran no shell command');
+
+    fs.writeFileSync(path.join(cwd, 'app.js'), 'module.exports = 5; // ainda quebrado');
+    h.turn(); // next prompt: the user's change goes into the snapshot
+    h.shell(); // Claude only reads (git status, cat...)
+    assert.strictEqual(h.gate().status, 0, 'user edit before the prompt, read-only shell command');
   });
   await t.test('files the check itself writes do not count as an edit', () => {
     const cwd = gitProject('node -e "require(\'fs\').writeFileSync(\'build.out\', String(Date.now()))"');
-    run('check-gate.js', ['start'], { session_id: 's10', cwd }, env);
+    const h = hooksOf('s10', cwd);
+    h.turn();
     fs.writeFileSync(path.join(cwd, 'app.js'), 'module.exports = 3;');
-    assert.strictEqual(run('check-gate.js', ['gate'], { session_id: 's10', cwd }, env).status, 0);
+    h.shell();
+    assert.strictEqual(h.gate().status, 0);
     assert.ok(fs.existsSync(path.join(cwd, 'build.out')), 'the check ran');
-    run('check-gate.js', ['gate'], { session_id: 's10', cwd }, env);
+    h.shell();
+    h.gate();
     const runs = fs.readFileSync(path.join(data, 'gate.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((e) => e.session === 's10');
     assert.deepStrictEqual(runs.map((e) => e.result), ['pass'], 'no edit since: the check did not run again');
   });

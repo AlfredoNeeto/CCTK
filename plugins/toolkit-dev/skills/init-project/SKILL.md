@@ -97,7 +97,7 @@ mesmo: o comando é bloqueado dentro do Claude Code.
    ```json
    {
      "model": "sonnet",
-     "extraKnownMarketplaces": { "claude-toolkit": { "source": { "source": "github", "repo": "AlfredoNeeto/claude-toolkit", "ref": "v1.1.0" } } },
+     "extraKnownMarketplaces": { "claude-toolkit": { "source": { "source": "github", "repo": "AlfredoNeeto/claude-toolkit", "ref": "v1.1.1" } } },
      "enabledPlugins": { "toolkit-dev@claude-toolkit": true }
    }
    ```

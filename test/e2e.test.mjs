@@ -343,11 +343,14 @@ test('hooks.json commands run as Claude Code runs them', () => {
   assert.strictEqual(gate.status, 2);
   assert.match(gate.stderr, /quebrou/);
 
-  // An edit made through the shell (no Edit/Write): the SessionStart snapshot catches it.
+  // An edit made through the shell (no Edit/Write): the snapshot taken at the prompt catches it.
   assert.strictEqual(spawnSync('git init -q && git add -A && git -c user.name=t -c user.email=t@t commit -qm i', { cwd: proj, shell: true }).status, 0);
-  const snapshotHook = JSON.parse(text).hooks.SessionStart[0].hooks[1].command;
-  assert.strictEqual(spawnSync(snapshotHook, { shell: true, encoding: 'utf8', env: e, input: JSON.stringify({ session_id: 'h2', cwd: proj }) }).status, 0);
+  const all = JSON.parse(text).hooks;
+  const call = (command, input) => spawnSync(command, { shell: true, encoding: 'utf8', env: e, input: JSON.stringify(input) });
+  assert.strictEqual(call(all.UserPromptSubmit[0].hooks[0].command, { session_id: 'h2', cwd: proj }).status, 0);
   fs.writeFileSync(path.join(proj, 'b.js'), 'x');
+  const shellHook = all.PostToolUse.find((x) => x.matcher === 'Bash|PowerShell').hooks[0].command;
+  assert.strictEqual(call(shellHook, { session_id: 'h2', tool_name: 'Bash', tool_input: { command: 'cat > b.js' } }).status, 0);
   const viaShell = hook('Stop', { session_id: 'h2', cwd: proj });
   assert.strictEqual(viaShell.status, 2, viaShell.stderr);
   assert.match(viaShell.stderr, /quebrou/);

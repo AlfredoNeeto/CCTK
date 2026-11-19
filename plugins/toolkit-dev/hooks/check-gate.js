@@ -1,7 +1,9 @@
-// SessionStart (arg "start"): takes a snapshot of the git working tree, to catch edits made through the shell.
+// UserPromptSubmit (arg "turn"): snapshot of the git working tree at the start of each turn, so what the user changed
+// in the IDE, a pull or a branch switch before the prompt is never taken for an edit by Claude.
 // PostToolUse (arg "mark"): records that this session edited files with Edit/Write.
-// Stop (arg "gate"): if there were edits (a mark, or a working tree that differs from the snapshot), runs the
-// project's check from .claude/toolkit.json.
+// PostToolUse on Bash/PowerShell (arg "shell"): records that Claude ran a shell command this turn.
+// Stop (arg "gate"): if there were edits (a mark, or a shell command plus a working tree that differs from the
+// snapshot), runs the project's check from .claude/toolkit.json.
 // Exit 2 + stderr blocks the stop so Claude fixes the failure; the edit marker survives until the check passes.
 // A check over the time limit (a slow suite, a watch mode that never ends) is killed with its whole process tree
 // and the stop goes through with a warning: the gate must never hang a session.
@@ -20,6 +22,7 @@ const dataDir = process.env.CLAUDE_PLUGIN_DATA || os.tmpdir();
 const session = input.session_id || 'nosession';
 const marker = path.join(dataDir, `toolkit-dirty-${session}`);
 const baseFile = path.join(dataDir, `toolkit-base-${session}`);
+const shellFlag = path.join(dataDir, `toolkit-shell-${session}`);
 const cwd = process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd();
 // One line per gate decision, read by `claude-toolkit stats` (does the gate catch failures that then get fixed?).
 const log = (result) => {
@@ -34,6 +37,12 @@ if (process.argv.includes('mark')) {
   if (isDoc(String(input.tool_input?.file_path || input.tool_input?.notebook_path || ''))) process.exit(0);
   fs.mkdirSync(dataDir, { recursive: true });
   fs.writeFileSync(marker, 'dirty');
+  process.exit(0);
+}
+
+if (process.argv.includes('shell')) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  fs.writeFileSync(shellFlag, '');
   process.exit(0);
 }
 
@@ -59,16 +68,17 @@ const saveBase = (snap) => {
   try { if (snap) fs.writeFileSync(baseFile, snap); else fs.rmSync(baseFile, { force: true }); } catch { /* fall back to the marker */ }
 };
 
-if (process.argv.includes('start')) {
+if (process.argv.includes('turn')) {
+  fs.rmSync(shellFlag, { force: true });
   if (check) {
     fs.mkdirSync(dataDir, { recursive: true });
     saveBase(snapshot());
   }
-  // One small file per session: drop the ones older than a week.
+  // A few small files per session: drop the ones older than a week.
   try {
     for (const f of fs.readdirSync(dataDir)) {
       const p = path.join(dataDir, f);
-      if (/^toolkit-(base|dirty)-/.test(f) && Date.now() - fs.statSync(p).mtimeMs > WEEK) fs.rmSync(p, { force: true });
+      if (/^toolkit-(base|dirty|shell)-/.test(f) && Date.now() - fs.statSync(p).mtimeMs > WEEK) fs.rmSync(p, { force: true });
     }
   } catch { /* housekeeping only */ }
   process.exit(0);
@@ -79,7 +89,10 @@ if (!check) process.exit(0); // project has no check configured
 const state = fs.existsSync(marker) ? fs.readFileSync(marker, 'utf8') : null;
 let base = null;
 try { base = fs.readFileSync(baseFile, 'utf8'); } catch { /* no snapshot: the marker alone decides */ }
-const shellEdits = base !== null && snapshot() !== base;
+// Only when Claude ran a shell command this turn: a tree changed by the user mid-turn alone must not trigger it.
+const ranShell = fs.existsSync(shellFlag);
+fs.rmSync(shellFlag, { force: true });
+const shellEdits = ranShell && base !== null && snapshot() !== base;
 if (!state && !shellEdits) process.exit(0); // no edits this turn: nothing to check
 
 // The command comes from the repository: run it only once the user approved it for this folder.
