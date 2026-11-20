@@ -6,7 +6,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT.split(String.fromCharCode(92)).join('/'), 'hooks/secrets.js'))\"",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/secrets.js"
+            ],
             "timeout": 15
           }
         ]
@@ -17,7 +20,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT.split(String.fromCharCode(92)).join('/'), 'hooks/check-gate.js'))\" turn",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/check-gate.js",
+              "turn"
+            ],
             "timeout": 15
           }
         ]
@@ -29,7 +36,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT.split(String.fromCharCode(92)).join('/'), 'hooks/secret-guard.js'))\"",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/secret-guard.js"
+            ],
             "timeout": 15
           }
         ]
@@ -41,7 +51,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT.split(String.fromCharCode(92)).join('/'), 'hooks/check-gate.js'))\" mark",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/check-gate.js",
+              "mark"
+            ],
             "timeout": 15
           }
         ]
@@ -51,7 +65,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT.split(String.fromCharCode(92)).join('/'), 'hooks/check-gate.js'))\" shell",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/check-gate.js",
+              "shell"
+            ],
             "timeout": 15
           }
         ]
@@ -62,7 +80,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT.split(String.fromCharCode(92)).join('/'), 'hooks/check-gate.js'))\" gate",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/check-gate.js",
+              "gate"
+            ],
             "timeout": 220,
             "statusMessage": "Rodando o check do projeto..."
           }

@@ -74,7 +74,7 @@ mesmo: o comando é bloqueado dentro do Claude Code.
 
 ## 6. Integrações
 
-O OpenSpec (1) e o time (6) são **sempre** feitos. Os outros itens, só quando se aplicam ao projeto.
+O OpenSpec (1) e o time (7) são **sempre** feitos. Os outros itens, só quando se aplicam ao projeto.
 
 1. **OpenSpec (sempre):** se não houver `openspec/`, rode
    `openspec init --tools claude --scope project --language pt-BR --no-animation .`
@@ -101,12 +101,17 @@ O OpenSpec (1) e o time (6) são **sempre** feitos. Os outros itens, só quando 
 5. **LSP:** não instale os plugins LSP (`csharp-lsp`, `typescript-lsp`). No benchmark do toolkit, o
    Claude não chamou a ferramenta LSP nenhuma vez num rastreio por 5 arquivos (preferiu `Grep`) e o custo
    por acerto subiu 11%. Para Dart/Flutter, use o MCP `dart` (`dart mcp-server`).
-6. **Time (sempre):** em `.claude/settings.json` do projeto, mescle (sem apagar o que existe; se já houver
+6. **Quarentena de pacotes npm** (se há `package.json`): no `.npmrc` da raiz (crie se não existir; não mexa
+   nas outras linhas), garanta a linha `min-release-age=7`. O npm (11.10+) passa a instalar só versões
+   publicadas há mais de 7 dias, e um pacote sequestrado costuma ser retirado antes disso. Se o time precisar de
+   uma versão recém-lançada, `min-release-age-exclude=<pacote>` libera só ela. Diga que o npm mais antigo
+   avisa "Unknown project config" e segue instalando normalmente.
+7. **Time (sempre):** em `.claude/settings.json` do projeto, mescle (sem apagar o que existe; se já houver
    `model`, mantenha o do time):
    ```json
    {
      "model": "sonnet",
-     "extraKnownMarketplaces": { "cctk": { "source": { "source": "github", "repo": "AlfredoNeeto/cctk", "ref": "v1.2.0" } } },
+     "extraKnownMarketplaces": { "cctk": { "source": { "source": "github", "repo": "AlfredoNeeto/cctk", "ref": "v1.3.0" } } },
      "enabledPlugins": { "cctk@cctk": true }
    }
    ```

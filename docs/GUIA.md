@@ -119,8 +119,9 @@ Na sessão, o Claude recebe só o nome e usa `$API_TOKEN` nos comandos.
 
 - Isso evita o vazamento **acidental**. Um programa escrito pela IA ainda consegue ler o próprio ambiente,
   então guarde só credenciais de desenvolvimento.
-- O arquivo `~/.cctk/secrets.env` fica em texto puro, protegido por permissão de arquivo e pelas
-  regras de bloqueio.
+- Os valores ficam criptografados no cofre do sistema (DPAPI, Keychain ou libsecret), como o PAT do Azure
+  DevOps. Em `~/.cctk/secrets.names` ficam só os nomes. Quem tinha a 1.2.0 tem o cofre em texto puro
+  migrado no `cctk install`.
 - No Windows, valores com `/` ou `\` não chegam ao PowerShell.
 
 ## Azure DevOps Server
@@ -153,6 +154,9 @@ cctk doctor
 | Aviso de que o check passou de 3 min | Troque o `check` em `.claude/cctk.json` por algo mais rápido |
 | O Claude insiste num check que já estava quebrado | Conserte o projeto ou ajuste o `check`. O check desiste na segunda parada sem edição |
 | "Bloqueado pelo toolkit" | O comando ia mostrar um segredo. Peça para usar a variável (`$NOME`) |
+| "o commit leva credenciais" | Tire o valor do arquivo (variável de ambiente ou `cctk secret set`) e refaça o `git add`. Valor falso de teste: faça o commit você mesmo, no terminal |
+| "blocks writes outside the working directories" | O Claude só edita arquivos dentro do projeto. Para liberar outra pasta: `/add-dir <pasta>` |
+| Um MCP seu parou de achar uma variável de ambiente | Os MCPs não herdam mais o ambiente inteiro. Declare a variável no `env` do servidor, como `"env": { "MINHA_KEY": "${MINHA_KEY}" }` |
 | Quero a configuração antiga | `cctk restore` |
 | Atualizar o kit | `cctk update`. Seus plugins, MCPs, permissões e variáveis ficam, e o `restore` ainda volta à configuração de antes do kit |
 | `cctk` não é reconhecido | Instale a CLI: `npm i -g cctk` e abra um terminal novo |

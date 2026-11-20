@@ -55,6 +55,7 @@ function env(home, extra = {}, shims = true) {
   e.HOME = e.USERPROFILE = home;
   e.CCTK_MARKETPLACE = tk.REPO_ROOT;
   e.SHIM_LOG = path.join(home, 'shim.log');
+  e.CCTK_CRED_SERVICE = 'cctk-test'; // never the user's Keychain/libsecret entries
   return { ...e, ...extra };
 }
 const shimLog = (home) => (fs.existsSync(path.join(home, 'shim.log')) ? read(path.join(home, 'shim.log')).trim().split('\n').map((l) => JSON.parse(l)) : []);
@@ -288,7 +289,11 @@ test('install from the old kit (Claude Toolkit Dev ≤1.1.2) migrates its data, 
   assert.strictEqual(r.code, 0, r.err);
   assert.match(r.out, /atualizar o Claude Code Toolkit/, 'the old kit counts as an install to update');
   assert.ok(!fs.existsSync(old) && !fs.existsSync(path.join(c, 'toolkit')));
-  assert.strictEqual(read(path.join(home, '.cctk', 'secrets.env')), 'API_KEY=abc\n');
+  assert.ok(!fs.existsSync(path.join(home, '.cctk', 'secrets.env')), 'the plain-text vault is gone');
+  assert.strictEqual(read(path.join(home, '.cctk', 'secrets.names')), 'API_KEY\n');
+  const vault = spawnSync(process.execPath, ['-e', 'process.stdout.write(JSON.stringify(require(process.argv[1]).readVault()))',
+    path.join(PLUGIN, 'hooks', 'vault.js')], { encoding: 'utf8', env: env(home) });
+  assert.strictEqual(vault.stdout, '{"API_KEY":"abc"}', vault.stderr);
   assert.strictEqual(read(path.join(home, '.cctk', 'trusted-checks.json')), '["k"]\n');
   assert.ok(fs.existsSync(path.join(home, '.cctk', 'creds', 'ado-cola.dpapi')));
   assert.ok(calls(home).includes(`claude plugin uninstall ${tk.OLD_PLUGIN_ID}`));
@@ -299,6 +304,7 @@ test('install from the old kit (Claude Toolkit Dev ≤1.1.2) migrates its data, 
   assert.strictEqual(s.enabledPlugins[tk.OLD_PLUGIN_ID], undefined);
   assert.strictEqual(s.extraKnownMarketplaces['claude-toolkit'], undefined);
   const ado = JSON.parse(read(path.join(home, '.claude.json'))).mcpServers['ado-cola'];
+  assert.strictEqual(ado.env.HTTPS_PROXY, '${HTTPS_PROXY:-}', 'the ADO MCP still sees the proxy with the env allowlist');
   assert.match(ado.args[0], /\.claude\/cctk\/ado-mcp\.js$/);
   assert.ok(fs.existsSync(ado.args[0]));
 });
@@ -362,22 +368,25 @@ test('ado add with a wrong PAT: declining saves nothing; MCP without PAT explain
   } finally {
     srv.close();
   }
-  const m = spawnSync(process.execPath, [path.join(tk.REPO_ROOT, 'runtime', 'ado-mcp.js'), 'https://tfs.local/tfs/ColA', 'ado-cola'], { encoding: 'utf8', env: env(home) });
+  tk.writeConfig(tk.paths(home)); // the launcher runs from ~/.claude/cctk, next to the creds.js the installer copies
+  const m = spawnSync(process.execPath, [path.join(home, '.claude', 'cctk', 'ado-mcp.js'), 'https://tfs.local/tfs/ColA', 'ado-cola'], { encoding: 'utf8', env: env(home) });
   assert.strictEqual(m.status, 1);
   assert.match(m.stderr, /ado add https:\/\/tfs\.local\/tfs\/ColA/);
 });
 
-test('hooks.json commands run as Claude Code runs them', () => {
+test('hooks.json commands run as Claude Code runs them', async () => {
   const text = read(path.join(PLUGIN, 'hooks', 'hooks.json'));
   for (const [rel] of text.matchAll(/hooks\/[\w-]+\.js/g)) assert.ok(fs.existsSync(path.join(PLUGIN, rel)), rel);
-  const cmd = (event) => JSON.parse(text).hooks[event][0].hooks[0].command;
+  const all = JSON.parse(text).hooks;
 
   const home = tmp('tk-e2e-hooks-');
-  fs.mkdirSync(path.join(home, '.cctk'));
-  fs.writeFileSync(path.join(home, '.cctk', 'secrets.env'), 'API_KEY=abc123\n');
+  const set = await drive(['secret', 'set', 'API_KEY'], [[/Valor de API_KEY/, 'abc123']], env(home));
+  assert.strictEqual(set.code, 0, set.err);
   const envFile = path.join(home, 'envfile');
   const e = env(home, { CLAUDE_PLUGIN_ROOT: PLUGIN, CLAUDE_PLUGIN_DATA: path.join(home, 'data'), CLAUDE_ENV_FILE: envFile });
-  const hook = (event, input) => spawnSync(cmd(event), { shell: true, encoding: 'utf8', env: e, input: JSON.stringify(input) });
+  // Exec form, like Claude Code: no shell, ${CLAUDE_PLUGIN_ROOT} substituted into each argument.
+  const call = (h, input) => spawnSync(h.command, h.args.map((a) => a.replace('${CLAUDE_PLUGIN_ROOT}', PLUGIN)), { encoding: 'utf8', env: e, input: JSON.stringify(input) });
+  const hook = (event, input) => call(all[event][0].hooks[0], input);
 
   const start = hook('SessionStart', { session_id: 'h1' });
   assert.strictEqual(start.status, 0, start.stderr);
@@ -415,11 +424,9 @@ test('hooks.json commands run as Claude Code runs them', () => {
 
   // An edit made through the shell (no Edit/Write): the snapshot taken at the prompt catches it.
   assert.strictEqual(spawnSync('git init -q && git add -A && git -c user.name=t -c user.email=t@t commit -qm i', { cwd: proj, shell: true }).status, 0);
-  const all = JSON.parse(text).hooks;
-  const call = (command, input) => spawnSync(command, { shell: true, encoding: 'utf8', env: e, input: JSON.stringify(input) });
-  assert.strictEqual(call(all.UserPromptSubmit[0].hooks[0].command, { session_id: 'h2', cwd: proj }).status, 0);
+  assert.strictEqual(hook('UserPromptSubmit', { session_id: 'h2', cwd: proj }).status, 0);
   fs.writeFileSync(path.join(proj, 'b.js'), 'x');
-  const shellHook = all.PostToolUse.find((x) => x.matcher === 'Bash|PowerShell').hooks[0].command;
+  const shellHook = all.PostToolUse.find((x) => x.matcher === 'Bash|PowerShell').hooks[0];
   assert.strictEqual(call(shellHook, { session_id: 'h2', tool_name: 'Bash', tool_input: { command: 'cat > b.js' } }).status, 0);
   const viaShell = hook('Stop', { session_id: 'h2', cwd: proj });
   assert.strictEqual(viaShell.status, 2, viaShell.stderr);
@@ -491,7 +498,7 @@ test('plugin and package structure', () => {
   const pack = tk.run('npm', ['pack', '--dry-run', '--json'], { cwd: tk.REPO_ROOT });
   assert.strictEqual(pack.status, 0, pack.stderr);
   const files = JSON.parse(pack.stdout)[0].files.map((f) => f.path.replace(/\\/g, '/'));
-  for (const f of ['cli.mjs', 'lib/toolkit.mjs', 'runtime/statusline.js', 'runtime/ado-mcp.js', 'runtime/creds.js',
+  for (const f of ['cli.mjs', 'lib/toolkit.mjs', 'runtime/statusline.js', 'runtime/ado-mcp.js', 'plugins/cctk/hooks/creds.js',
     'plugins/cctk/hooks/hooks.json', 'plugins/cctk/hooks/vault.js', 'plugins/cctk/.claude-plugin/plugin.json']) {
     assert.ok(files.includes(f), `pacote sem ${f}`);
   }

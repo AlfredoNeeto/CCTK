@@ -5,7 +5,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { verdict } = require('./secret-guard.js');
+process.env.CCTK_CRED_SERVICE = 'cctk-test'; // never the user's Keychain/libsecret entries
+const { verdict, scanDiff } = require('./secret-guard.js');
 const { trust } = require('./trust.js');
 
 const run = (script, args, input, env) =>
@@ -174,11 +175,14 @@ test('secret-guard', () => {
     'Get-Content C:/Users/a/creds/ado-x.dpapi | ConvertTo-SecureString',
     "[Environment]::GetEnvironmentVariable('DB_CONN')", "Write-Output [Environment]::GetEnvironmentVariable('DB_CONN')",
     "$x = 1; [Environment]::GetEnvironmentVariable(\"DB_CONN\", 'User')", '[Environment]::GetEnvironmentVariables()',
-    'cctk trust', 'npx -y cctk@latest trust', 'cat ~/.claude-toolkit/secrets.env', 'npx -y github:AlfredoNeeto/claude-toolkit#v1.1.0 trust']) {
+    'cctk trust', 'npx -y cctk@latest trust', 'cat ~/.claude-toolkit/secrets.env', 'npx -y github:AlfredoNeeto/claude-toolkit#v1.1.0 trust',
+    `node -e "require('C:/Users/a/.claude/plugins/cache/cctk/cctk/1.3.0/hooks/trust.js').trust('.', 'x')"`,
+    `node -e "const t = require(p + '/trust.js'); t.trust(process.cwd(), 'npm test')"`,
+    `node -e "console.log(require('./creds.js').getCred('vault'))"`, 'cat ~/x/trusted-checks.json']) {
     assert.ok(verdict(cmd, n), `should block: ${cmd}`);
   }
   for (const cmd of ['curl -H "Authorization: Bearer $DB_CONN" https://x', 'sqlcmd -S "$DB_CONN" -Q "select 1"',
-    'echo ok', 'dotnet test', 'env FOO=1 npm test', 'git status', 'cctk stats',
+    'echo ok', 'dotnet test', 'env FOO=1 npm test', 'git status', 'cctk stats', 'git add runtime/creds.js hooks/trust.js',
     // checks the variable without showing it: the 5 blocks measured in bench/ were this, each costing a turn
     "$t = [Environment]::GetEnvironmentVariable('DB_CONN'); \"definida: $([bool]$t) (tamanho: $($t.Length))\"",
     "[Environment]::GetEnvironmentVariable('PATH')"]) {
@@ -186,10 +190,44 @@ test('secret-guard', () => {
   }
 });
 
+test('secret-guard: finds credentials in the lines a diff adds, never in removed ones', () => {
+  const key = ['ghp', '_', 'a'.repeat(36)].join(''); // built here so this file never holds a token-shaped literal
+  const diff = [
+    'diff --git a/src/app.js b/src/app.js', '--- a/src/app.js', '+++ b/src/app.js',
+    '@@ -0,0 +10,3 @@', '+const ok = 1;', `+const token = '${key}';`, "+const conn = 'Server=x;Password=hunter22;';",
+    '@@ -40 +42 @@', `-const old = '${key}';`, "+const pwd = 'Password=${DB_PASS}';",
+    '+++ b/k.pem', '@@ -0,0 +1 @@', '+-----BEGIN RSA PRIVATE KEY-----',
+  ].join('\n');
+  assert.deepStrictEqual(scanDiff(diff).map((f) => `${f.file}:${f.line} ${f.kind}`),
+    ['src/app.js:11 token do GitHub', 'src/app.js:12 senha em connection string', 'k.pem:1 chave privada']);
+  assert.doesNotMatch(JSON.stringify(scanDiff(diff)), /aaaa|hunter/);
+});
+
+test('secret-guard blocks a commit with a key in the stage and lets a clean one through', () => {
+  const dir = gitProject();
+  const guard = (command) => run('secret-guard.js', [], { cwd: dir, tool_input: { command } }, {});
+  fs.writeFileSync(path.join(dir, 'app.js'), 'module.exports = 2;');
+  spawnSync('git', ['add', '-A'], { cwd: dir });
+  assert.strictEqual(guard('git commit -m x').stdout, '');
+  fs.writeFileSync(path.join(dir, 'cfg.js'), `module.exports = '${['AKIA', 'ABCDEFGHIJKLMNOP'].join('')}';`);
+  assert.strictEqual(guard('git commit -m x').stdout, '', 'not staged yet and not tracked: -a would not take it either');
+  spawnSync('git', ['add', '-A'], { cwd: dir });
+  const r = JSON.parse(guard('git commit -m "x"').stdout).hookSpecificOutput;
+  assert.strictEqual(r.permissionDecision, 'deny');
+  assert.match(r.permissionDecisionReason, /cfg\.js:1 chave AWS/);
+  assert.doesNotMatch(r.permissionDecisionReason, /ABCDEFGHIJKLMNOP/);
+  assert.strictEqual(guard('git status').stdout, '');
+  // -a also commits tracked files that were never staged
+  spawnSync('git', ['reset', '-q'], { cwd: dir });
+  fs.renameSync(path.join(dir, 'cfg.js'), path.join(dir, 'app.js'));
+  assert.strictEqual(guard('git commit -m x').stdout, '');
+  assert.match(guard('git commit -am x').stdout, /app\.js:1 chave AWS/);
+});
+
 test('secret-guard via node -e like hooks.json', () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-home-'));
   fs.mkdirSync(path.join(home, '.cctk'));
-  fs.writeFileSync(path.join(home, '.cctk', 'secrets.env'), 'API_KEY=abc\n');
+  fs.writeFileSync(path.join(home, '.cctk', 'secrets.names'), 'API_KEY\n');
   const r = spawnSync(process.execPath, ['-e', `require(${JSON.stringify(path.join(__dirname, 'secret-guard.js'))})`], {
     input: JSON.stringify({ tool_input: { command: 'echo $API_KEY' } }), encoding: 'utf8',
     env: { ...process.env, HOME: home, USERPROFILE: home },
@@ -197,10 +235,13 @@ test('secret-guard via node -e like hooks.json', () => {
   assert.strictEqual(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, 'deny');
 });
 
-test('secrets: writes plain NAME=value lines and only names to context', () => {
+test('secrets: decrypts the vault into plain NAME=value lines and only names to context', {
+  skip: process.platform === 'linux' && !process.env.DBUS_SESSION_BUS_ADDRESS,
+}, () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-home-'));
-  fs.mkdirSync(path.join(home, '.cctk'));
-  fs.writeFileSync(path.join(home, '.cctk', 'secrets.env'), 'API_KEY=abc123\nDB_CONN=Server=x;Pwd=y z\n');
+  const prev = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE };
+  process.env.HOME = process.env.USERPROFILE = home;
+  try { require('./vault.js').writeVault({ API_KEY: 'abc123', DB_CONN: 'Server=x;Pwd=y z' }); } finally { Object.assign(process.env, prev); }
   const envFile = path.join(home, 'envfile');
   const r = run('secrets.js', [], {}, { HOME: home, USERPROFILE: home, CLAUDE_ENV_FILE: envFile });
   const lines = fs.readFileSync(envFile, 'utf8').trim().split('\n');

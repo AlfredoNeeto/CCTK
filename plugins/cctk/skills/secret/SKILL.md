@@ -17,8 +17,8 @@ cctk secret rm NOME
 Depois de gravar, rode `/clear` ou abra uma sessão nova: o cofre é carregado no início da sessão.
 
 Para mostrar os nomes disponíveis agora, use os nomes que vieram no contexto da sessão
-("Variáveis de ambiente disponíveis..."). Não leia o arquivo do cofre: ele está bloqueado e o
-acesso seria negado.
+("Variáveis de ambiente disponíveis..."). Os valores ficam criptografados no cofre do sistema e a leitura
+é bloqueada: não tente abrir `~/.cctk` nem o cofre do sistema.
 
 Como usar uma variável num comando: `$NOME` no bash e `$env:NOME` no PowerShell, sempre dentro do
 comando que precisa dela (ex.: `curl -H "Authorization: Bearer $API_TOKEN" ...`), nunca com `echo`.

@@ -8,7 +8,8 @@ import * as tk from './lib/toolkit.mjs';
 import { stats, format } from './lib/stats.mjs';
 
 const require = createRequire(import.meta.url);
-const { setCred, getCred } = require('./runtime/creds.js');
+const { setCred, getCred } = require('./plugins/cctk/hooks/creds.js');
+const { migrateVault } = require('./plugins/cctk/hooks/vault.js');
 const { trust, isTrusted, readCheck } = require('./plugins/cctk/hooks/trust.js');
 const p = tk.paths();
 const argv = process.argv.slice(2);
@@ -162,6 +163,7 @@ async function install() {
 
   console.log(`✔ Backup em ${tk.backup(p)}`);
   tk.migrate(p);
+  try { migrateVault(); } catch (e) { console.error(`⚠ O cofre continua em texto puro (${e.message})`); process.exitCode = 1; }
   if (!update) tk.clean(p);
   tk.writeConfig(p, readSettings(), update); // read after migrate: it may have dropped the old plugin
   console.log(update ? '✔ Ajustes do kit gravados; o resto do seu settings.json ficou como estava' : '✔ Configuração limpa gravada');
@@ -196,9 +198,9 @@ try {
     const m = tk.restore(p, stamp);
     console.log(`✔ Restaurado o backup ${m.stamp}. Plugins reinstalados: ${m.plugins.join(', ') || 'nenhum'}.`);
   } else if (cmd === 'ado' && sub === 'add') await adoAdd(arg);
-  else if (cmd === 'secret' && sub === 'set' && arg) { tk.vaultSet(p, arg, await askHidden(`Valor de ${arg} (não aparece na tela): `)); console.log(`✔ ${arg} gravado. Rode /clear no Claude Code para carregar.`); }
-  else if (cmd === 'secret' && sub === 'list') console.log(tk.vaultList(p).join('\n') || '(cofre vazio)');
-  else if (cmd === 'secret' && sub === 'rm' && arg) { tk.vaultRm(p, arg); console.log(`✔ ${arg} removido.`); }
+  else if (cmd === 'secret' && sub === 'set' && arg) { tk.vaultSet(arg, await askHidden(`Valor de ${arg} (não aparece na tela): `)); console.log(`✔ ${arg} gravado. Rode /clear no Claude Code para carregar.`); }
+  else if (cmd === 'secret' && sub === 'list') console.log(tk.vaultList().join('\n') || '(cofre vazio)');
+  else if (cmd === 'secret' && sub === 'rm' && arg) { tk.vaultRm(arg); console.log(`✔ ${arg} removido.`); }
   else if (cmd === 'stats') { const days = Number(sub) || 28; console.log(format(stats(p, days), days)); }
   else if (cmd === 'trust') await trustCheck();
   else if (cmd === 'doctor') await doctor();

@@ -4,7 +4,7 @@ Faz o plano Pro do Claude Code render mais, sem perder qualidade e sem vazar seg
 
 Projeto da comunidade, sem vínculo com a Anthropic. Até a 1.1.2 se chamava Claude Toolkit Dev.
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-1.2.0-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-kit-2F6F8F)
+![versão](https://img.shields.io/badge/vers%C3%A3o-1.3.0-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-kit-2F6F8F)
 
 **[Instalar](#instalar)** · **[📖 Guia do dia a dia](docs/GUIA.md)** · [Comandos](#comandos) · [Benchmark](bench/README.md)
 
@@ -108,12 +108,13 @@ No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina ant
 |:---:|---|---|
 | ✅ | Sonnet com esforço medium, subagentes em Sonnet | Metade do custo do Opus |
 | ✅ | Bloqueio de `.env`, `secrets/`, chaves, `~/.ssh` e user-secrets do .NET | O Claude não lê segredos |
+| ⚙️ | Edição só dentro do projeto, MCPs sem herdar o ambiente, commit com credencial barrado | Um erro da IA não sai da pasta nem leva token junto |
 | ⏳ | Estilo Concise, sugestões de prompt desligadas | Menos tokens por resposta |
 | ⏳ | OpenSpec 2.1 | Spec antes do código |
 | ⏳ | `security-guidance`, Playwright CLI, MCP context7 | Revisão de segurança, conferir a tela, docs atualizadas |
 | ⚙️ | Statusline com modelo, contexto e cota de 5h e 7 dias | Ver a cota antes de acabar |
 | ⚙️ | Check obrigatório (até 3 min, aprovado por você) | O Claude só encerra com build e teste passando |
-| ⚙️ | Cofre de variáveis e guarda de segredos | A IA usa `$NOME` sem ver o valor |
+| ⚙️ | Cofre de variáveis (criptografado pelo sistema) e guarda de segredos | A IA usa `$NOME` sem ver o valor |
 | ⚙️ | MCP Azure DevOps on-prem e DBHub somente leitura | Cards, PRs e banco sem sair do Claude |
 
 ✅ ganho medido no [benchmark](bench/README.md) · ⏳ ainda não medido isolado · ⚙️ funcionalidade (o

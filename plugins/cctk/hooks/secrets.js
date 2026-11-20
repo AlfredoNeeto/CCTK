@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { readVault, secretNames } = require(path.join(__dirname, 'vault.js'));
 
-const vault = readVault();
+const vault = readVault(); // decrypted only here, straight into the shell's environment
 const names = Object.keys(vault);
 
 // Plain NAME=value lines: the only form Claude Code also copies to PowerShell.

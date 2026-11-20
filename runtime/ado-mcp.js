@@ -3,7 +3,7 @@
 // Usage (written into ~/.claude.json by the installer): node ado-mcp.js <collection-url> <credential-name>
 const path = require('path');
 const { spawn } = require('child_process');
-const { getCred } = require(path.join(__dirname, 'creds.js'));
+const { getCred } = require(path.join(__dirname, 'creds.js')); // the installer copies it here from the plugin
 
 const ADO_MCP = '@tiberriver256/mcp-server-azure-devops@0.1.54';
 const [url, name] = process.argv.slice(2);

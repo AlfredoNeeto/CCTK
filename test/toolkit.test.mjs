@@ -8,6 +8,15 @@ import { createRequire } from 'node:module';
 import * as tk from '../lib/toolkit.mjs';
 
 const require = createRequire(import.meta.url);
+process.env.CCTK_CRED_SERVICE = 'cctk-test'; // never the user's Keychain/libsecret entries
+const noStore = process.platform === 'linux' && !process.env.DBUS_SESSION_BUS_ADDRESS;
+
+// The credential store and ~/.cctk follow HOME (USERPROFILE on Windows): point both at a fake home while fn runs.
+function withHome(home, fn) {
+  const prev = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE };
+  process.env.HOME = process.env.USERPROFILE = home;
+  try { return fn(); } finally { Object.assign(process.env, prev); }
+}
 
 function fakeHome() {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-home-'));
@@ -52,6 +61,8 @@ test('backup → clean → writeConfig → restore round trip', () => {
   assert.strictEqual(s.env.CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION, 'false');
   assert.strictEqual(s.theme, 'dark');
   assert.ok(s.permissions.deny.includes('Read(**/.env)'));
+  assert.strictEqual(s.permissions.blockWritesOutsideWorkingDirectories, true);
+  assert.strictEqual(s.env.CLAUDE_CODE_MCP_ALLOWLIST_ENV, '1');
   assert.match(s.statusLine.command, /statusline\.js/);
   assert.ok(fs.existsSync(path.join(p.runtime, 'ado-mcp.js')));
 
@@ -91,30 +102,39 @@ test('ado: one entry per collection, PAT never in the config', () => {
   assert.doesNotMatch(JSON.stringify(servers), /PAT/);
 });
 
-test('vault set/list/rm', () => {
-  const p = fakeHome();
-  tk.vaultSet(p, 'API_TOKEN', 'a=b');
-  tk.vaultSet(p, 'DB', 'x');
-  tk.vaultSet(p, 'API_TOKEN', 'novo');
-  assert.deepStrictEqual(tk.vaultList(p), ['DB', 'API_TOKEN']);
-  assert.match(read(path.join(p.toolkit, 'secrets.env')), /^DB=x\nAPI_TOKEN=novo\n$/);
-  tk.vaultRm(p, 'DB');
-  assert.deepStrictEqual(tk.vaultList(p), ['API_TOKEN']);
-  assert.throws(() => tk.vaultSet(p, 'bad name', 'x'));
-  assert.throws(() => tk.vaultSet(p, 'OK', 'a\nb'));
-});
+test('vault set/list/rm: values only in the credential store, names on disk', { skip: noStore }, () => withHome(fakeHome().home, () => {
+  tk.vaultSet('API_TOKEN', 'a=b');
+  tk.vaultSet('DB', 'x');
+  tk.vaultSet('API_TOKEN', 'novo');
+  assert.deepStrictEqual(tk.vaultList(), ['API_TOKEN', 'DB']);
+  const vault = require('../plugins/cctk/hooks/vault.js');
+  assert.deepStrictEqual(vault.readVault(), { API_TOKEN: 'novo', DB: 'x' });
+  const disk = fs.readdirSync(path.join(os.homedir(), '.cctk'), { recursive: true })
+    .map((f) => path.join(os.homedir(), '.cctk', f)).filter((f) => fs.statSync(f).isFile()).map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+  assert.doesNotMatch(disk, /novo|=x/);
+  tk.vaultRm('DB');
+  assert.deepStrictEqual(tk.vaultList(), ['API_TOKEN']);
+  assert.throws(() => tk.vaultSet('bad name', 'x'));
+  assert.throws(() => tk.vaultSet('OK', 'a\nb'));
+
+  // 1.2.0 kept plain NAME=value lines: the migration moves them in, keeps what the store has, deletes the file
+  fs.writeFileSync(path.join(os.homedir(), '.cctk', 'secrets.env'), 'API_TOKEN=velho\nNOVA=y\n');
+  vault.migrateVault();
+  assert.deepStrictEqual(vault.readVault(), { API_TOKEN: 'novo', NOVA: 'y' });
+  assert.ok(!fs.existsSync(path.join(os.homedir(), '.cctk', 'secrets.env')));
+}));
 
 test('run() keeps JSON and spaces intact through the shell', () => {
   const r = tk.run(process.execPath, ['-e', 'console.log(JSON.stringify(process.argv.slice(1)))', '["propose","verify"]', 'a b']);
   assert.deepStrictEqual(JSON.parse(r.stdout), ['["propose","verify"]', 'a b']);
 });
 
-test('creds: OS store round trip', { skip: process.platform === 'linux' && !process.env.DBUS_SESSION_BUS_ADDRESS }, () => {
+test('creds: OS store round trip', { skip: noStore }, () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-cred-'));
   const prev = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE };
   process.env.HOME = process.env.USERPROFILE = home;
   try {
-    const { setCred, getCred } = require('../runtime/creds.js');
+    const { setCred, getCred } = require('../plugins/cctk/hooks/creds.js');
     const name = `tk-test-${process.pid}`;
     setCred(name, 'p@t$ "x"');
     assert.strictEqual(getCred(name), 'p@t$ "x"');

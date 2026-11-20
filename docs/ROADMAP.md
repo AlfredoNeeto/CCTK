@@ -130,6 +130,19 @@ Quando o kit já está instalado:
 - Nota no topo do README: "antes chamado Claude Toolkit Dev".
 
 ## 1.3.0: segurança barata (nativo ou Node, sem binário novo)
+
+**Feita.** O que foi medido com o Claude Code 2.1.329 real no Windows:
+- `blockWritesOutsideWorkingDirectories`: o Write recusa fora do projeto ("…blocks writes outside the working
+  directories. Ask the user to add the directory with /add-dir"). Vale só para Edit/Write/NotebookEdit; o
+  shell continua livre, e plano, scratchpad e memória continuam graváveis.
+- `CLAUDE_CODE_MCP_ALLOWLIST_ENV=1`: o MCP recebe só PATH, USERPROFILE, HOMEDRIVE/HOMEPATH, APPDATA,
+  LOCALAPPDATA, TEMP, SYSTEMROOT, WINDIR, PROGRAMFILES, USERNAME/USERDOMAIN, PROCESSOR_ARCHITECTURE e as
+  `CLAUDE_*`. Somem HTTPS_PROXY, NODE_EXTRA_CA_CERTS e COMSPEC. `"${X:-}"` no `env` do servidor repassa a
+  variável (vazia se não existir), por isso os `ado-*` repassam proxy e CA.
+- Hooks na forma exec: `${CLAUDE_PLUGIN_ROOT}` é expandido nos `args`. Uma sessão real barrou um commit com
+  chave AWS no stage. O `onFailure` ficou de fora: sem ele, a falha de um hook já não bloqueia.
+- O cofre virou uma entrada única no cofre do sistema (JSON, uma leitura por sessão), com os nomes em
+  `~/.cctk/secrets.names`. O `creds.js` foi para dentro do plugin, porque o hook de sessão precisa dele.
 1. **`permissions.blockWritesOutsideWorkingDirectories: true`**: cobre a escrita no Windows, que não tem
    sandbox. Antes, um teste E2E real no Windows.
 2. **`CLAUDE_CODE_MCP_ALLOWLIST_ENV: '1'`**: o MCP do ADO, o DBHub e o context7 deixam de herdar o shell
