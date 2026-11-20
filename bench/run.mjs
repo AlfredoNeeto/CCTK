@@ -343,9 +343,11 @@ function report(runs) {
     `${new Date().toLocaleString('pt-BR')} · ${runs.length} execuções · mediana por tarefa · Δ em relação ao padrão`, ''];
   const models = (arm) => [...new Set(runs.filter((r) => r.arm === arm).flatMap((r) => r.models))];
   for (const arm of arms) lines.push(`- **${arm}**: modelos usados: ${models(arm).join(', ') || '–'}`);
-  if (arms.includes('advisor') && !models('advisor').some((m) => /opus/i.test(m))) {
-    lines.push('', '> **Atenção:** o lado `advisor` não registrou uso do Opus. Ou o advisor não foi chamado, ou o custo dele não ' +
-      'aparece no `modelUsage` do `-p`. Nesse caso, o custo desse lado está subestimado.');
+  // When Sonnet consults the advisor, Opus shows up in modelUsage with its cost (checked with claude -p 2.1.329).
+  if (arms.includes('advisor')) {
+    const adv = runs.filter((r) => r.arm === 'advisor' && !failed(r));
+    lines.push(`- **advisor** consultou o Opus em ${adv.filter((r) => r.models.some((m) => /opus/i.test(m))).length} de ${adv.length} execuções ` +
+      '(o custo dessas consultas já está somado)');
   }
   if (new Set(arms.map((a) => models(a).sort().join())).size > 1) {
     lines.push('', '> **Atenção:** os lados usaram modelos diferentes. Parte (ou quase toda) a diferença de custo pode vir só da troca de modelo. ' +

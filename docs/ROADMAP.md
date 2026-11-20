@@ -198,8 +198,9 @@ tarefa de bench), claude-mem (licença) e winget (não se atualiza).
 - A documentação não diz se o uso do advisor aparece no `modelUsage` do `-p`. O relatório avisa quando o lado
   `advisor` não registra Opus.
 - Falta: rodar o bench (precisa do seu login, então quem roda é você) e decidir o advisor pela regra acima.
-  Antes da rodada completa, uma curta: se o Opus não aparecer nos modelos do lado `advisor`, o custo dele está
-  fora da conta e a regra dos +15% não pode ser aplicada com esses números.
+  Conferido (20/11): quando o Sonnet consulta o advisor, o Opus aparece no `modelUsage` do `-p` com o custo
+  somado, tanto com `--advisor opus` quanto com `advisorModel` no settings. Na rodada curta (node-race,
+  dotnet-business-days) o Sonnet não consultou nenhuma vez: em tarefa que ele já acerta, o advisor não muda nada.
 
 ---
 
