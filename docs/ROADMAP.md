@@ -145,7 +145,8 @@ Quando o kit já está instalado:
   sem decisão de permissão), porque senha de dev no `appsettings.Development.json` é comum. Os formatos de
   token continuam bloqueando. O install pergunta uma vez qual é a pasta dos repositórios e a grava em
   `permissions.additionalDirectories`, para o Claude editar entre repositórios irmãos sem `/add-dir`.
-  Recusa o home e a raiz do disco.
+  Recusa o home e a raiz do disco. Conferido com o claude real no Windows: com a pasta no settings do usuário, o
+  Write gravou no repositório irmão e recusou a pasta de fora.
 - O cofre virou uma entrada única no cofre do sistema (JSON, uma leitura por sessão), com os nomes em
   `~/.cctk/secrets.names`. O `creds.js` foi para dentro do plugin, porque o hook de sessão precisa dele.
 1. **`permissions.blockWritesOutsideWorkingDirectories: true`**: cobre a escrita no Windows, que não tem
