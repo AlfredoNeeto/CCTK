@@ -169,9 +169,11 @@ function login() {
   const real = tk.paths();
   const oauth = readJson(path.join(real.claude, '.credentials.json')).claudeAiOauth;
   if (!oauth?.accessToken) throw new Error('Sem login do Claude Code. Rode `claude` e faça login, ou defina CLAUDE_CODE_OAUTH_TOKEN (claude setup-token).');
-  if (oauth.expiresAt - Date.now() < 3 * HOUR) {
-    throw new Error(`O token de acesso vence às ${new Date(oauth.expiresAt).toLocaleTimeString()}, cedo demais para o benchmark.\n` +
-      'Rode `claude setup-token` e defina CLAUDE_CODE_OAUTH_TOKEN com o token gerado.');
+  // ~1.5 min per run (median 30-60 s, .NET builds longer) plus the 30 min the loop keeps in reserve before stopping.
+  const need = REPS * tasks.length * ARMS.length * 1.5 * 60000 + 0.5 * HOUR;
+  if (oauth.expiresAt - Date.now() < need) {
+    throw new Error(`O token de acesso vence às ${new Date(oauth.expiresAt).toLocaleTimeString()}, e esta rodada precisa de cerca de ` +
+      `${Math.ceil(need / 60000)} min.\nRode menos tarefas, ou rode \`claude setup-token\` num terminal e defina CLAUDE_CODE_OAUTH_TOKEN com o token gerado.`);
   }
   // No refreshToken in the copy: a temp home can never rotate (and so invalidate) the user's real login.
   const { refreshToken, ...access } = oauth;
