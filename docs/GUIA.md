@@ -33,13 +33,14 @@ Primeira vez num repositório? Rode `/cctk:init-project` uma vez, commite o que 
 ## Ler a statusline
 
 ```
-Sonnet | ctx 12% | 5h 8% (reset 14:30) | 7d 21% (reset 24/11 09:00)
+Sonnet | ctx 12% | cache 87% | 5h 8% (reset 14:30) | 7d 21% (reset 24/11 09:00)
 ```
 
 | Campo | O que fazer |
 |---|---|
 | `Sonnet` | Tudo certo. Se aparecer `Opus ⚠ mais caro`, só continue se estiver planejando |
 | `ctx 12%` | Contexto usado. Perto de 80% (`!`), termine a tarefa e dê `/clear` |
+| `cache 87%` | Quanto da conversa veio do cache, que custa bem menos. Com `frio`, a pausa passou da validade do cache e a próxima mensagem reenvia a conversa inteira a preço cheio: com contexto grande, prefira `/clear` e retome com um resumo |
 | `5h` / `7d` | Cota do Pro gasta e quando ela volta. Com `!` (80%+), deixe o que for grande para depois do reset |
 
 ## Tarefa pequena

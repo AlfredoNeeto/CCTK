@@ -14,6 +14,10 @@ process.stdin.on('data', (d) => (raw += d)).on('end', () => {
   const opus = /opus/i.test(`${j.model?.id || ''} ${j.model?.display_name || ''}`);
   const parts = [j.model?.display_name && `${j.model.display_name}${opus ? ' ⚠ mais caro' : ''}`];
   if (j.context_window?.used_percentage != null) parts.push(`ctx ${pct(j.context_window.used_percentage)}`);
+  // Share of this session's input read from cache (0..1, Claude Code 2.1.251+). Cold = past the cache TTL: the next
+  // message re-sends the whole conversation at full price.
+  const c = j.prompt_cache;
+  if (c?.hit_ratio != null) parts.push(`cache ${Math.round(c.hit_ratio * 100)}%${c.warm === false ? ' frio' : ''}`);
   for (const [key, label, long] of [['five_hour', '5h', false], ['seven_day', '7d', true]]) {
     const r = j.rate_limits?.[key];
     if (r?.used_percentage == null) continue;

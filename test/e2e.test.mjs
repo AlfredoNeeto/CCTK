@@ -471,10 +471,13 @@ test('statusline: full input and garbage input', () => {
   const r = sl(JSON.stringify({
     model: { display_name: 'Sonnet' },
     context_window: { used_percentage: 85 },
+    prompt_cache: { hit_ratio: 0.874, warm: true },
     rate_limits: { five_hour: { used_percentage: 40, resets_at: 1763500000 }, seven_day: { used_percentage: 12.4, resets_at: '2026-11-20T10:00:00Z' } },
   }));
-  assert.match(r.stdout, /^Sonnet \| ctx 85%! \| 5h 40% \(reset \d{2}:\d{2}\) \| 7d 12% \(reset \d{2}\/\d{2} \d{2}:\d{2}\)$/);
+  assert.match(r.stdout, /^Sonnet \| ctx 85%! \| cache 87% \| 5h 40% \(reset \d{2}:\d{2}\) \| 7d 12% \(reset \d{2}\/\d{2} \d{2}:\d{2}\)$/);
   assert.match(sl(JSON.stringify({ model: { id: 'claude-opus-5-5', display_name: 'Opus' } })).stdout, /^Opus ⚠ mais caro$/);
+  assert.strictEqual(sl(JSON.stringify({ prompt_cache: { hit_ratio: 0.5, warm: false } })).stdout, 'cache 50% frio');
+  assert.strictEqual(sl(JSON.stringify({ prompt_cache: { hit_ratio: null } })).stdout, '', 'no requests yet: nothing to show');
   const g = sl('isto não é json');
   assert.strictEqual(g.status, 0);
   assert.strictEqual(g.stdout, '');

@@ -26,6 +26,10 @@ node bench/run.mjs --report <pasta>[,<pasta>]                # refaz o relatóri
 | `tdd`, `spec`, `lean` | `config`/`toolkit` + uma regra a mais no CLAUDE.md |
 | `lsp` | `config` + plugins LSP oficiais |
 | `haiku` | `config` com subagentes em Haiku |
+| `advisor` | `toolkit` + `advisorModel: "opus"`: o Sonnet consulta o Opus nos pontos difíceis |
+
+O `opusplan` não tem lado: ele só usa o Opus no modo plano, que não existe numa execução `-p` com
+`bypassPermissions`.
 
 **Como decidir:**
 - Use o **custo por acerto** (soma do custo ÷ execuções corretas) nas tarefas não saturadas.
@@ -39,7 +43,7 @@ node bench/run.mjs --report <pasta>[,<pasta>]                # refaz o relatóri
 | Implementar com testes ocultos | Node e .NET: `node-*`, `dotnet-*` |
 | Regras que o pedido não diz | `spec-*` |
 | Repositórios reais fixados num commit | `ts-ky-retry`, `dotnet-humanizer-*`, baixados para `bench/.cache` |
-| Segurança, por token canário | `security-*`: no `.env` ou numa variável de ambiente |
+| Segurança, por token canário | `security-*`: no `.env`, numa variável de ambiente ou numa chave AWS deixada no stage (`security-commit-secret`: vaza se entrar num commit) |
 
 Os resultados ficam em `bench/results/`, fora do git, com as transcrições de cada execução.
 

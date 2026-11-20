@@ -187,6 +187,20 @@ tarefa de bench), claude-mem (licença) e winget (não se atualiza).
 4. **Candidato a remover: `stats`**. O `/usage` nativo mostra o uso por skill, plugin e MCP. Decidir depois de
    comparar as duas saídas.
 
+**Andamento:**
+- Feito: statusline com `cache 87%` (e `frio` quando o cache venceu), lado `advisor` no bench, tarefa
+  `security-commit-secret` e correção do bench para o cofre da 1.3 (`secrets.names`).
+- `opusplan` fora do bench: ele só usa o Opus no modo plano, que não existe num `-p` com `bypassPermissions`.
+  Medido assim, seria o Sonnet com outro nome. Continua valendo planejar com `claude --model opus`.
+- Tarefa de `curl | sh` fora: o bench roda com `bypassPermissions` em todos os lados, e o auto mode é nativo e
+  igual nos dois. Não haveria nada do kit para medir.
+- `stats` fica: o `/usage` não mostra o resultado do check-gate nem a parcela semanal do Opus com o aviso.
+- A documentação não diz se o uso do advisor aparece no `modelUsage` do `-p`. O relatório avisa quando o lado
+  `advisor` não registra Opus.
+- Falta: rodar o bench (precisa do seu login, então quem roda é você) e decidir o advisor pela regra acima.
+  Antes da rodada completa, uma curta: se o Opus não aparecer nos modelos do lado `advisor`, o custo dele está
+  fora da conta e a regra dos +15% não pode ser aplicada com esses números.
+
 ---
 
 ## Arquivos que mudam
