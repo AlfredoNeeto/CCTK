@@ -28,15 +28,17 @@ function verdict(cmd, names) {
 }
 
 // Credentials that should never reach a commit. Placeholders like Password=${DB_PASS} or <senha> don't match.
+// warn: only a note to Claude, the commit goes on. A dev password in appsettings.Development.json or docker-compose
+// is common and often intended; a token format almost never shows up by accident.
 const LEAKS = [
   ['chave AWS', /\bAKIA[0-9A-Z]{16}\b/],
   ['token do GitHub', /\b(gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{50,})/],
   ['chave da Anthropic/OpenAI', /\bsk-(ant|proj)-[A-Za-z0-9_-]{20,}/],
   ['token do Slack', /\bxox[abprs]-[A-Za-z0-9-]{10,}/],
   ['chave privada', /-----BEGIN [A-Z ]*PRIVATE KEY-----/],
-  ['senha em connection string', /\b(password|pwd)\s*=\s*(?![$%{<\[(]|\*{3})[^;'"\s]{4,}/i],
   ['PAT do Azure DevOps', /\b(pat|token)\b.{0,40}\b([a-z2-7]{52}|[A-Za-z0-9]{84})\b/i],
   ['JWT', /\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/],
+  ['senha em connection string', /\b(password|pwd)\s*=\s*(?![$%{<\[(]|\*{3})[^;'"\s]{4,}/i, 'warn'],
 ];
 
 // Added lines of a unified diff (-U0) as { file, line, kind }; never the value itself.
@@ -49,7 +51,7 @@ function scanDiff(diff) {
     if (h) { line = Number(h[1]); continue; }
     if (!l.startsWith('+')) continue;
     const hit = LEAKS.find(([, re]) => re.test(l));
-    if (hit) found.push({ file, line, kind: hit[0] });
+    if (hit) found.push({ file, line, kind: hit[0], warn: !!hit[2] });
     line++;
   }
   return found;
@@ -69,19 +71,28 @@ function commitLeaks(cmd, cwd) {
 if (!require.main || require.main === module) {
   const input = JSON.parse(fs.readFileSync(0, 'utf8') || '{}');
   const cmd = String(input.tool_input?.command || '');
+  const where = (list) => list.slice(0, 10).map((f) => `${f.file}:${f.line} ${f.kind}`).join('; ');
   let reason = verdict(cmd, secretNames());
+  let note;
   if (reason) reason = `Bloqueado pelo toolkit: o comando ${reason}. Use a variável por referência sem exibir o valor.`;
   else {
     const leaks = commitLeaks(cmd, input.cwd || process.cwd());
-    if (leaks.length) {
-      reason = `Bloqueado pelo toolkit: o commit leva credenciais (${leaks.slice(0, 10).map((f) => `${f.file}:${f.line} ${f.kind}`).join('; ')}). ` +
+    const block = leaks.filter((f) => !f.warn);
+    if (block.length) {
+      reason = `Bloqueado pelo toolkit: o commit leva credenciais (${where(block)}). ` +
         'Tire o valor do código (use variável de ambiente ou o cofre: cctk secret set) e refaça o stage. ' +
         'Se for um valor falso de teste, peça ao usuário para fazer o commit ele mesmo, num terminal.';
+    } else if (leaks.length) {
+      note = `Aviso do toolkit: este commit leva senha em texto (${where(leaks)}). Se não for só de desenvolvimento local, ` +
+        'avise o usuário e sugira tirar o valor do arquivo (variável de ambiente ou user-secrets).';
     }
   }
-  if (reason) {
+  // Without permissionDecision the normal permission flow goes on: the note never approves the commit by itself.
+  if (reason || note) {
     process.stdout.write(JSON.stringify({
-      hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason },
+      hookSpecificOutput: reason
+        ? { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason }
+        : { hookEventName: 'PreToolUse', additionalContext: note },
     }));
   }
 }

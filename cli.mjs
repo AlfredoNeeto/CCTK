@@ -173,6 +173,16 @@ async function install() {
     process.exitCode = 1;
   }
 
+  // Asked once (an empty answer is saved as []), on updates too: 1.3.0 is the first version that fences edits.
+  if (!flags.has('--yes') && !readSettings().permissions?.additionalDirectories) {
+    console.log('\nO Claude só edita arquivos dentro do projeto aberto. Se você guarda os repositórios numa pasta só,');
+    console.log('ele pode editar entre eles (ex.: a API e o front) sem pedir /add-dir.');
+    for (;;) {
+      const err = tk.setWorkDir(p, await ask('Pasta dos seus repositórios (ex.: D:\\repos). Vazio para pular: '));
+      if (!err) break;
+      console.log(err);
+    }
+  }
   if (!update && !flags.has('--yes') && (await yes('Você usa Azure DevOps Server (on-premises)?'))) await adoAdd();
   console.log(`\n${failed.length ? 'Terminou com falhas' : 'Pronto'} (Claude Code Toolkit ${tk.VERSION}). Próximos passos:
   1. Abra o Claude Code dentro de um projeto (cd meu-projeto && claude).

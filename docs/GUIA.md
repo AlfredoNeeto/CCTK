@@ -154,8 +154,8 @@ cctk doctor
 | Aviso de que o check passou de 3 min | Troque o `check` em `.claude/cctk.json` por algo mais rápido |
 | O Claude insiste num check que já estava quebrado | Conserte o projeto ou ajuste o `check`. O check desiste na segunda parada sem edição |
 | "Bloqueado pelo toolkit" | O comando ia mostrar um segredo. Peça para usar a variável (`$NOME`) |
-| "o commit leva credenciais" | Tire o valor do arquivo (variável de ambiente ou `cctk secret set`) e refaça o `git add`. Valor falso de teste: faça o commit você mesmo, no terminal |
-| "blocks writes outside the working directories" | O Claude só edita arquivos dentro do projeto. Para liberar outra pasta: `/add-dir <pasta>` |
+| "o commit leva credenciais" | Tire o valor do arquivo (variável de ambiente ou `cctk secret set`) e refaça o `git add`. Valor falso de teste: faça o commit você mesmo, no terminal. Senha em connection string (`Password=`) não bloqueia: o Claude só recebe um aviso |
+| "blocks writes outside the working directories" | O Claude só edita (Edit/Write) dentro do projeto e da pasta de repositórios que você indicou no `install`. Outra pasta: `/add-dir <pasta>`. Para trocar a pasta de repositórios, edite `permissions.additionalDirectories` no `~/.claude/settings.json`. A trava não cobre comandos de terminal |
 | Um MCP seu parou de achar uma variável de ambiente | Os MCPs não herdam mais o ambiente inteiro. Declare a variável no `env` do servidor, como `"env": { "MINHA_KEY": "${MINHA_KEY}" }` |
 | Quero a configuração antiga | `cctk restore` |
 | Atualizar o kit | `cctk update`. Seus plugins, MCPs, permissões e variáveis ficam, e o `restore` ainda volta à configuração de antes do kit |

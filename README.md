@@ -108,7 +108,7 @@ No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina ant
 |:---:|---|---|
 | ✅ | Sonnet com esforço medium, subagentes em Sonnet | Metade do custo do Opus |
 | ✅ | Bloqueio de `.env`, `secrets/`, chaves, `~/.ssh` e user-secrets do .NET | O Claude não lê segredos |
-| ⚙️ | Edição só dentro do projeto, MCPs sem herdar o ambiente, commit com credencial barrado | Um erro da IA não sai da pasta nem leva token junto |
+| ⚙️ | Edit/Write só dentro do projeto (e da pasta de repositórios que você indicar), MCPs sem herdar o ambiente, commit com token barrado | Menos estrago de um erro da IA. Comandos de terminal não são cobertos: no Windows não há sandbox |
 | ⏳ | Estilo Concise, sugestões de prompt desligadas | Menos tokens por resposta |
 | ⏳ | OpenSpec 2.1 | Spec antes do código |
 | ⏳ | `security-guidance`, Playwright CLI, MCP context7 | Revisão de segurança, conferir a tela, docs atualizadas |

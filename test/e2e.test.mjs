@@ -151,15 +151,20 @@ test('install → ado add → MCP launch → restore, full flow', async () => {
   const srv = await patServer(pat);
   try {
     const e = env(home);
+    const repos = tmp('tk-e2e-repos-');
     const r = await drive(['install'], [
       [/Continuar\?/, 's'],
+      [/Pasta dos seus repositórios/, home], // too broad: asked again
+      [/Pasta dos seus repositórios/, repos],
       [/Azure DevOps Server/, 's'],
       [/URL da collection/, srv.url],
       [/PAT para/, pat],
       [/URL da collection/, ''],
     ], e);
     assert.strictEqual(r.code, 0, r.err);
-    assert.strictEqual(r.answered, 5);
+    assert.strictEqual(r.answered, 7);
+    assert.match(r.out, /ampla demais/);
+    assert.deepStrictEqual(JSON.parse(read(path.join(home, '.claude', 'settings.json'))).permissions.additionalDirectories, [repos]);
     assert.match(r.out, /Backup em/);
     assert.match(r.out, /\[1\/8\] Instalando o OpenSpec… ✔[\s\S]*\[8\/8\] Instalando o security-guidance… ✔/);
     assert.match(r.out, /ado-cola configurado/);
@@ -233,7 +238,7 @@ test('update (install over the kit) keeps ado-* MCPs, and restore still returns 
   const srv = await patServer('pat-ok');
   try {
     const e = env(home);
-    const first = await drive(['install'], [[/Continuar\?/, 's'], [/Azure DevOps Server/, 's'], [/URL da collection/, srv.url], [/PAT para/, 'pat-ok'], [/URL da collection/, '']], e);
+    const first = await drive(['install'], [[/Continuar\?/, 's'], [/Pasta dos seus repositórios/, ''], [/Azure DevOps Server/, 's'], [/URL da collection/, srv.url], [/PAT para/, 'pat-ok'], [/URL da collection/, '']], e);
     assert.strictEqual(first.code, 0, first.err);
     // The fake claude doesn't write settings: mark both kit plugins enabled, as the real install would, and add
     // what a user changes after installing (proxy, an allow rule, another plugin): an update must keep it.
@@ -248,6 +253,7 @@ test('update (install over the kit) keeps ado-* MCPs, and restore still returns 
     assert.strictEqual(update.code, 0, update.err);
     assert.match(update.out, /atualizar o Claude Code Toolkit/);
     assert.doesNotMatch(update.out, /Azure DevOps Server/, 'an update does not ask again');
+    assert.doesNotMatch(update.out, /Pasta dos seus repositórios/, 'skipping the repos folder is remembered');
     assert.ok(!calls(home).slice(before).some((x) => x.includes('uninstall')), 'an update uninstalls nothing');
     assert.ok(calls(home).slice(before).includes(`claude plugin update ${tk.PLUGIN_ID}`), 'install alone leaves the old version');
     assert.ok(!calls(home).slice(before).some((x) => x.includes('marketplace remove')), 'removing it would delete the plugin data');
@@ -340,7 +346,7 @@ test('install with every answer piped at once (scripted use)', () => {
 
 test('install keeps going when a tool step fails, reports it and exits 1', async () => {
   const home = fakeHome();
-  const r = await drive(['install'], [[/Continuar\?/, 's'], [/Azure DevOps Server/, 'n']], env(home, { SHIM_FAIL: 'openspec' }));
+  const r = await drive(['install'], [[/Continuar\?/, 's'], [/Pasta dos seus repositórios/, ''], [/Azure DevOps Server/, 'n']], env(home, { SHIM_FAIL: 'openspec' }));
   assert.strictEqual(r.code, 1, r.err);
   assert.match(r.err, /Etapas que falharam[\s\S]*openspec config set profile custom/);
   assert.match(r.out, /\[3\/8\] Configurando o OpenSpec… ✖/);

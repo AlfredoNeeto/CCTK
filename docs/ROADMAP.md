@@ -141,6 +141,11 @@ Quando o kit já está instalado:
   variável (vazia se não existir), por isso os `ado-*` repassam proxy e CA.
 - Hooks na forma exec: `${CLAUDE_PLUGIN_ROOT}` é expandido nos `args`. Uma sessão real barrou um commit com
   chave AWS no stage. O `onFailure` ficou de fora: sem ele, a falha de um hook já não bloqueia.
+- Para não atrapalhar o uso: `Password=` em connection string só gera um aviso ao Claude (`additionalContext`,
+  sem decisão de permissão), porque senha de dev no `appsettings.Development.json` é comum. Os formatos de
+  token continuam bloqueando. O install pergunta uma vez qual é a pasta dos repositórios e a grava em
+  `permissions.additionalDirectories`, para o Claude editar entre repositórios irmãos sem `/add-dir`.
+  Recusa o home e a raiz do disco.
 - O cofre virou uma entrada única no cofre do sistema (JSON, uma leitura por sessão), com os nomes em
   `~/.cctk/secrets.names`. O `creds.js` foi para dentro do plugin, porque o hook de sessão precisa dele.
 1. **`permissions.blockWritesOutsideWorkingDirectories: true`**: cobre a escrita no Windows, que não tem

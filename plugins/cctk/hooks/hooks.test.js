@@ -217,9 +217,20 @@ test('secret-guard blocks a commit with a key in the stage and lets a clean one 
   assert.match(r.permissionDecisionReason, /cfg\.js:1 chave AWS/);
   assert.doesNotMatch(r.permissionDecisionReason, /ABCDEFGHIJKLMNOP/);
   assert.strictEqual(guard('git status').stdout, '');
+
+  // A dev password in a connection string: the commit goes on, Claude gets a note (and no permission decision)
+  spawnSync('git', ['rm', '-q', '--cached', 'cfg.js'], { cwd: dir });
+  fs.rmSync(path.join(dir, 'cfg.js'));
+  fs.writeFileSync(path.join(dir, 'appsettings.Development.json'), '{ "Db": "Server=localhost;User Id=sa;Password=dev12345;" }');
+  spawnSync('git', ['add', '-A'], { cwd: dir });
+  const w = JSON.parse(guard('git commit -m x').stdout).hookSpecificOutput;
+  assert.strictEqual(w.permissionDecision, undefined);
+  assert.match(w.additionalContext, /appsettings\.Development\.json:1 senha em connection string/);
+  assert.doesNotMatch(w.additionalContext, /dev12345/);
+  spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'dev'], { cwd: dir });
   // -a also commits tracked files that were never staged
   spawnSync('git', ['reset', '-q'], { cwd: dir });
-  fs.renameSync(path.join(dir, 'cfg.js'), path.join(dir, 'app.js'));
+  fs.writeFileSync(path.join(dir, 'app.js'), `module.exports = '${['AKIA', 'ABCDEFGHIJKLMNOP'].join('')}';`);
   assert.strictEqual(guard('git commit -m x').stdout, '');
   assert.match(guard('git commit -am x').stdout, /app\.js:1 chave AWS/);
 });

@@ -124,6 +124,30 @@ test('vault set/list/rm: values only in the credential store, names on disk', { 
   assert.ok(!fs.existsSync(path.join(os.homedir(), '.cctk', 'secrets.env')));
 }));
 
+test('setWorkDir: saves the repos folder, refuses the home, a drive root or a missing folder', () => {
+  const p = fakeHome();
+  const settings = () => JSON.parse(read(path.join(p.claude, 'settings.json')));
+  const repos = path.join(p.home, 'repos');
+  fs.mkdirSync(repos);
+  assert.match(tk.setWorkDir(p, p.home), /ampla demais/);
+  assert.match(tk.setWorkDir(p, path.parse(p.home).root), /ampla demais/);
+  assert.match(tk.setWorkDir(p, path.dirname(p.home)), /ampla demais/);
+  assert.match(tk.setWorkDir(p, path.join(p.home, 'nao-existe')), /não existe/);
+  assert.strictEqual(settings().permissions?.additionalDirectories, undefined, 'nothing saved on refusal');
+  assert.strictEqual(tk.setWorkDir(p, '~/repos'), null);
+  assert.deepStrictEqual(settings().permissions.additionalDirectories, [repos]);
+  assert.strictEqual(settings().model, 'opus', 'the rest of settings.json stays');
+  assert.strictEqual(tk.setWorkDir(p, ''), null, 'empty = asked, nothing added');
+  assert.deepStrictEqual(settings().permissions.additionalDirectories, [repos]);
+  const other = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-repos-')); // outside the home (another drive on many PCs)
+  assert.strictEqual(tk.setWorkDir(p, other), null);
+  assert.deepStrictEqual(settings().permissions.additionalDirectories, [repos, other]);
+
+  const q = fakeHome();
+  tk.setWorkDir(q, '');
+  assert.deepStrictEqual(JSON.parse(read(path.join(q.claude, 'settings.json'))).permissions.additionalDirectories, [], 'skipping is remembered');
+});
+
 test('run() keeps JSON and spaces intact through the shell', () => {
   const r = tk.run(process.execPath, ['-e', 'console.log(JSON.stringify(process.argv.slice(1)))', '["propose","verify"]', 'a b']);
   assert.deepStrictEqual(JSON.parse(r.stdout), ['["propose","verify"]', 'a b']);
