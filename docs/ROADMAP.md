@@ -81,6 +81,8 @@ Pontos de código a trocar:
 
 ### B. Distribuição pelo npm
 - Caminho principal: `npm i -g cctk` e depois `cctk install`. Sem instalar global: `npx cctk@latest install`.
+- Na publicação (20/11), o npm recusou `cctk` por ser parecido demais com `cmdk`. O pacote saiu como
+  `@alfredoneeto/cctk`; o comando, o plugin e o repositório continuam `cctk`.
 - Publicação manual (`npm publish` com 2FA). Trusted publishing e provenance exigem GitHub Actions, e CI está
   fora do roteiro.
 - `MARKETPLACE_SOURCE` continua preso à tag da versão (`AlfredoNeeto/cctk#vX.Y.Z`), para o plugin bater com a

@@ -44,7 +44,7 @@ Precisa de [Claude Code](https://code.claude.com) com login feito, [Node 22.20+]
 Code e rode num terminal comum:
 
 ```
-npm i -g cctk
+npm i -g @alfredoneeto/cctk
 cctk install
 ```
 

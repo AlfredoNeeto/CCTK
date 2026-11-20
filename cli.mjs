@@ -127,7 +127,7 @@ async function doctor() {
   if (check) line(isTrusted(process.cwd(), check), `Check deste projeto aprovado (${check})`, 'Rode nesta pasta: cctk trust');
   else console.log('– Nenhum check nesta pasta (rode o doctor na raiz de um projeto para conferir o dele)');
   // fail-open: offline, proxy or a slow npm just skip the hint
-  const latest = tk.run('npm', ['view', 'cctk', 'version'], { timeout: 5000 }).stdout.trim();
+  const latest = tk.run('npm', ['view', tk.NPM_NAME, 'version'], { timeout: 5000 }).stdout.trim();
   if (/^\d+\.\d+\.\d+$/.test(latest) && newer(latest, tk.VERSION)) console.log(`↑ Versão nova: ${latest}. Rode: cctk update`);
   if (bad) process.exitCode = 1;
 }
@@ -192,8 +192,8 @@ async function install() {
 
 // The installer must be the new version's: a second process, after npm replaced the package.
 function selfUpdate() {
-  const r = tk.run('npm', ['install', '-g', 'cctk@latest'], { timeout: 300000, stdio: 'inherit' });
-  if (r.status !== 0) throw new Error('npm install -g cctk@latest falhou. Confira a rede, o proxy e as permissões do npm.');
+  const r = tk.run('npm', ['install', '-g', `${tk.NPM_NAME}@latest`], { timeout: 300000, stdio: 'inherit' });
+  if (r.status !== 0) throw new Error(`npm install -g ${tk.NPM_NAME}@latest falhou. Confira a rede, o proxy e as permissões do npm.`);
   process.exitCode = tk.run('cctk', ['install', '--yes'], { stdio: 'inherit' }).status;
 }
 

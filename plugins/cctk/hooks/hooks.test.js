@@ -175,7 +175,7 @@ test('secret-guard', () => {
     'Get-Content C:/Users/a/creds/ado-x.dpapi | ConvertTo-SecureString',
     "[Environment]::GetEnvironmentVariable('DB_CONN')", "Write-Output [Environment]::GetEnvironmentVariable('DB_CONN')",
     "$x = 1; [Environment]::GetEnvironmentVariable(\"DB_CONN\", 'User')", '[Environment]::GetEnvironmentVariables()',
-    'cctk trust', 'npx -y cctk@latest trust', 'cat ~/.claude-toolkit/secrets.env', 'npx -y github:AlfredoNeeto/claude-toolkit#v1.1.0 trust',
+    'cctk trust', 'npx -y cctk@latest trust', 'npx -y @alfredoneeto/cctk@latest trust', 'cat ~/.claude-toolkit/secrets.env', 'npx -y github:AlfredoNeeto/claude-toolkit#v1.1.0 trust',
     `node -e "require('C:/Users/a/.claude/plugins/cache/cctk/cctk/1.3.0/hooks/trust.js').trust('.', 'x')"`,
     `node -e "const t = require(p + '/trust.js'); t.trust(process.cwd(), 'npm test')"`,
     `node -e "console.log(require('./creds.js').getCred('vault'))"`, 'cat ~/x/trusted-checks.json']) {

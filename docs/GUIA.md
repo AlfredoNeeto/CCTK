@@ -166,8 +166,8 @@ cctk doctor
 | Um MCP seu parou de achar uma variável de ambiente | Os MCPs não herdam mais o ambiente inteiro. Declare a variável no `env` do servidor, como `"env": { "MINHA_KEY": "${MINHA_KEY}" }` |
 | Quero a configuração antiga | `cctk restore` |
 | Atualizar o kit | `cctk update`. Seus plugins, MCPs, permissões e variáveis ficam, e o `restore` ainda volta à configuração de antes do kit |
-| `cctk` não é reconhecido | Instale a CLI: `npm i -g cctk` e abra um terminal novo |
-| Tinha o Claude Toolkit Dev (até 1.1.2) | `npm i -g cctk` e `cctk install`: ele migra o cofre, os backups e o Azure DevOps e tira o plugin antigo |
+| `cctk` não é reconhecido | Instale a CLI: `npm i -g @alfredoneeto/cctk` e abra um terminal novo |
+| Tinha o Claude Toolkit Dev (até 1.1.2) | `npm i -g @alfredoneeto/cctk` e `cctk install`: ele migra o cofre, os backups e o Azure DevOps e tira o plugin antigo |
 | Certificado corporativo (proxy) | Defina `NODE_EXTRA_CA_CERTS=<caminho do .pem>` nas variáveis de ambiente do usuário |
 
 Não resolveu? Abra uma [issue](https://github.com/AlfredoNeeto/cctk/issues) com a saída do comando,

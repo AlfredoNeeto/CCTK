@@ -218,7 +218,7 @@ test('release: package, plugin and the ref init-project writes share one version
 test('release: README and guide use the npm package and their relative links exist', () => {
   for (const doc of ['README.md', 'docs/GUIA.md']) {
     const text = fs.readFileSync(path.join(tk.REPO_ROOT, doc), 'utf8');
-    assert.match(text, /npm i -g cctk/, `${doc}: install command`);
+    assert.match(text, /npm i -g @alfredoneeto\/cctk/, `${doc}: install command`);
     assert.doesNotMatch(text, /npx github:/, `${doc}: the github: install is gone since 1.2.0`);
     const links = [...text.matchAll(/\]\(((?!https?:|#)[^)#]+)[^)]*\)|\b(?:src|srcset)="((?!https?:)[^"]+)"/g)];
     for (const [, md, html] of links) {
