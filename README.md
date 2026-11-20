@@ -6,7 +6,7 @@ Um comando instala uma configuração do Claude Code medida em benchmark: modelo
 cota, bloqueio de segredos, check de build e teste antes de encerrar, spec antes do código e uma statusline que
 mostra a cota. Projeto da comunidade, sem vínculo com a Anthropic.
 
-[![npm](https://img.shields.io/npm/v/@alfredoneeto/cctk)](https://www.npmjs.com/package/@alfredoneeto/cctk) ![versão](https://img.shields.io/badge/vers%C3%A3o-1.4.0-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933)
+[![npm](https://img.shields.io/npm/v/@alfredoneeto/cctk)](https://www.npmjs.com/package/@alfredoneeto/cctk) ![versão](https://img.shields.io/badge/vers%C3%A3o-1.4.1-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933)
 
 **[Instalar](#instalar)** · **[📖 Guia do dia a dia](docs/GUIA.md)** · [Comandos](#comandos) · [Benchmark](bench/README.md)
 

@@ -111,7 +111,7 @@ O OpenSpec (1) e o time (7) são **sempre** feitos. Os outros itens, só quando 
    ```json
    {
      "model": "sonnet",
-     "extraKnownMarketplaces": { "cctk": { "source": { "source": "github", "repo": "AlfredoNeeto/cctk", "ref": "v1.4.0" } } },
+     "extraKnownMarketplaces": { "cctk": { "source": { "source": "github", "repo": "AlfredoNeeto/cctk", "ref": "v1.4.1" } } },
      "enabledPlugins": { "cctk@cctk": true }
    }
    ```
