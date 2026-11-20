@@ -74,7 +74,9 @@ Uma mudança por sessão de implementação.
    Pelo mesmo motivo, evite o `opusplan`.
 3. **O advisor já vem ligado** (`advisorModel: "opus"`). O Sonnet pode consultar o Opus quando acha que
    precisa, e cada consulta conta na cota. No bench ele acertou mais sem consultar nenhuma vez
-   ([resultados](../bench/README.md#resultados-19112026)). O recurso ainda é experimental no Claude Code.
+   ([resultados](../bench/README.md#resultados-19112026)). As tarefas do bench são curtas: quanto ele consulta
+   numa sessão longa e difícil ainda não foi medido. Nas primeiras semanas, fique de olho no `5h` e no `7d` da
+   statusline. O recurso ainda é experimental no Claude Code.
 4. **`/effort high` só em tarefa com muitas regras** (validação, importação, cálculo). Depois, `/effort medium`.
 5. **`/clear` entre assuntos diferentes.**
 
@@ -155,6 +157,7 @@ cctk doctor
 | "Rode o instalador num terminal comum" | Feche o Claude Code e rode o `install` fora dele |
 | "O check deste projeto ainda não foi aprovado" | Confira o comando e rode o `trust` na pasta do projeto ([o check](#o-check-antes-de-encerrar)) |
 | "Falta instalar: ..." | Instale o que a mensagem lista e rode de novo |
+| Cota de 5h ou 7d subindo mais rápido que antes da 1.4 | O primeiro suspeito é o advisor consultando o Opus. Apague `"advisorModel"` do `~/.claude/settings.json` (o próximo `cctk install` recoloca) e compare |
 | Aviso de que o check passou de 3 min | Troque o `check` em `.claude/cctk.json` por algo mais rápido |
 | O Claude insiste num check que já estava quebrado | Conserte o projeto ou ajuste o `check`. O check desiste na segunda parada sem edição |
 | "Bloqueado pelo toolkit" | O comando ia mostrar um segredo. Peça para usar a variável (`$NOME`) |
