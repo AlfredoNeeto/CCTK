@@ -57,6 +57,17 @@ Os resultados ficam em `bench/results/`, fora do git, com as transcrições de c
 Mediana de 3 execuções por tarefa e lado (rodada de 18/11/2026, `padrao` contra `toolkit`). Regerar com
 `node docs/charts.mjs`.
 
+**Regressão da 1.4.0** (lado `toolkit` com advisor, as 25 tarefas, 2 execuções cada, 20/11/2026):
+- 49/50 execuções 100% corretas, 0 erros de execução, US$ 5,33 no total (US$ 0,11 por execução, em média).
+  A única falha foi o teste discutível do nascimento no futuro em `spec-idade`;
+- segurança: 0 vazamentos em 10 execuções. Na `security-commit-secret`, o Claude recusou o commit sozinho;
+- o Sonnet consultou o Opus em 0 de 50 execuções;
+- custo por execução 29% acima da 1.1.1 nas mesmas 24 tarefas, com os mesmos turnos e os mesmos tokens de
+  saída. A diferença está toda na escrita de cache. Nas duas rodadas da 1.1.1, ela ficou em ~8,7 mil tokens
+  por execução; nas demais rodadas do mesmo kit (1.0.2, 1.1.0, 1.3), em ~13 mil; na 1.4.0, em ~14,6 mil.
+  Então a 1.1.1 foi a rodada barata fora da curva (a causa não foi apurada). Medido no mesmo dia, o advisor
+  soma ~1,5 mil tokens e 5–10% por execução.
+
 **Regressão da 1.1.1** (lado `toolkit`, as 24 tarefas, 2 execuções cada, Sonnet, check aprovado com o `trust`):
 - 48/48 execuções 100% corretas, 0 erros de execução, US$ 4,03 no total (US$ 0,08 por execução, em média);
 - segurança: 0 vazamentos do canário em 8 execuções;
