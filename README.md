@@ -2,9 +2,11 @@
 
 Faz o plano Pro do Claude Code render mais, sem perder qualidade e sem vazar segredo.
 
-Projeto da comunidade, sem vínculo com a Anthropic. Até a 1.1.2 se chamava Claude Toolkit Dev.
+Um comando instala uma configuração do Claude Code medida em benchmark: modelo e esforço calibrados para a
+cota, bloqueio de segredos, check de build e teste antes de encerrar, spec antes do código e uma statusline que
+mostra a cota. Projeto da comunidade, sem vínculo com a Anthropic.
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-1.4.0-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-kit-2F6F8F)
+[![npm](https://img.shields.io/npm/v/@alfredoneeto/cctk)](https://www.npmjs.com/package/@alfredoneeto/cctk) ![versão](https://img.shields.io/badge/vers%C3%A3o-1.4.0-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933)
 
 **[Instalar](#instalar)** · **[📖 Guia do dia a dia](docs/GUIA.md)** · [Comandos](#comandos) · [Benchmark](bench/README.md)
 
@@ -39,9 +41,11 @@ com backup.
 
 ## Instalar
 
-Precisa de [Claude Code](https://code.claude.com) com login feito, [Node 22.20+](https://nodejs.org),
-[git](https://git-scm.com) e [uv](https://docs.astral.sh/uv/getting-started/installation/). Feche o Claude
-Code e rode num terminal comum:
+**Requisitos:** [Claude Code](https://code.claude.com) com login feito, [Node 22.20+](https://nodejs.org),
+[git](https://git-scm.com) e [uv](https://docs.astral.sh/uv/getting-started/installation/). Funciona no
+Windows, no macOS e no Linux.
+
+Feche o Claude Code e rode num terminal comum:
 
 ```
 npm i -g @alfredoneeto/cctk
@@ -108,7 +112,7 @@ No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina ant
 | ✅ | Sonnet com esforço medium, subagentes em Sonnet | Metade do custo do Opus |
 | ✅ | Advisor: o Sonnet pode consultar o Opus nos pontos difíceis (experimental no Claude Code) | Mais acertos onde o pedido deixa regra implícita, com custo por acerto menor |
 | ✅ | Bloqueio de `.env`, `secrets/`, chaves, `~/.ssh` e user-secrets do .NET | O Claude não lê segredos |
-| ⚙️ | Edit/Write só dentro do projeto (e da pasta de repositórios que você indicar), MCPs sem herdar o ambiente, commit com token barrado | Menos estrago de um erro da IA. Comandos de terminal não são cobertos: no Windows não há sandbox |
+| ⚙️ | Edit/Write só dentro do projeto (e da pasta de repositórios que você indicar), MCPs sem herdar o ambiente, commit com token barrado | Menos estrago de um erro da IA. Comandos de terminal ficam no sandbox nativo no macOS e no Linux (com `bwrap` e `socat` instalados); no Windows não há sandbox |
 | ⏳ | Estilo Concise, sugestões de prompt desligadas | Menos tokens por resposta |
 | ⏳ | OpenSpec 2.1 | Spec antes do código |
 | ⏳ | `security-guidance`, Playwright CLI, MCP context7 | Revisão de segurança, conferir a tela, docs atualizadas |
@@ -120,43 +124,37 @@ No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina ant
 ✅ ganho medido no [benchmark](bench/README.md) · ⏳ ainda não medido isolado · ⚙️ funcionalidade (o
 check e o guarda de segredos não mostraram ganho no benchmark; ficam como proteção no uso real)
 
+## Limitações conhecidas
+
+- **O custo do advisor no uso real ainda não foi medido.** No benchmark, com tarefas curtas, ele não consultou
+  o Opus nenhuma vez. Numa sessão longa e difícil pode consultar mais, e cada consulta conta na cota. Nas
+  primeiras semanas, acompanhe o `5h` e o `7d` da statusline. Para desligar, veja o
+  [Guia](docs/GUIA.md).
+- **O kit depende de recursos do Claude Code que mudam entre versões** (hooks, settings, plugins). Se algo
+  parar depois de atualizar o Claude Code, rode `cctk doctor`.
+- **No Windows, comandos de terminal não ficam em sandbox.** As travas cobrem leitura de segredos e
+  Edit/Write, não o que o Claude roda no shell.
+
 ## Desinstalar
 
 ```
 cctk restore           # a configuração de antes do kit
-cctk restore <data>    # um específico (lista em ~/.cctk/backups/)
+cctk restore <data>    # um backup específico (lista em ~/.cctk/backups/)
 ```
 
 Devolve sua configuração, seus plugins e MCPs, e tira os plugins do kit. Se quiser, apague à mão a pasta
-`~/.cctk/` e rode `npm uninstall -g cctk @fission-ai/openspec @playwright/cli`.
+`~/.cctk/` e rode `npm uninstall -g @alfredoneeto/cctk @fission-ai/openspec @playwright/cli`.
 
 ## Privacidade
 
 Sem telemetria. O `stats` lê só as transcrições locais. O context7 recebe suas buscas de documentação, e o
 MCP do Azure DevOps fala só com o seu servidor.
 
-## Desenvolvimento
+## Problemas e contribuições
 
-<details>
-<summary>Testes, benchmark e como lançar uma versão</summary>
-
-```
-npm test                                             # instalador, hooks e ponta a ponta (HOME e binários falsos)
-E2E_REAL=1 npm test                                  # + claude real numa HOME isolada (PowerShell: $env:E2E_REAL=1; npm test)
-CCTK_MARKETPLACE=/caminho/do/clone node cli.mjs install   # instala a partir do clone local
-node bench/run.mjs --dry                             # benchmark: veja bench/README.md
-node docs/charts.mjs                                 # regera o gráfico do README
-vhs demo/cctk.tape                                # regera o GIF: siga os passos no topo do cctk.tape
-```
-
-**Para lançar uma versão:**
-1. suba `version` em `package.json` e em `plugins/cctk/.claude-plugin/plugin.json`, o `"ref"` no
-   `init-project` e o badge deste README (um teste confere tudo);
-2. commite;
-3. crie a tag `vX.Y.Z` e faça o push da `main` e da tag (o plugin é instalado dessa tag);
-4. `npm publish` (com 2FA). Confira antes com `npm pack --dry-run`.
-
-</details>
+Encontrou um bug ou tem uma sugestão? Abra uma [issue](https://github.com/AlfredoNeeto/cctk/issues) com a
+saída do `cctk doctor`. Para desenvolver, rodar os testes ou o benchmark, veja o
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licença
 
