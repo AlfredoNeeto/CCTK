@@ -58,6 +58,7 @@ test('backup → clean → writeConfig → restore round trip', () => {
   assert.strictEqual(read(path.join(p.claude, '.credentials.json')), 'login');
   const s = JSON.parse(read(path.join(p.claude, 'settings.json')));
   assert.strictEqual(s.model, 'sonnet');
+  assert.strictEqual(s.advisorModel, 'opus');
   assert.strictEqual(s.env.CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION, 'false');
   assert.strictEqual(s.theme, 'dark');
   assert.ok(s.permissions.deny.includes('Read(**/.env)'));

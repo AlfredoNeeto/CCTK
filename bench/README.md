@@ -26,7 +26,7 @@ node bench/run.mjs --report <pasta>[,<pasta>]                # refaz o relatóri
 | `tdd`, `spec`, `lean` | `config`/`toolkit` + uma regra a mais no CLAUDE.md |
 | `lsp` | `config` + plugins LSP oficiais |
 | `haiku` | `config` com subagentes em Haiku |
-| `advisor` | `toolkit` + `advisorModel: "opus"`: o Sonnet consulta o Opus nos pontos difíceis |
+| `sem-advisor` | `toolkit` sem o `advisorModel: "opus"`, que o kit liga desde a 1.4 |
 
 O `opusplan` não tem lado: ele só usa o Opus no modo plano, que não existe numa execução `-p` com
 `bypassPermissions`.
@@ -75,6 +75,19 @@ Rodadas anteriores: 1.1.0, 46/48 por US$ 3,98; 1.0.2, 46/48 por US$ 4,80. Em tod
 - **`/effort high` em tarefa com muitas regras:** melhor custo por acerto na importação de CSV (8/10 a
   US$ 0,21, contra 6/8 a US$ 0,40 do Opus e 5/13 a US$ 0,34 do Sonnet medium). Cuidado: essa tarefa tinha
   uma regra que o enunciado não dizia, e o `high` "adivinhava" mais.
+- **Advisor (`advisorModel: "opus"`, 1.4):** em `spec-idade` e `spec-slug`, juntando duas rodadas (20/11),
+  o `advisor` fez 19/22 e o `toolkit` da 1.3 (sem advisor) 11/22 (Fisher p≈0,02). O custo por acerto foi de US$ 0,103 contra
+  US$ 0,156, ou 5–10% a mais por execução. Os poréns:
+  - escolhi essas duas tarefas porque o advisor tinha ido melhor nelas numa rodada anterior. Só a rodada
+    confirmatória (8 reps) deu 14/16 contra 10/16, com p≈0,22;
+  - em `spec-idade`, toda a diferença veio do teste discutível do nascimento no futuro. Descontado ele, fica
+    21/22 contra 17/22, com custo por acerto 8% menor; a diferença real está em tirar acentos no slug
+    (10/11 contra 6/11);
+  - o Sonnet não consultou o Opus nenhuma vez. O ganho vem de algo que ligar o advisor muda na sessão,
+    provavelmente as instruções que ele acrescenta ao prompt;
+  - nas 5 tarefas que os dois já acertavam sempre, empatou e custou um pouco mais.
+
+  Passa na regra do roadmap (mais acertos, no máximo +15% de custo por acerto) e entrou no kit.
 
 **O que não mostrou ganho:**
 - **Plugin (qualidade):** `toolkit` e `config` se alternaram na importação de CSV. É ruído.

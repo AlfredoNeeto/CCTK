@@ -21,9 +21,9 @@ const ONLY = opt('tasks')?.split(',');
 // spec: config + regra de explicitar e testar as regras implícitas do domínio antes do código
 // lsp: config + plugins LSP oficiais (navegação por símbolo) · haiku: config com subagentes em Haiku
 // lean: config + regras curtas de economia (drona23/claude-token-efficient, MIT)
-// advisor: toolkit + advisorModel opus (o Sonnet consulta o Opus nos pontos difíceis). O opusplan fica de fora: ele só
+// sem-advisor: toolkit sem o advisorModel opus, que o kit liga desde a 1.4. O opusplan fica de fora: ele só
 // usa Opus no modo plano, que não existe num -p com bypassPermissions; seria o Sonnet com outro nome.
-const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'advisor'];
+const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'sem-advisor'];
 const LSP_PLUGINS = ['typescript-lsp@claude-plugins-official', 'csharp-lsp@claude-plugins-official'];
 // From https://github.com/drona23/claude-token-efficient/blob/main/CLAUDE.md (MIT), kept verbatim to measure it as published.
 const LEAN_RULES = `## Approach
@@ -192,9 +192,10 @@ function makeHome(arm, auth) {
     for (const m of Object.values(s.modelSettings)) m.effortLevel = 'high';
     writeJson(f, s);
   }
-  if (arm === 'advisor') {
+  if (arm === 'sem-advisor') {
     const f = path.join(p.claude, 'settings.json');
-    writeJson(f, { ...readJson(f), advisorModel: 'opus' });
+    const { advisorModel, ...s } = readJson(f);
+    writeJson(f, s);
   }
   if (arm === 'haiku') {
     const f = path.join(p.claude, 'settings.json');
@@ -208,7 +209,7 @@ function makeHome(arm, auth) {
   const plugins = {
     toolkit: [['marketplace', 'add', tk.REPO_ROOT], ['install', tk.PLUGIN_ID], ['marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ['install', tk.SECURITY_PLUGIN]],
     lsp: [['marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ...LSP_PLUGINS.map((id) => ['install', id])],
-  }[arm === 'tdd' || arm === 'advisor' ? 'toolkit' : arm] || [];
+  }[arm === 'tdd' || arm === 'sem-advisor' ? 'toolkit' : arm] || [];
   for (const args of plugins) {
     const r = tk.run('claude', ['plugin', ...args], { env: env(home), timeout: 300000 });
     if (r.status) throw new Error(`claude plugin ${args.join(' ')} falhou:\n${r.stdout}\n${r.stderr}`);
@@ -346,9 +347,9 @@ function report(runs) {
   const models = (arm) => [...new Set(runs.filter((r) => r.arm === arm).flatMap((r) => r.models))];
   for (const arm of arms) lines.push(`- **${arm}**: modelos usados: ${models(arm).join(', ') || '–'}`);
   // When Sonnet consults the advisor, Opus shows up in modelUsage with its cost (checked with claude -p 2.1.329).
-  if (arms.includes('advisor')) {
-    const adv = runs.filter((r) => r.arm === 'advisor' && !failed(r));
-    lines.push(`- **advisor** consultou o Opus em ${adv.filter((r) => r.models.some((m) => /opus/i.test(m))).length} de ${adv.length} execuções ` +
+  if (arms.includes('toolkit')) {
+    const adv = runs.filter((r) => r.arm === 'toolkit' && !failed(r));
+    lines.push(`- **toolkit** (advisor ligado) consultou o Opus em ${adv.filter((r) => r.models.some((m) => /opus/i.test(m))).length} de ${adv.length} execuções ` +
       '(o custo dessas consultas já está somado)');
   }
   if (new Set(arms.map((a) => models(a).sort().join())).size > 1) {

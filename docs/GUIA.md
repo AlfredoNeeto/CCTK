@@ -72,8 +72,11 @@ Uma mudança por sessão de implementação.
 1. **Opus só para planejar.** O Sonnet fez as mesmas tarefas por cerca de metade do custo ([benchmark](../bench/README.md)).
 2. **Escolha o modelo ao abrir.** Trocar com `/model` no meio relê a conversa sem o desconto do cache.
    Pelo mesmo motivo, evite o `opusplan`.
-3. **`/effort high` só em tarefa com muitas regras** (validação, importação, cálculo). Depois, `/effort medium`.
-4. **`/clear` entre assuntos diferentes.**
+3. **O advisor já vem ligado** (`advisorModel: "opus"`). O Sonnet pode consultar o Opus quando acha que
+   precisa, e cada consulta conta na cota. No bench ele acertou mais sem consultar nenhuma vez
+   ([resultados](../bench/README.md#resultados-19112026)). O recurso ainda é experimental no Claude Code.
+4. **`/effort high` só em tarefa com muitas regras** (validação, importação, cálculo). Depois, `/effort medium`.
+5. **`/clear` entre assuntos diferentes.**
 
 ## O check antes de encerrar
 

@@ -177,6 +177,10 @@ Fora: safety-net/dcg (o auto mode já cobre), Snyk agent-scan (envia dados e exe
 tarefa de bench), claude-mem (licença) e winget (não se atualiza).
 
 ## 1.4.0: qualidade sem custo exorbitante (medir antes)
+
+**Feita.** Entraram o advisor (`advisorModel: "opus"`, resultados e poréns no
+[bench](../bench/README.md#resultados-19112026)) e o `cache %` na statusline. O `stats` fica.
+
 1. **Bench com os lados `advisor` (`"advisorModel":"opus"`) e `opusplan`**: as 24 tarefas, 2 execuções cada,
    cerca de US$ 10–12. Só entra se os acertos subirem com no máximo +15% de custo por acerto, ou se ficarem
    iguais custando menos.
@@ -197,7 +201,8 @@ tarefa de bench), claude-mem (licença) e winget (não se atualiza).
 - `stats` fica: o `/usage` não mostra o resultado do check-gate nem a parcela semanal do Opus com o aviso.
 - A documentação não diz se o uso do advisor aparece no `modelUsage` do `-p`. O relatório avisa quando o lado
   `advisor` não registra Opus.
-- Falta: rodar o bench (precisa do seu login, então quem roda é você) e decidir o advisor pela regra acima.
+- Advisor decidido (20/11): 19/22 contra 11/22 em `spec-idade`/`spec-slug`, com custo por acerto 34% menor e o
+  Opus nunca chamado. Entrou no kit.
   Conferido (20/11): quando o Sonnet consulta o advisor, o Opus aparece no `modelUsage` do `-p` com o custo
   somado, tanto com `--advisor opus` quanto com `advisorModel` no settings. Na rodada curta (node-race,
   dotnet-business-days) o Sonnet não consultou nenhuma vez: em tarefa que ele já acerta, o advisor não muda nada.

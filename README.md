@@ -4,7 +4,7 @@ Faz o plano Pro do Claude Code render mais, sem perder qualidade e sem vazar seg
 
 Projeto da comunidade, sem vínculo com a Anthropic. Até a 1.1.2 se chamava Claude Toolkit Dev.
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-1.3.0-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-kit-2F6F8F)
+![versão](https://img.shields.io/badge/vers%C3%A3o-1.4.0-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-kit-2F6F8F)
 
 **[Instalar](#instalar)** · **[📖 Guia do dia a dia](docs/GUIA.md)** · [Comandos](#comandos) · [Benchmark](bench/README.md)
 
@@ -107,6 +107,7 @@ No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina ant
 | | Peça | Para quê |
 |:---:|---|---|
 | ✅ | Sonnet com esforço medium, subagentes em Sonnet | Metade do custo do Opus |
+| ✅ | Advisor: o Sonnet pode consultar o Opus nos pontos difíceis (experimental no Claude Code) | Mais acertos onde o pedido deixa regra implícita, com custo por acerto menor |
 | ✅ | Bloqueio de `.env`, `secrets/`, chaves, `~/.ssh` e user-secrets do .NET | O Claude não lê segredos |
 | ⚙️ | Edit/Write só dentro do projeto (e da pasta de repositórios que você indicar), MCPs sem herdar o ambiente, commit com token barrado | Menos estrago de um erro da IA. Comandos de terminal não são cobertos: no Windows não há sandbox |
 | ⏳ | Estilo Concise, sugestões de prompt desligadas | Menos tokens por resposta |
