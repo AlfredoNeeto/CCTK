@@ -1,6 +1,6 @@
-// Which project checks the user approved. .claude/toolkit.json comes with the repository, so a cloned repo (or a PR)
+// Which project checks the user approved. .claude/cctk.json comes with the repository, so a cloned repo (or a PR)
 // picks the command the Stop hook runs: it only runs after the user approves that exact command for that folder,
-// in a terminal (`claude-toolkit trust`). The list lives in ~/.claude-toolkit, which Claude can't edit (deny rules
+// in a terminal (`cctk trust`). The list lives in ~/.cctk, which Claude can't edit (deny rules
 // and secret-guard). Shared by the hook and the CLI.
 // shortcut: approving `npm test` trusts the command, not the package.json script it calls; same as running it by hand.
 const crypto = require('crypto');
@@ -8,7 +8,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const trustFile = () => path.join(os.homedir(), '.claude-toolkit', 'trusted-checks.json');
+const trustFile = () => path.join(os.homedir(), '.cctk', 'trusted-checks.json');
 const key = (dir, check) => {
   // realpath: the same folder can arrive as C:\Users\ALFRED~1\... or via a symlink; the key must not depend on that.
   let d = path.resolve(dir);
@@ -24,4 +24,11 @@ function trust(dir, check) {
   fs.writeFileSync(trustFile(), JSON.stringify([...new Set([...list(), key(dir, check)])]) + '\n', { mode: 0o600 });
 }
 
-module.exports = { isTrusted, trust };
+// The project's check command; .claude/toolkit.json is the name before 1.2.0.
+function readCheck(dir) {
+  for (const f of ['cctk.json', 'toolkit.json']) {
+    try { return JSON.parse(fs.readFileSync(path.join(dir, '.claude', f), 'utf8')).check; } catch { /* next */ }
+  }
+}
+
+module.exports = { isTrusted, trust, readCheck };

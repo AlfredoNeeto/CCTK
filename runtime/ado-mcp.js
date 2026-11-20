@@ -9,7 +9,7 @@ const ADO_MCP = '@tiberriver256/mcp-server-azure-devops@0.1.54';
 const [url, name] = process.argv.slice(2);
 const pat = url && name && getCred(name);
 if (!pat) {
-  process.stderr.write(`PAT "${name}" não encontrado no cofre do sistema. Rode: npx github:AlfredoNeeto/claude-toolkit ado add ${url || '<url>'}\n`);
+  process.stderr.write(`PAT "${name}" não encontrado no cofre do sistema. Rode: cctk ado add ${url || '<url>'}\n`);
   process.exit(1);
 }
 

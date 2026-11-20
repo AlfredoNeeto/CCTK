@@ -3,7 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const vaultFile = () => path.join(os.homedir(), '.claude-toolkit', 'secrets.env');
+const vaultFile = () => path.join(os.homedir(), '.cctk', 'secrets.env');
 
 function readVault(file = vaultFile()) {
   if (!fs.existsSync(file)) return {};

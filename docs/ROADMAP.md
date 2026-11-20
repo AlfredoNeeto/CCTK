@@ -107,11 +107,15 @@ Quando o kit já está instalado:
 - Ficam como estão: `enabledPlugins`, `extraKnownMarketplaces`, `permissions.allow` e `hooks`.
 - A 1ª instalação continua limpando tudo, com backup.
 
-### E. Plugin realmente atualizado
-- No update: `claude plugin marketplace remove cctk` (falha tolerada), depois `marketplace add` com a tag nova,
-  depois `plugin install`.
-- Gravar `extraKnownMarketplaces.cctk` com a ref no settings do usuário.
-- Validar com `E2E_REAL=1`. O teste atual usa um `claude` falso (`test/e2e.test.mjs:227`).
+### E. Plugin realmente atualizado (testado à mão com o claude 2.1.329)
+- Na 1.1.x, `marketplace add` com a tag nova **falha** ("source doesn't match its extraKnownMarketplaces
+  entry") e o plugin fica na versão velha.
+- `marketplace remove` + `add` funciona, mas apaga os dados do plugin (o log do check que o `stats` lê).
+- Caminho adotado:
+  1. o `writeConfig` troca a `ref` em `extraKnownMarketplaces.cctk`;
+  2. `marketplace add <repo>#<tag nova>`;
+  3. `plugin install` (instala se o plugin for novo; se já existir, não atualiza);
+  4. `plugin update`.
 
 ### F. `doctor`, `update` e `restore`
 - `doctor`: versão nova via `npm view cctk version` (3 s, fail-open) e confere

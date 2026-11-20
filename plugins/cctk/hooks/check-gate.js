@@ -3,7 +3,7 @@
 // PostToolUse (arg "mark"): records that this session edited files with Edit/Write.
 // PostToolUse on Bash/PowerShell (arg "shell"): records that Claude ran a shell command this turn.
 // Stop (arg "gate"): if there were edits (a mark, or a shell command plus a working tree that differs from the
-// snapshot), runs the project's check from .claude/toolkit.json.
+// snapshot), runs the project's check from .claude/cctk.json.
 // Exit 2 + stderr blocks the stop so Claude fixes the failure; the edit marker survives until the check passes.
 // A check over the time limit (a slow suite, a watch mode that never ends) is killed with its whole process tree
 // and the stop goes through with a warning: the gate must never hang a session.
@@ -12,9 +12,9 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
-const { isTrusted } = require(path.join(__dirname, 'trust.js'));
+const { isTrusted, readCheck } = require(path.join(__dirname, 'trust.js'));
 
-const LIMIT_MS = Number(process.env.TOOLKIT_CHECK_TIMEOUT_MS) || 180000;
+const LIMIT_MS = Number(process.env.CCTK_CHECK_TIMEOUT_MS) || 180000;
 const WEEK = 7 * 86400000;
 
 const input = JSON.parse(fs.readFileSync(0, 'utf8') || '{}');
@@ -24,7 +24,7 @@ const marker = path.join(dataDir, `toolkit-dirty-${session}`);
 const baseFile = path.join(dataDir, `toolkit-base-${session}`);
 const shellFlag = path.join(dataDir, `toolkit-shell-${session}`);
 const cwd = process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd();
-// One line per gate decision, read by `claude-toolkit stats` (does the gate catch failures that then get fixed?).
+// One line per gate decision, read by `cctk stats` (does the gate catch failures that then get fixed?).
 const log = (result) => {
   try {
     fs.appendFileSync(path.join(dataDir, 'gate.log'), JSON.stringify({ ts: new Date().toISOString(), session: input.session_id, cwd, result }) + '\n');
@@ -46,8 +46,7 @@ if (process.argv.includes('shell')) {
   process.exit(0);
 }
 
-let check;
-try { check = JSON.parse(fs.readFileSync(path.join(cwd, '.claude', 'toolkit.json'), 'utf8')).check; } catch { /* none */ }
+const check = readCheck(cwd);
 
 // HEAD plus every changed, deleted, staged or untracked file (docs excluded) with its size and mtime, hashed.
 // Catches `cat > f`, `sed -i`, Set-Content... that never go through Edit/Write. null outside git or if git fails;
@@ -102,7 +101,7 @@ if (!isTrusted(cwd, check)) {
   log('untrusted');
   process.stdout.write(JSON.stringify({
     systemMessage: `O check deste projeto ainda não foi aprovado e não rodou: ${check}\n` +
-      'Se o comando for seguro, aprove num terminal, na pasta do projeto: npx github:AlfredoNeeto/claude-toolkit trust',
+      'Se o comando for seguro, aprove num terminal, na pasta do projeto: cctk trust',
   }));
   process.exit(0);
 }
@@ -142,7 +141,7 @@ runCheck().then((r) => {
     log('timeout');
     process.stdout.write(JSON.stringify({
       systemMessage: `O check do projeto passou de ${Math.round(LIMIT_MS / 60000)} min e foi interrompido (${check}). ` +
-        'Troque por uma versão mais rápida em .claude/toolkit.json (por exemplo, só build e typecheck).',
+        'Troque por uma versão mais rápida em .claude/cctk.json (por exemplo, só build e typecheck).',
     }));
     process.exit(0);
   }

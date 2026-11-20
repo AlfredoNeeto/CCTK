@@ -25,9 +25,9 @@ claude                      # abre no Sonnet: o modelo do dia a dia
 1. **Pedido pequeno?** Peça direto ([como pedir](#tarefa-pequena)).
 2. **Terminou?** `/clear` antes do próximo assunto.
 3. **Feature com regra de negócio?** Planeje no Opus, implemente no Sonnet ([fluxo](#feature-ou-bug-com-regra-de-negócio)).
-4. **No fim da semana:** `npx github:AlfredoNeeto/claude-toolkit#v1.1.2 stats` mostra para onde foi a cota.
+4. **No fim da semana:** `cctk stats` mostra para onde foi a cota.
 
-Primeira vez num repositório? Rode `/toolkit-dev:init-project` uma vez, commite o que ele criar e
+Primeira vez num repositório? Rode `/cctk:init-project` uma vez, commite o que ele criar e
 [aprove o check](#o-check-antes-de-encerrar).
 
 ## Ler a statusline
@@ -76,7 +76,7 @@ Uma mudança por sessão de implementação.
 
 ## O check antes de encerrar
 
-O `init-project` grava em `.claude/toolkit.json` um **check**: o comando de build e teste do projeto.
+O `init-project` grava em `.claude/cctk.json` um **check**: o comando de build e teste do projeto.
 Se o Claude editou código, ele só encerra quando o check passa. Isso vale também para edições feitas por
 comando no terminal (`sed -i`, `cat > arquivo`), num repositório git. Editar só `.md`, `.txt` ou arquivos em
 `openspec/` não dispara o check.
@@ -85,11 +85,11 @@ comando no terminal (`sed -i`, `cat > arquivo`), num repositório git. Editar s�
   não disparam o check. A exceção: se você editar código **enquanto** o Claude responde, e ele rodar algum
   comando no terminal nessa resposta, o check roda no fim dela.
 
-- **Aprove o check uma vez por projeto.** O `toolkit.json` vem com o repositório, então um repo clonado
+- **Aprove o check uma vez por projeto.** O `cctk.json` vem com o repositório, então um repo clonado
   ou um PR poderia trazer qualquer comando. O kit só roda o check depois que você aprova, num terminal,
   na pasta do projeto:
   ```
-  npx github:AlfredoNeeto/claude-toolkit#v1.1.2 trust
+  cctk trust
   ```
   Se o comando mudar (num pull, num PR ou porque o Claude editou o arquivo), o kit avisa e pede aprovação
   de novo. O Claude não consegue aprovar sozinho.
@@ -102,24 +102,24 @@ comando no terminal (`sed -i`, `cat > arquivo`), num repositório git. Editar s�
 
 | Quando | Comando |
 |---|---|
-| Os requisitos estão em PDF, DOCX, PPTX ou XLSX | `/toolkit-dev:convert requisitos.pdf` → gera `docs/requisitos.md`, e você cita com `@docs/requisitos.md` |
-| Vai instalar uma skill, plugin, MCP ou rodar um repo de terceiros | `/toolkit-dev:audit <url>` **antes**. Ele analisa sem executar nada |
+| Os requisitos estão em PDF, DOCX, PPTX ou XLSX | `/cctk:convert requisitos.pdf` → gera `docs/requisitos.md`, e você cita com `@docs/requisitos.md` |
+| Vai instalar uma skill, plugin, MCP ou rodar um repo de terceiros | `/cctk:audit <url>` **antes**. Ele analisa sem executar nada |
 
 ## Tokens e senhas (cofre)
 
 Dê ao Claude um token de desenvolvimento sem que ele veja o valor:
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.1.2 secret set API_TOKEN   # pede o valor sem mostrar
-npx github:AlfredoNeeto/claude-toolkit#v1.1.2 secret list
-npx github:AlfredoNeeto/claude-toolkit#v1.1.2 secret rm API_TOKEN
+cctk secret set API_TOKEN   # pede o valor sem mostrar
+cctk secret list
+cctk secret rm API_TOKEN
 ```
 
 Na sessão, o Claude recebe só o nome e usa `$API_TOKEN` nos comandos.
 
 - Isso evita o vazamento **acidental**. Um programa escrito pela IA ainda consegue ler o próprio ambiente,
   então guarde só credenciais de desenvolvimento.
-- O arquivo `~/.claude-toolkit/secrets.env` fica em texto puro, protegido por permissão de arquivo e pelas
+- O arquivo `~/.cctk/secrets.env` fica em texto puro, protegido por permissão de arquivo e pelas
   regras de bloqueio.
 - No Windows, valores com `/` ou `\` não chegam ao PowerShell.
 
@@ -128,7 +128,7 @@ Na sessão, o Claude recebe só o nome e usa `$API_TOKEN` nos comandos.
 Para servidores on-premises (o MCP oficial da Microsoft só atende a nuvem):
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.1.2 ado add https://servidor/tfs/MinhaCollection
+cctk ado add https://servidor/tfs/MinhaCollection
 ```
 
 - Cada collection vira um MCP `ado-<collection>`. Pode cadastrar quantas quiser.
@@ -142,7 +142,7 @@ npx github:AlfredoNeeto/claude-toolkit#v1.1.2 ado add https://servidor/tfs/Minha
 Comece pelo `doctor`. Ele confere a instalação e diz o que fazer em cada item que falhou:
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.1.2 doctor
+cctk doctor
 ```
 
 | Sintoma | O que fazer |
@@ -150,12 +150,14 @@ npx github:AlfredoNeeto/claude-toolkit#v1.1.2 doctor
 | "Rode o instalador num terminal comum" | Feche o Claude Code e rode o `install` fora dele |
 | "O check deste projeto ainda não foi aprovado" | Confira o comando e rode o `trust` na pasta do projeto ([o check](#o-check-antes-de-encerrar)) |
 | "Falta instalar: ..." | Instale o que a mensagem lista e rode de novo |
-| Aviso de que o check passou de 3 min | Troque o `check` em `.claude/toolkit.json` por algo mais rápido |
+| Aviso de que o check passou de 3 min | Troque o `check` em `.claude/cctk.json` por algo mais rápido |
 | O Claude insiste num check que já estava quebrado | Conserte o projeto ou ajuste o `check`. O check desiste na segunda parada sem edição |
 | "Bloqueado pelo toolkit" | O comando ia mostrar um segredo. Peça para usar a variável (`$NOME`) |
-| Quero a configuração antiga | `npx github:AlfredoNeeto/claude-toolkit#v1.1.2 restore` |
-| Atualizar o kit | Rode o `install` com a tag nova, por exemplo `#v1.2.0`. Os MCPs do Azure DevOps continuam, e o `restore` ainda volta à configuração de antes do kit |
+| Quero a configuração antiga | `cctk restore` |
+| Atualizar o kit | `cctk update`. Seus plugins, MCPs, permissões e variáveis ficam, e o `restore` ainda volta à configuração de antes do kit |
+| `cctk` não é reconhecido | Instale a CLI: `npm i -g cctk` e abra um terminal novo |
+| Tinha o Claude Toolkit Dev (até 1.1.2) | `npm i -g cctk` e `cctk install`: ele migra o cofre, os backups e o Azure DevOps e tira o plugin antigo |
 | Certificado corporativo (proxy) | Defina `NODE_EXTRA_CA_CERTS=<caminho do .pem>` nas variáveis de ambiente do usuário |
 
-Não resolveu? Abra uma [issue](https://github.com/AlfredoNeeto/claude-toolkit/issues) com a saída do comando,
+Não resolveu? Abra uma [issue](https://github.com/AlfredoNeeto/cctk/issues) com a saída do comando,
 o `claude --version` e o seu sistema operacional.

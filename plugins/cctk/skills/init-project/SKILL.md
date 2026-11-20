@@ -1,6 +1,6 @@
 ---
 name: init-project
-description: Prepara um repositório para o Claude Toolkit Dev. Detecta a stack, cria ou atualiza AGENTS.md e CLAUDE.md, grava o check obrigatório em .claude/toolkit.json, inicializa o OpenSpec, deixa o projeto em Sonnet e oferece Azure DevOps e banco somente leitura. Use quando pedirem "init-project", "preparar o repositório para IA", "configurar o toolkit neste projeto" ou para criar/atualizar o AGENTS.md. Prefira esta skill ao /init nativo.
+description: Prepara um repositório para o Claude Code Toolkit. Detecta a stack, cria ou atualiza AGENTS.md e CLAUDE.md, grava o check obrigatório em .claude/cctk.json, inicializa o OpenSpec, deixa o projeto em Sonnet e oferece Azure DevOps e banco somente leitura. Use quando pedirem "init-project", "preparar o repositório para IA", "configurar o toolkit neste projeto" ou para criar/atualizar o AGENTS.md. Prefira esta skill ao /init nativo.
 disable-model-invocation: true
 ---
 
@@ -16,9 +16,13 @@ Arquivos de apoio: [AGENTS.template.md](references/AGENTS.template.md) (modelo) 
 
 1. Ache a raiz com `git rev-parse --show-toplevel` e trabalhe sempre nela.
 2. Procure `AGENTS.md`, `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md`, `.cursorrules`,
-   `.github/copilot-instructions.md`, `.claude/toolkit.json`, `openspec/` e `.mcp.json`.
+   `.github/copilot-instructions.md`, `.claude/cctk.json`, `openspec/` e `.mcp.json`.
    - Se o `AGENTS.md` existe, a seção 5 usa o **modo atualizar** (seção 7). Todas as outras seções
      (check, OpenSpec, time) valem do mesmo jeito: siga de 2 a 8 em ordem.
+   - Projeto do kit antigo (Claude Toolkit Dev, até 1.1.2): renomeie `.claude/toolkit.json` para
+     `.claude/cctk.json` (`git mv`) e, no `.claude/settings.json`, troque o marketplace `claude-toolkit` e o
+     plugin `toolkit-dev@claude-toolkit` pelos da seção 6. Avise que o check precisa de um novo `cctk trust`
+     só se o comando mudar.
    - Se existe um `CLAUDE.md` sem `@AGENTS.md`, o Claude Code lê só ele. Proponha mover o conteúdo
      útil para o AGENTS.md e deixar no CLAUDE.md só `@AGENTS.md`. Nada é apagado sem um "ok".
 
@@ -50,14 +54,14 @@ Monte o comando com [stacks.md](references/stacks.md). Ele precisa:
 Rode o comando uma vez e cronometre. Se passar de 2 minutos, grave a versão rápida (só build e typecheck,
 como em stacks.md) e avise o usuário, em vez de perguntar. Se falhar no estado atual do repositório, mostre a saída e pergunte se deve
 gravar mesmo assim (o Claude vai ficar preso tentando consertar algo que já estava quebrado).
-Grave em `.claude/toolkit.json`:
+Grave em `.claude/cctk.json`:
 
 ```json
 { "check": "<comando>" }
 ```
 
 O hook só roda um check que o usuário aprovou, porque o comando vem do repositório. Diga a ele para aprovar
-num terminal, na raiz do projeto: `npx github:AlfredoNeeto/claude-toolkit trust`. Não tente aprovar você
+num terminal, na raiz do projeto: `cctk trust`. Não tente aprovar você
 mesmo: o comando é bloqueado dentro do Claude Code.
 
 ## 5. Escrever AGENTS.md e CLAUDE.md
@@ -75,12 +79,12 @@ O OpenSpec (1) e o time (6) são **sempre** feitos. Os outros itens, só quando 
 1. **OpenSpec (sempre):** se não houver `openspec/`, rode
    `openspec init --tools claude --scope project --language pt-BR --no-animation .`
    Se o comando `openspec` não existir, não pule: diga ao usuário para rodar o `install` do kit de novo
-   (`npx github:AlfredoNeeto/claude-toolkit install`) e depois o `/toolkit-dev:init-project`.
+   (`cctk install`) e depois o `/cctk:init-project`.
 2. **Azure DevOps:** se o remote for de um servidor Azure DevOps, escreva no AGENTS.md:
    "Este repo está na collection `<Collection>`, projeto `<Projeto>`: use o MCP `ado-<collection>`."
    O nome segue a regra do instalador: a collection em minúsculas, com tudo que não é letra ou número
    trocado por `-`. Confira em `/mcp` se ele existe. Se não existir, diga ao usuário para rodar
-   `npx github:AlfredoNeeto/claude-toolkit ado add <url-da-collection>` num terminal.
+   `cctk ado add <url-da-collection>` num terminal.
 3. **Banco somente leitura** (se detectou banco): ofereça o DBHub e só faça depois de um "sim".
    - Crie `dbhub.toml` a partir de [dbhub.example.toml](references/dbhub.example.toml). O usuário
      preenche o DSN; não peça a senha na conversa.
@@ -102,8 +106,8 @@ O OpenSpec (1) e o time (6) são **sempre** feitos. Os outros itens, só quando 
    ```json
    {
      "model": "sonnet",
-     "extraKnownMarketplaces": { "claude-toolkit": { "source": { "source": "github", "repo": "AlfredoNeeto/claude-toolkit", "ref": "v1.1.2" } } },
-     "enabledPlugins": { "toolkit-dev@claude-toolkit": true }
+     "extraKnownMarketplaces": { "cctk": { "source": { "source": "github", "repo": "AlfredoNeeto/cctk", "ref": "v1.2.0" } } },
+     "enabledPlugins": { "cctk@cctk": true }
    }
    ```
    Assim, quem clonar o repositório recebe a sugestão de instalar o toolkit e trabalha em Sonnet, que no
@@ -117,9 +121,9 @@ Proponha só o que falta ou está desatualizado, mostre como diff resumido e apl
 
 ## 8. Verificar antes de entregar
 
-1. O check do `.claude/toolkit.json` rodou e o resultado foi mostrado.
+1. O check do `.claude/cctk.json` rodou e o resultado foi mostrado.
 2. `openspec/` e `.claude/skills/openspec-propose/` existem, e o `.claude/settings.json` do projeto tem o
-   `model` e o `toolkit-dev@claude-toolkit`. Se algo faltar, volte à seção 6.
+   `model` e o `cctk@cctk`. Se algo faltar, volte à seção 6.
 3. Não sobrou placeholder: `grep -nE '<[^>]+>' AGENTS.md` não deve achar nada além dos padrões de
    commit e branch (`<tipo>`, `<resumo>`, `<id>`, `<slug>`).
 4. Conte as linhas do AGENTS.md.

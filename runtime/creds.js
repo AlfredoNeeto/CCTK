@@ -5,8 +5,9 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
+// Internal id in Keychain/libsecret, kept from the old name so existing PATs still resolve.
 const SERVICE = 'claude-toolkit';
-const credDir = () => path.join(os.homedir(), '.claude-toolkit', 'creds');
+const credDir = () => path.join(os.homedir(), '.cctk', 'creds');
 const dpapiFile = (name) => path.join(credDir(), `${name}.dpapi`);
 // Without PSModulePath: one inherited from PowerShell 7 makes Windows PowerShell 5.1 fail to load ConvertTo-SecureString.
 const ps = (script, { env = process.env, ...opts } = {}) => {

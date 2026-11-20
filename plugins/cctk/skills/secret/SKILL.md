@@ -9,9 +9,9 @@ disable-model-invocation: true
 Os valores **nunca** passam por esta conversa. Quem grava é você, num terminal fora do Claude Code:
 
 ```
-npx github:AlfredoNeeto/claude-toolkit secret set NOME     # pede o valor sem mostrar na tela
-npx github:AlfredoNeeto/claude-toolkit secret list         # só os nomes
-npx github:AlfredoNeeto/claude-toolkit secret rm NOME
+cctk secret set NOME     # pede o valor sem mostrar na tela
+cctk secret list         # só os nomes
+cctk secret rm NOME
 ```
 
 Depois de gravar, rode `/clear` ou abra uma sessão nova: o cofre é carregado no início da sessão.

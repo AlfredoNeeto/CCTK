@@ -9,7 +9,7 @@ import { spawnSync } from 'node:child_process';
 import * as tk from '../lib/toolkit.mjs';
 import { createRequire } from 'node:module';
 
-const { trust } = createRequire(import.meta.url)('../plugins/toolkit-dev/hooks/trust.js');
+const { trust, readCheck } = createRequire(import.meta.url)('../plugins/cctk/hooks/trust.js');
 
 const BENCH = path.join(tk.REPO_ROOT, 'bench');
 const argv = process.argv.slice(2);
@@ -200,10 +200,10 @@ function explorations(stdout) {
   return n;
 }
 
-// The kit runs a project's check only after `claude-toolkit trust`: approve it in the arm's home, as a user would once.
+// The kit runs a project's check only after `cctk trust`: approve it in the arm's home, as a user would once.
 function approveCheck(dir, home) {
-  let check;
-  try { check = readJson(path.join(dir, '.claude', 'toolkit.json')).check; } catch { return; }
+  const check = readCheck(dir);
+  if (!check) return;
   const saved = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE };
   process.env.HOME = process.env.USERPROFILE = home; // trust.js resolves the list from os.homedir()
   try { trust(dir, check); } finally {

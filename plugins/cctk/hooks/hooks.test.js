@@ -1,4 +1,4 @@
-// node --test plugins/toolkit-dev/hooks
+// node --test plugins/cctk/hooks
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
@@ -18,7 +18,7 @@ function project(check, trusted = true) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-proj-'));
   if (check !== undefined) {
     fs.mkdirSync(path.join(dir, '.claude'));
-    fs.writeFileSync(path.join(dir, '.claude', 'toolkit.json'), JSON.stringify({ check }));
+    fs.writeFileSync(path.join(dir, '.claude', 'cctk.json'), JSON.stringify({ check }));
     if (trusted) trust(dir, check);
   }
   return dir;
@@ -75,7 +75,7 @@ test('check-gate', async (t) => {
     const cwd = project('node -e "setInterval(() => {}, 1000)"');
     run('check-gate.js', ['mark'], { session_id: 's6' }, env);
     const started = Date.now();
-    const r = run('check-gate.js', ['gate'], { session_id: 's6', cwd }, { ...env, TOOLKIT_CHECK_TIMEOUT_MS: '1500' });
+    const r = run('check-gate.js', ['gate'], { session_id: 's6', cwd }, { ...env, CCTK_CHECK_TIMEOUT_MS: '1500' });
     assert.strictEqual(r.status, 0);
     assert.ok(Date.now() - started < 15000, `levou ${Date.now() - started} ms`);
     assert.match(JSON.parse(r.stdout).systemMessage, /interrompido/);
@@ -91,10 +91,10 @@ test('check-gate', async (t) => {
     run('check-gate.js', ['mark'], { session_id: 's7' }, env);
     const r = run('check-gate.js', ['gate'], { session_id: 's7', cwd }, env);
     assert.strictEqual(r.status, 0);
-    assert.match(JSON.parse(r.stdout).systemMessage, /não foi aprovado[\s\S]*claude-toolkit trust/);
+    assert.match(JSON.parse(r.stdout).systemMessage, /não foi aprovado[\s\S]*cctk trust/);
     assert.ok(!fs.existsSync(path.join(data, 'toolkit-dirty-s7')), 'the warning shows once per edit, not on every stop');
 
-    trust(cwd, pass); // approved a different command than the one in toolkit.json
+    trust(cwd, pass); // approved a different command than the one in cctk.json
     run('check-gate.js', ['mark'], { session_id: 's7' }, env);
     assert.strictEqual(run('check-gate.js', ['gate'], { session_id: 's7', cwd }, env).status, 0);
     trust(cwd, fail);
@@ -169,16 +169,16 @@ test('check-gate', async (t) => {
 test('secret-guard', () => {
   const n = ['DB_CONN', 'ADO_PAT_DEFAULTCOLLECTION'];
   for (const cmd of ['echo $DB_CONN', 'echo "${DB_CONN}"', 'Write-Output $env:DB_CONN', '$env:ADO_PAT_DEFAULTCOLLECTION',
-    'printenv', 'env', 'env | grep DB', 'Get-ChildItem env:', 'cat ~/.claude-toolkit/secrets.env', 'printf "%s" $DB_CONN',
+    'printenv', 'env', 'env | grep DB', 'Get-ChildItem env:', 'cat ~/.cctk/secrets.env', 'printf "%s" $DB_CONN',
     'security find-generic-password -s claude-toolkit -a ado-x -w', 'secret-tool lookup service claude-toolkit account ado-x',
     'Get-Content C:/Users/a/creds/ado-x.dpapi | ConvertTo-SecureString',
     "[Environment]::GetEnvironmentVariable('DB_CONN')", "Write-Output [Environment]::GetEnvironmentVariable('DB_CONN')",
     "$x = 1; [Environment]::GetEnvironmentVariable(\"DB_CONN\", 'User')", '[Environment]::GetEnvironmentVariables()',
-    'npx github:AlfredoNeeto/claude-toolkit trust', 'npx -y github:AlfredoNeeto/claude-toolkit#v1.1.0 trust']) {
+    'cctk trust', 'npx -y cctk@latest trust', 'cat ~/.claude-toolkit/secrets.env', 'npx -y github:AlfredoNeeto/claude-toolkit#v1.1.0 trust']) {
     assert.ok(verdict(cmd, n), `should block: ${cmd}`);
   }
   for (const cmd of ['curl -H "Authorization: Bearer $DB_CONN" https://x', 'sqlcmd -S "$DB_CONN" -Q "select 1"',
-    'echo ok', 'dotnet test', 'env FOO=1 npm test', 'git status', 'npx github:AlfredoNeeto/claude-toolkit stats',
+    'echo ok', 'dotnet test', 'env FOO=1 npm test', 'git status', 'cctk stats',
     // checks the variable without showing it: the 5 blocks measured in bench/ were this, each costing a turn
     "$t = [Environment]::GetEnvironmentVariable('DB_CONN'); \"definida: $([bool]$t) (tamanho: $($t.Length))\"",
     "[Environment]::GetEnvironmentVariable('PATH')"]) {
@@ -188,8 +188,8 @@ test('secret-guard', () => {
 
 test('secret-guard via node -e like hooks.json', () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-home-'));
-  fs.mkdirSync(path.join(home, '.claude-toolkit'));
-  fs.writeFileSync(path.join(home, '.claude-toolkit', 'secrets.env'), 'API_KEY=abc\n');
+  fs.mkdirSync(path.join(home, '.cctk'));
+  fs.writeFileSync(path.join(home, '.cctk', 'secrets.env'), 'API_KEY=abc\n');
   const r = spawnSync(process.execPath, ['-e', `require(${JSON.stringify(path.join(__dirname, 'secret-guard.js'))})`], {
     input: JSON.stringify({ tool_input: { command: 'echo $API_KEY' } }), encoding: 'utf8',
     env: { ...process.env, HOME: home, USERPROFILE: home },
@@ -199,8 +199,8 @@ test('secret-guard via node -e like hooks.json', () => {
 
 test('secrets: writes plain NAME=value lines and only names to context', () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-home-'));
-  fs.mkdirSync(path.join(home, '.claude-toolkit'));
-  fs.writeFileSync(path.join(home, '.claude-toolkit', 'secrets.env'), 'API_KEY=abc123\nDB_CONN=Server=x;Pwd=y z\n');
+  fs.mkdirSync(path.join(home, '.cctk'));
+  fs.writeFileSync(path.join(home, '.cctk', 'secrets.env'), 'API_KEY=abc123\nDB_CONN=Server=x;Pwd=y z\n');
   const envFile = path.join(home, 'envfile');
   const r = run('secrets.js', [], {}, { HOME: home, USERPROFILE: home, CLAUDE_ENV_FILE: envFile });
   const lines = fs.readFileSync(envFile, 'utf8').trim().split('\n');

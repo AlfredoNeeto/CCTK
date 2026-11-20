@@ -1,10 +1,10 @@
 {
-  "name": "claude-toolkit",
-  "version": "1.1.2",
-  "description": "Claude Toolkit Dev: instala e configura o Claude Code para qualidade e economia no plano Pro.",
+  "name": "cctk",
+  "version": "1.2.0",
+  "description": "Claude Code Toolkit: instala e configura o Claude Code para qualidade e economia no plano Pro.",
   "license": "MIT",
   "bin": {
-    "claude-toolkit": "cli.mjs"
+    "cctk": "cli.mjs"
   },
   "files": [
     "cli.mjs",
@@ -16,11 +16,11 @@
     "node": ">=22.20"
   },
   "scripts": {
-    "test": "node --test test/toolkit.test.mjs test/e2e.test.mjs plugins/toolkit-dev/hooks/hooks.test.js",
+    "test": "node --test test/toolkit.test.mjs test/e2e.test.mjs plugins/cctk/hooks/hooks.test.js",
     "bench": "node bench/run.mjs"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AlfredoNeeto/claude-toolkit.git"
+    "url": "git+https://github.com/AlfredoNeeto/cctk.git"
   }
 }

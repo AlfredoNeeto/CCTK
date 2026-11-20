@@ -64,7 +64,7 @@ test('backup → clean → writeConfig → restore round trip', () => {
   assert.strictEqual(read(path.join(p.claude, 'skills/minha/SKILL.md')), 'skill');
   assert.deepStrictEqual(JSON.parse(read(p.claudeJson)).mcpServers, { context7: { url: 'x' } });
   assert.deepStrictEqual(r2.calls, [
-    'claude plugin uninstall toolkit-dev@claude-toolkit',
+    'claude plugin uninstall cctk@cctk',
     'claude plugin uninstall security-guidance@claude-plugins-official',
     'claude plugin marketplace add DietrichGebert/ponytail',
     'claude plugin install ponytail@ponytail',
@@ -140,7 +140,7 @@ test('stats: dedupes messages, ignores subagents for switches, counts gate catch
   fs.writeFileSync(path.join(proj, 'S2.jsonl'), msg('m3', 'claude-sonnet-5-5', 2, 'S2'));
   // A subagent on haiku inside S2 is not a switch.
   fs.writeFileSync(path.join(proj, 'S1', 'subagents', 'agent-x.jsonl'), msg('m4', 'claude-haiku-5-5', 2, 'S2'));
-  const gate = path.join(p.claude, 'plugins', 'data', 'toolkit-dev-claude-toolkit', 'gate.log');
+  const gate = path.join(p.claude, 'plugins', 'data', 'cctk-cctk', 'gate.log');
   fs.mkdirSync(path.dirname(gate), { recursive: true });
   fs.writeFileSync(gate, [['S1', 'fail', 3], ['S1', 'pass', 2], ['S2', 'fail', 2], ['S2', 'giveup', 1]]
     .map(([session, result, h]) => JSON.stringify({ ts: ts(h), session, result })).join('\n'));
@@ -163,19 +163,18 @@ test('stats: warns when Opus is over 30% of the week', async () => {
 });
 
 test('release: package, plugin and the ref init-project writes share one version', () => {
-  const plugin = JSON.parse(fs.readFileSync(path.join(tk.REPO_ROOT, 'plugins/toolkit-dev/.claude-plugin/plugin.json'), 'utf8'));
+  const plugin = JSON.parse(fs.readFileSync(path.join(tk.REPO_ROOT, 'plugins/cctk/.claude-plugin/plugin.json'), 'utf8'));
   assert.strictEqual(plugin.version, tk.VERSION);
-  const skill = fs.readFileSync(path.join(tk.REPO_ROOT, 'plugins/toolkit-dev/skills/init-project/SKILL.md'), 'utf8');
+  const skill = fs.readFileSync(path.join(tk.REPO_ROOT, 'plugins/cctk/skills/init-project/SKILL.md'), 'utf8');
   assert.ok(skill.includes(`"ref": "v${tk.VERSION}"`), 'init-project must pin the team marketplace to this version');
-  if (!process.env.TOOLKIT_MARKETPLACE) assert.strictEqual(tk.MARKETPLACE_SOURCE, `AlfredoNeeto/claude-toolkit#v${tk.VERSION}`);
+  if (!process.env.CCTK_MARKETPLACE) assert.strictEqual(tk.MARKETPLACE_SOURCE, `AlfredoNeeto/cctk#v${tk.VERSION}`);
 });
 
-test('release: README and guide commands use this version and their relative links exist', () => {
+test('release: README and guide use the npm package and their relative links exist', () => {
   for (const doc of ['README.md', 'docs/GUIA.md']) {
     const text = fs.readFileSync(path.join(tk.REPO_ROOT, doc), 'utf8');
-    const npx = [...text.matchAll(/npx github:AlfredoNeeto\/claude-toolkit(#v[\d.]+)?/g)];
-    assert.ok(npx.length > 0);
-    for (const [cmd, tag] of npx) assert.strictEqual(tag, `#v${tk.VERSION}`, `${doc}: "${cmd}" must pin #v${tk.VERSION}`);
+    assert.match(text, /npm i -g cctk/, `${doc}: install command`);
+    assert.doesNotMatch(text, /npx github:/, `${doc}: the github: install is gone since 1.2.0`);
     const links = [...text.matchAll(/\]\(((?!https?:|#)[^)#]+)[^)]*\)|\b(?:src|srcset)="((?!https?:)[^"]+)"/g)];
     for (const [, md, html] of links) {
       const link = md || html;

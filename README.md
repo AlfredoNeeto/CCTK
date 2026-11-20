@@ -1,8 +1,10 @@
-# Claude Toolkit Dev
+# Claude Code Toolkit (cctk)
 
 Faz o plano Pro do Claude Code render mais, sem perder qualidade e sem vazar segredo.
 
-![versão](https://img.shields.io/badge/vers%C3%A3o-1.1.2-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-kit-D97757)
+Projeto da comunidade, sem vínculo com a Anthropic. Até a 1.1.2 se chamava Claude Toolkit Dev.
+
+![versão](https://img.shields.io/badge/vers%C3%A3o-1.2.0-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933) ![claude code](https://img.shields.io/badge/Claude%20Code-kit-2F6F8F)
 
 **[Instalar](#instalar)** · **[📖 Guia do dia a dia](docs/GUIA.md)** · [Comandos](#comandos) · [Benchmark](bench/README.md)
 
@@ -33,7 +35,7 @@ API; quanto cada modelo pesa na cota do Pro não é documentado. O que não ajud
 - Você usa o plano **Pro** e a cota acaba antes da semana.
 - Você quer o mesmo jeito de trabalhar (spec, check, segurança) para o time inteiro.
 
-Não é para você se não quer abrir mão dos seus plugins, MCPs e skills atuais: a instalação remove tudo,
+Não é para você se não quer abrir mão dos seus plugins, MCPs e skills atuais: a primeira instalação remove tudo,
 com backup.
 
 ## Instalar
@@ -43,23 +45,29 @@ Precisa de [Claude Code](https://code.claude.com) com login feito, [Node 22.20+]
 Code e rode num terminal comum:
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.1.2 install
+npm i -g cctk
+cctk install
 ```
 
+Para ver antes o que muda, sem gravar nada: `cctk install --dry-run`. Para atualizar depois: `cctk update`.
+
 > [!WARNING]
-> A instalação **remove** plugins, MCPs de usuário, skills, agents, commands e output styles, para o kit
-> rodar como foi medido. Antes, faz **backup** em `~/.claude-toolkit/backups/`, e o `restore` volta tudo.
-> Histórico, memória e login não são tocados.
+> A primeira instalação **remove** plugins, MCPs de usuário, skills, agents, commands e output styles, para o kit
+> rodar como foi medido. Antes, faz **backup** em `~/.cctk/backups/`, e o `restore` volta tudo.
+> Histórico, memória e login não são tocados. As atualizações não removem nada: só regravam os ajustes do kit.
 
 <details>
 <summary>O que o instalador faz</summary>
 
-1. Confere os pré-requisitos e mostra o que vai remover, pedindo confirmação.
+1. Confere os pré-requisitos (se faltar o uv, oferece instalar) e mostra o que vai remover, pedindo confirmação.
 2. Faz backup e remove plugins, MCPs de usuário, skills, agents, commands e output styles.
 3. Grava a configuração do kit (`~/.claude/settings.json`, `~/.claude/CLAUDE.md` e a statusline).
-4. Instala o OpenSpec, o Playwright CLI, o plugin `toolkit-dev` (na versão da tag que você instalou) e o
-   plugin oficial `security-guidance`.
+4. Instala o OpenSpec, o Playwright CLI, o plugin `cctk` (na mesma versão da CLI) e o plugin oficial
+   `security-guidance`, mostrando cada etapa (`[3/8] …`). Se alguma falhar, diz qual e sai com erro.
 5. Pergunta se você usa Azure DevOps Server. Se não usa, responda `n`.
+
+Numa atualização, os passos 2 e 5 não acontecem: seus plugins, MCPs, permissões e variáveis ficam.
+Para instalar sem perguntas (scripts): `cctk install --yes`.
 
 No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina antes `NODE_EXTRA_CA_CERTS`.
 
@@ -68,17 +76,18 @@ No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina ant
 ## Primeiros passos
 
 1. `cd meu-projeto` e `claude`. A statusline no rodapé deve começar por `Sonnet`.
-2. `/toolkit-dev:init-project`: descobre a stack e cria `AGENTS.md`, `CLAUDE.md`, `openspec/` e o
+2. `/cctk:init-project`: descobre a stack e cria `AGENTS.md`, `CLAUDE.md`, `openspec/` e o
    **check** (o build e teste que o Claude roda antes de encerrar). Commite tudo.
-3. Num terminal, na pasta do projeto, aprove o check: `npx github:AlfredoNeeto/claude-toolkit#v1.1.2 trust`.
+3. Num terminal, na pasta do projeto, aprove o check: `cctk trust`.
    Como o comando vem do repositório, o kit só o roda depois de você aprovar.
 4. Peça uma tarefa pequena. Depois, leia o **[Guia do dia a dia](docs/GUIA.md)**.
 
 ## Comandos
 
-| No terminal (`npx github:AlfredoNeeto/claude-toolkit#v1.1.2 ...`) | Para quê |
+| No terminal (`cctk ...`) | Para quê |
 |---|---|
-| `install` | Instala ou atualiza o kit |
+| `install [--dry-run]` | Instala o kit, ou mostra o que mudaria |
+| `update` | Baixa a versão nova e atualiza, mantendo seus ajustes |
 | `doctor` | Confere a instalação e diz o que fazer em cada falha |
 | `trust` | Aprova o check do projeto (rode na pasta dele) |
 | `restore [data]` | Volta à configuração de antes do kit, ou ao backup de uma data |
@@ -88,10 +97,10 @@ No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina ant
 
 | No Claude Code | Para quê |
 |---|---|
-| `/toolkit-dev:init-project` | Prepara ou atualiza o repositório |
-| `/toolkit-dev:audit <url>` | Diz se uma skill, plugin, MCP ou repo é seguro **antes** de instalar |
-| `/toolkit-dev:convert <arquivo>` | PDF, DOCX, PPTX ou XLSX → Markdown em `docs/` |
-| `/toolkit-dev:secret` | Ajuda do cofre |
+| `/cctk:init-project` | Prepara ou atualiza o repositório |
+| `/cctk:audit <url>` | Diz se uma skill, plugin, MCP ou repo é seguro **antes** de instalar |
+| `/cctk:convert <arquivo>` | PDF, DOCX, PPTX ou XLSX → Markdown em `docs/` |
+| `/cctk:secret` | Ajuda do cofre |
 
 ## O que vem instalado
 
@@ -113,12 +122,12 @@ check e o guarda de segredos não mostraram ganho no benchmark; ficam como prote
 ## Desinstalar
 
 ```
-npx github:AlfredoNeeto/claude-toolkit#v1.1.2 restore           # a configuração de antes do kit
-npx github:AlfredoNeeto/claude-toolkit#v1.1.2 restore <data>    # um específico (lista em ~/.claude-toolkit/backups/)
+cctk restore           # a configuração de antes do kit
+cctk restore <data>    # um específico (lista em ~/.cctk/backups/)
 ```
 
 Devolve sua configuração, seus plugins e MCPs, e tira os plugins do kit. Se quiser, apague à mão a pasta
-`~/.claude-toolkit/` e rode `npm uninstall -g @fission-ai/openspec @playwright/cli`.
+`~/.cctk/` e rode `npm uninstall -g cctk @fission-ai/openspec @playwright/cli`.
 
 ## Privacidade
 
@@ -133,17 +142,18 @@ MCP do Azure DevOps fala só com o seu servidor.
 ```
 npm test                                             # instalador, hooks e ponta a ponta (HOME e binários falsos)
 E2E_REAL=1 npm test                                  # + claude real numa HOME isolada (PowerShell: $env:E2E_REAL=1; npm test)
-TOOLKIT_MARKETPLACE=/caminho/do/clone node cli.mjs install   # instala a partir do clone local
+CCTK_MARKETPLACE=/caminho/do/clone node cli.mjs install   # instala a partir do clone local
 node bench/run.mjs --dry                             # benchmark: veja bench/README.md
 node docs/charts.mjs                                 # regera o gráfico do README
-vhs demo/toolkit.tape                                # regera o GIF: siga os passos no topo do toolkit.tape
+vhs demo/cctk.tape                                # regera o GIF: siga os passos no topo do cctk.tape
 ```
 
 **Para lançar uma versão:**
-1. suba `version` em `package.json` e em `plugins/toolkit-dev/.claude-plugin/plugin.json`, o `"ref"` no
-   `init-project` e as tags `#vX.Y.Z` deste README e do `docs/GUIA.md` (um teste confere tudo);
+1. suba `version` em `package.json` e em `plugins/cctk/.claude-plugin/plugin.json`, o `"ref"` no
+   `init-project` e o badge deste README (um teste confere tudo);
 2. commite;
-3. crie a tag `vX.Y.Z` e faça o push da `main` e da tag.
+3. crie a tag `vX.Y.Z` e faça o push da `main` e da tag (o plugin é instalado dessa tag);
+4. `npm publish` (com 2FA). Confira antes com `npm pack --dry-run`.
 
 </details>
 

@@ -1,6 +1,6 @@
 ---
 name: third-party-auditor
-description: Audita uma skill, plugin, servidor MCP ou projeto open source já clonado em quarentena e devolve um veredito de segurança. Usado pela skill /toolkit-dev:audit.
+description: Audita uma skill, plugin, servidor MCP ou projeto open source já clonado em quarentena e devolve um veredito de segurança. Usado pela skill /cctk:audit.
 tools: Read, Grep, Glob
 model: opus
 effort: high

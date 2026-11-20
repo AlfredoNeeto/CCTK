@@ -1,15 +1,15 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "claude-toolkit",
-  "description": "Claude Toolkit Dev: qualidade e economia no Claude Code para quem usa o plano Pro.",
+  "name": "cctk",
+  "description": "Claude Code Toolkit: qualidade e economia no Claude Code para quem usa o plano Pro.",
   "owner": {
     "name": "Alfredo Neto"
   },
   "plugins": [
     {
-      "name": "toolkit-dev",
+      "name": "cctk",
       "description": "Check obrigatório antes de encerrar, cofre de variáveis, auditoria de terceiros, init de projeto com OpenSpec e conversão de documentos.",
-      "source": "./plugins/toolkit-dev",
+      "source": "./plugins/cctk",
       "category": "productivity"
     }
   ]

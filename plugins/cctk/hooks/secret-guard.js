@@ -5,8 +5,8 @@ const path = require('path');
 const { secretNames } = require(path.join(__dirname, 'vault.js'));
 
 function verdict(cmd, names) {
-  if (/\.claude-toolkit/i.test(cmd)) return 'acessa o cofre de variáveis (~/.claude-toolkit)';
-  if (/claude-toolkit\S*\s+trust\b/i.test(cmd)) return 'aprova o check do projeto, o que só você pode fazer, num terminal';
+  if (/\.(cctk|claude-toolkit)\b/i.test(cmd)) return 'acessa o cofre de variáveis (~/.cctk)';
+  if (/\b(cctk|claude-toolkit)\S*\s+trust\b/i.test(cmd)) return 'aprova o check do projeto, o que só você pode fazer, num terminal';
   if (/find-generic-password|secret-tool\s+lookup|ConvertTo-SecureString|SecureStringToBSTR|\.dpapi\b/i.test(cmd)) return 'lê o cofre de credenciais do sistema';
   if (/(^|[|;&]\s*)(printenv|env|set|export\s+-p|declare\s+-x)\s*($|[|;&>])/m.test(cmd)) return 'lista todas as variáveis de ambiente';
   if (/\b(Get-ChildItem|gci|ls|dir|Get-Item)\s+env:/i.test(cmd)) return 'lista variáveis de ambiente';

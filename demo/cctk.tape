@@ -1,6 +1,6 @@
 # Demo GIF do README: o Claude Code de verdade, com o kit, numa HOME temporária (nunca na real: o install
 # remove plugins). Na raiz do repo, num terminal comum (PowerShell) e com login feito:
-#   vhs demo/toolkit.tape
+#   vhs demo/cctk.tape
 #   ffmpeg -y -i demo/raw.gif -filter_complex "[0]split[a][b];[a]crop=iw:62:0:0[t];[b]crop=iw:ih-318:0:318[c];[t][c]vstack,split[s1][s2];[s1]palettegen[p];[s2][p]paletteuse" demo/toolkit.gif
 #   Remove-Item demo/raw.gif
 # O ffmpeg corta a faixa y 62-318: o cabeçalho do Claude Code (mostra o plano da conta) e os avisos de abertura.
@@ -21,10 +21,10 @@ Set Theme "Catppuccin Mocha"
 
 # Setup escondido: HOME temporária, kit instalado (respostas: continuar = s, Azure DevOps = n).
 Hide
-Type "$h = node demo/home.mjs; $env:HOME = $env:USERPROFILE = $h; (Get-PSProvider FileSystem).Home = $h; $env:TOOLKIT_MARKETPLACE = $PWD; Get-ChildItem Env:CLAUDE* | Remove-Item; $env:IS_DEMO = 1"
+Type "$h = node demo/home.mjs; $env:HOME = $env:USERPROFILE = $h; (Get-PSProvider FileSystem).Home = $h; $env:CCTK_MARKETPLACE = $PWD; Get-ChildItem Env:CLAUDE* | Remove-Item; $env:IS_DEMO = 1"
 Enter
 Wait
-Type "Set-PSReadLineOption -PredictionSource None; function prompt { '> ' }; $tk = Join-Path $PWD cli.mjs; function claude-toolkit { node $tk @args }"
+Type "Set-PSReadLineOption -PredictionSource None; function prompt { '> ' }; $tk = Join-Path $PWD cli.mjs; function cctk { node $tk @args }"
 Enter
 Wait
 Type "'s', 'n' | node $tk install *> $null; cd ~\meu-projeto; Clear-Host"
@@ -56,7 +56,7 @@ Type "Clear-Host; 1..12 | % { '' }"
 Enter
 Wait
 Show
-Type "claude-toolkit stats 7"
+Type "cctk stats 7"
 Enter
 Wait
 Sleep 4s

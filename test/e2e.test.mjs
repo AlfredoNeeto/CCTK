@@ -11,7 +11,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import * as tk from '../lib/toolkit.mjs';
 
 const CLI = path.join(tk.REPO_ROOT, 'cli.mjs');
-const PLUGIN = path.join(tk.REPO_ROOT, 'plugins', 'toolkit-dev');
+const PLUGIN = path.join(tk.REPO_ROOT, 'plugins', 'cctk');
 const win = process.platform === 'win32';
 const read = (f) => fs.readFileSync(f, 'utf8');
 const tmp = (prefix) => fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -36,6 +36,7 @@ fs.writeFileSync(path.join(BIN, 'shim.cjs'), `
 const fs = require('fs');
 const [cmd, ...args] = process.argv.slice(2);
 const rec = { cmd, args };
+if (cmd === 'npm' && args[0] === 'view' && process.env.SHIM_NPM_VIEW) process.stdout.write(process.env.SHIM_NPM_VIEW);
 if (cmd === 'npx') rec.env = { url: process.env.AZURE_DEVOPS_ORG_URL, pat: process.env.AZURE_DEVOPS_PAT, method: process.env.AZURE_DEVOPS_AUTH_METHOD };
 if (process.env.SHIM_LOG) fs.appendFileSync(process.env.SHIM_LOG, JSON.stringify(rec) + '\\n');
 process.exit((process.env.SHIM_FAIL || '').split(',').includes(cmd) ? 1 : 0);
@@ -52,7 +53,7 @@ function env(home, extra = {}, shims = true) {
   for (const [k, v] of Object.entries(process.env)) if (!/^(path|claude.*)$/i.test(k)) e[k] = v;
   e.PATH = [...(shims ? [BIN] : []), path.dirname(process.execPath), process.env.PATH].join(path.delimiter);
   e.HOME = e.USERPROFILE = home;
-  e.TOOLKIT_MARKETPLACE = tk.REPO_ROOT;
+  e.CCTK_MARKETPLACE = tk.REPO_ROOT;
   e.SHIM_LOG = path.join(home, 'shim.log');
   return { ...e, ...extra };
 }
@@ -127,17 +128,17 @@ test('install refuses: inside Claude Code, missing prerequisite, user says no', 
   assert.match(noGit.err, /Falta instalar:[\s\S]*git:/);
   assert.doesNotMatch(noGit.err, /uv:|Claude Code:/);
 
-  // uv is part of the kit (/toolkit-dev:convert): missing it blocks the install like the others
+  // uv is part of the kit (/cctk:convert): missing it blocks the install like the others
   const noUv = await drive(['install'], [], env(home, { SHIM_FAIL: 'uv' }));
   assert.strictEqual(noUv.code, 1);
-  assert.match(noUv.err, /Falta instalar:[\s\S]*uv \(para o \/toolkit-dev:convert\):/);
+  assert.match(noUv.err, /Falta instalar:[\s\S]*uv \(para o \/cctk:convert\):/);
   assert.doesNotMatch(noUv.err, /git:|Claude Code:/);
 
   const no = await drive(['install'], [[/Continuar\?/, 'n']], env(home));
   assert.strictEqual(no.code, 0, no.err);
   assert.match(no.out, /ponytail@ponytail/, 'shows what will be removed');
   assert.strictEqual(read(path.join(home, '.claude', 'settings.json')), before);
-  assert.ok(!fs.existsSync(path.join(home, '.claude-toolkit', 'backups')));
+  assert.ok(!fs.existsSync(path.join(home, '.cctk', 'backups')));
   assert.deepStrictEqual(calls(home), [], 'nothing ran besides the prereq checks');
 });
 
@@ -159,7 +160,7 @@ test('install → ado add → MCP launch → restore, full flow', async () => {
     assert.strictEqual(r.code, 0, r.err);
     assert.strictEqual(r.answered, 5);
     assert.match(r.out, /Backup em/);
-    assert.match(r.out, /OpenSpec e plugin instalados/);
+    assert.match(r.out, /\[1\/8\] Instalando o OpenSpec… ✔[\s\S]*\[8\/8\] Instalando o security-guidance… ✔/);
     assert.match(r.out, /ado-cola configurado/);
     assert.doesNotMatch(r.out + r.err, new RegExp(pat), 'PAT never printed');
 
@@ -175,14 +176,14 @@ test('install → ado add → MCP launch → restore, full flow', async () => {
       `claude plugin install ${tk.SECURITY_PLUGIN}`,
     ]);
 
-    const backups = fs.readdirSync(path.join(home, '.claude-toolkit', 'backups'));
+    const backups = fs.readdirSync(path.join(home, '.cctk', 'backups'));
     assert.strictEqual(backups.length, 1);
     const s = JSON.parse(read(path.join(c, 'settings.json')));
     assert.strictEqual(s.model, 'sonnet');
     assert.strictEqual(s.theme, 'dark');
     assert.strictEqual(s.enabledPlugins, undefined);
     assert.ok(!fs.existsSync(path.join(c, 'skills')));
-    for (const f of ['statusline.js', 'ado-mcp.js', 'creds.js']) assert.ok(fs.existsSync(path.join(c, 'toolkit', f)), f);
+    for (const f of ['statusline.js', 'ado-mcp.js', 'creds.js']) assert.ok(fs.existsSync(path.join(c, 'cctk', f)), f);
     assert.strictEqual(read(path.join(c, 'projects/p1/conversa.jsonl')), 'historico');
     assert.strictEqual(read(path.join(c, '.credentials.json')), 'login');
 
@@ -206,7 +207,7 @@ test('install → ado add → MCP launch → restore, full flow', async () => {
     assert.strictEqual(launch({ SHIM_FAIL: 'npx' }).status, 1, 'child exit code is propagated');
 
     const before = calls(home).length;
-    const back = await drive(['restore'], [], e);
+    const back = await drive(['restore'], [[/Voltar à configuração/, 's']], e);
     assert.strictEqual(back.code, 0, back.err);
     assert.match(back.out, new RegExp(`Restaurado o backup ${backups[0]}`));
     assert.strictEqual(read(path.join(c, 'settings.json')), original.settings);
@@ -233,25 +234,93 @@ test('update (install over the kit) keeps ado-* MCPs, and restore still returns 
     const e = env(home);
     const first = await drive(['install'], [[/Continuar\?/, 's'], [/Azure DevOps Server/, 's'], [/URL da collection/, srv.url], [/PAT para/, 'pat-ok'], [/URL da collection/, '']], e);
     assert.strictEqual(first.code, 0, first.err);
-    // The fake claude doesn't write settings: mark both kit plugins enabled, as the real install would.
+    // The fake claude doesn't write settings: mark both kit plugins enabled, as the real install would, and add
+    // what a user changes after installing (proxy, an allow rule, another plugin): an update must keep it.
     const s = JSON.parse(read(path.join(c, 'settings.json')));
-    fs.writeFileSync(path.join(c, 'settings.json'), JSON.stringify({ ...s, enabledPlugins: { [tk.PLUGIN_ID]: true, [tk.SECURITY_PLUGIN]: true } }));
+    fs.writeFileSync(path.join(c, 'settings.json'), JSON.stringify({ ...s, env: { ...s.env, HTTPS_PROXY: 'http://proxy:8080' },
+      permissions: { ...s.permissions, allow: ['Bash(npm test)'] }, enabledPlugins: { [tk.PLUGIN_ID]: true, [tk.SECURITY_PLUGIN]: true, 'meu@plugin': true },
+      extraKnownMarketplaces: { cctk: { source: { source: 'github', repo: 'AlfredoNeeto/cctk', ref: 'v1.0.0' } } } }));
+    fs.writeFileSync(path.join(c, 'CLAUDE.md'), 'minhas regras');
 
     const before = calls(home).length;
-    const update = await drive(['install'], [[/Continuar\?/, 's'], [/Azure DevOps Server/, 'n']], e);
+    const update = await drive(['install'], [[/Continuar\?/, 's']], e);
     assert.strictEqual(update.code, 0, update.err);
-    assert.match(update.out, /Remover plugins \(nenhum\), MCPs de usuário \(nenhum\)/);
+    assert.match(update.out, /atualizar o Claude Code Toolkit/);
+    assert.doesNotMatch(update.out, /Azure DevOps Server/, 'an update does not ask again');
     assert.ok(!calls(home).slice(before).some((x) => x.includes('uninstall')), 'an update uninstalls nothing');
+    assert.ok(calls(home).slice(before).includes(`claude plugin update ${tk.PLUGIN_ID}`), 'install alone leaves the old version');
+    assert.ok(!calls(home).slice(before).some((x) => x.includes('marketplace remove')), 'removing it would delete the plugin data');
+    const kept = JSON.parse(read(path.join(c, 'settings.json')));
+    assert.strictEqual(kept.extraKnownMarketplaces.cctk.source.ref, `v${tk.VERSION}`, 'marketplace add refuses a ref that differs from this entry');
+    assert.strictEqual(kept.env.HTTPS_PROXY, 'http://proxy:8080');
+    assert.strictEqual(kept.env.CLAUDE_CODE_SUBAGENT_MODEL, 'sonnet');
+    assert.deepStrictEqual(kept.permissions.allow, ['Bash(npm test)']);
+    assert.deepStrictEqual(kept.permissions.deny, tk.DENY);
+    assert.strictEqual(kept.enabledPlugins['meu@plugin'], true);
+    assert.strictEqual(read(path.join(c, 'CLAUDE.md')), 'minhas regras');
     assert.deepStrictEqual(Object.keys(JSON.parse(read(path.join(home, '.claude.json'))).mcpServers), ['ado-cola']);
-    assert.strictEqual(fs.readdirSync(path.join(home, '.claude-toolkit', 'backups')).length, 2);
+    assert.strictEqual(fs.readdirSync(path.join(home, '.cctk', 'backups')).length, 2);
 
-    const back = await drive(['restore'], [], e);
+    const back = await drive(['restore'], [[/Voltar à configuração/, 's']], e);
     assert.strictEqual(back.code, 0, back.err);
     assert.strictEqual(read(path.join(c, 'settings.json')), original);
     assert.deepStrictEqual(JSON.parse(read(path.join(home, '.claude.json'))).mcpServers, { context7: { url: 'x' } });
   } finally {
     srv.close();
   }
+});
+
+test('install from the old kit (Claude Toolkit Dev ≤1.1.2) migrates its data, MCPs and plugin', async () => {
+  const home = fakeHome();
+  const c = path.join(home, '.claude');
+  const old = path.join(home, '.claude-toolkit');
+  fs.mkdirSync(path.join(old, 'creds'), { recursive: true });
+  fs.writeFileSync(path.join(old, 'secrets.env'), 'API_KEY=abc\n');
+  fs.writeFileSync(path.join(old, 'trusted-checks.json'), '["k"]\n');
+  fs.writeFileSync(path.join(old, 'creds', 'ado-cola.dpapi'), 'x');
+  fs.mkdirSync(path.join(c, 'toolkit'));
+  fs.writeFileSync(path.join(c, 'settings.json'), JSON.stringify({ model: 'sonnet', statusLine: { type: 'command', command: `node "${c}/toolkit/statusline.js"` },
+    env: { HTTPS_PROXY: 'http://proxy:8080' }, enabledPlugins: { [tk.OLD_PLUGIN_ID]: true, [tk.SECURITY_PLUGIN]: true },
+    extraKnownMarketplaces: { 'claude-toolkit': { source: { source: 'github', repo: 'AlfredoNeeto/claude-toolkit', ref: 'v1.1.2' } } } }));
+  fs.writeFileSync(path.join(home, '.claude.json'), JSON.stringify({ mcpServers: { 'ado-cola': { type: 'stdio', command: 'node', args: [`${c}/toolkit/ado-mcp.js`, 'https://tfs/ColA', 'ado-cola'] } } }));
+
+  const r = await drive(['install'], [[/Continuar\?/, 's']], env(home));
+  assert.strictEqual(r.code, 0, r.err);
+  assert.match(r.out, /atualizar o Claude Code Toolkit/, 'the old kit counts as an install to update');
+  assert.ok(!fs.existsSync(old) && !fs.existsSync(path.join(c, 'toolkit')));
+  assert.strictEqual(read(path.join(home, '.cctk', 'secrets.env')), 'API_KEY=abc\n');
+  assert.strictEqual(read(path.join(home, '.cctk', 'trusted-checks.json')), '["k"]\n');
+  assert.ok(fs.existsSync(path.join(home, '.cctk', 'creds', 'ado-cola.dpapi')));
+  assert.ok(calls(home).includes(`claude plugin uninstall ${tk.OLD_PLUGIN_ID}`));
+  assert.ok(calls(home).includes('claude plugin marketplace remove claude-toolkit'));
+  const s = JSON.parse(read(path.join(c, 'settings.json')));
+  assert.match(s.statusLine.command, /cctk\/statusline\.js/);
+  assert.strictEqual(s.env.HTTPS_PROXY, 'http://proxy:8080');
+  assert.strictEqual(s.enabledPlugins[tk.OLD_PLUGIN_ID], undefined);
+  assert.strictEqual(s.extraKnownMarketplaces['claude-toolkit'], undefined);
+  const ado = JSON.parse(read(path.join(home, '.claude.json'))).mcpServers['ado-cola'];
+  assert.match(ado.args[0], /\.claude\/cctk\/ado-mcp\.js$/);
+  assert.ok(fs.existsSync(ado.args[0]));
+});
+
+test('install --dry-run shows the plan and changes nothing', async () => {
+  const home = fakeHome();
+  const before = read(path.join(home, '.claude', 'settings.json'));
+  const r = await drive(['install', '--dry-run'], [], env(home));
+  assert.strictEqual(r.code, 0, r.err);
+  assert.match(r.out, /ponytail@ponytail[\s\S]*--dry-run: nada foi alterado/);
+  assert.strictEqual(read(path.join(home, '.claude', 'settings.json')), before);
+  assert.ok(!fs.existsSync(path.join(home, '.cctk')));
+  assert.deepStrictEqual(calls(home), []);
+});
+
+test('install --yes runs without questions and skips Azure DevOps', () => {
+  const home = fakeHome();
+  const r = spawnSync(process.execPath, [CLI, 'install', '--yes'], { input: '', encoding: 'utf8', env: env(home) });
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.match(r.stdout, /Continuar\? \[s\/N\] s/);
+  assert.doesNotMatch(r.stdout, /Azure DevOps/);
+  assert.strictEqual(JSON.parse(read(path.join(home, '.claude', 'settings.json'))).model, 'sonnet');
 });
 
 test('install with every answer piped at once (scripted use)', () => {
@@ -263,12 +332,13 @@ test('install with every answer piped at once (scripted use)', () => {
   assert.strictEqual(eof.status, 0, 'EOF counts as "no", without hanging');
 });
 
-test('install keeps going when a tool step fails and reports it', async () => {
+test('install keeps going when a tool step fails, reports it and exits 1', async () => {
   const home = fakeHome();
   const r = await drive(['install'], [[/Continuar\?/, 's'], [/Azure DevOps Server/, 'n']], env(home, { SHIM_FAIL: 'openspec' }));
-  assert.strictEqual(r.code, 0, r.err);
+  assert.strictEqual(r.code, 1, r.err);
   assert.match(r.err, /Etapas que falharam[\s\S]*openspec config set profile custom/);
-  assert.match(r.out, /Pronto/);
+  assert.match(r.out, /\[3\/8\] Configurando o OpenSpec… ✖/);
+  assert.match(r.out, /Terminou com falhas/);
   assert.ok(calls(home).includes(`claude plugin install ${tk.PLUGIN_ID}`));
   assert.strictEqual(JSON.parse(read(path.join(home, '.claude', 'settings.json'))).model, 'sonnet');
 });
@@ -285,7 +355,7 @@ test('ado add with a wrong PAT: declining saves nothing; MCP without PAT explain
     assert.strictEqual(r.code, 0, r.err);
     assert.strictEqual(r.answered, 3);
     assert.deepStrictEqual(Object.keys(JSON.parse(read(path.join(home, '.claude.json'))).mcpServers), ['context7']);
-    assert.ok(!fs.existsSync(path.join(home, '.claude-toolkit', 'creds', 'ado-cola.dpapi')));
+    assert.ok(!fs.existsSync(path.join(home, '.cctk', 'creds', 'ado-cola.dpapi')));
 
     const bad = await drive(['ado', 'add', 'nao-e-url'], [[/URL da collection/, '']], env(home));
     assert.match(bad.out, /URL inválida/);
@@ -303,8 +373,8 @@ test('hooks.json commands run as Claude Code runs them', () => {
   const cmd = (event) => JSON.parse(text).hooks[event][0].hooks[0].command;
 
   const home = tmp('tk-e2e-hooks-');
-  fs.mkdirSync(path.join(home, '.claude-toolkit'));
-  fs.writeFileSync(path.join(home, '.claude-toolkit', 'secrets.env'), 'API_KEY=abc123\n');
+  fs.mkdirSync(path.join(home, '.cctk'));
+  fs.writeFileSync(path.join(home, '.cctk', 'secrets.env'), 'API_KEY=abc123\n');
   const envFile = path.join(home, 'envfile');
   const e = env(home, { CLAUDE_PLUGIN_ROOT: PLUGIN, CLAUDE_PLUGIN_DATA: path.join(home, 'data'), CLAUDE_ENV_FILE: envFile });
   const hook = (event, input) => spawnSync(cmd(event), { shell: true, encoding: 'utf8', env: e, input: JSON.stringify(input) });
@@ -323,7 +393,7 @@ test('hooks.json commands run as Claude Code runs them', () => {
 
   const proj = tmp('tk-e2e-proj-');
   fs.mkdirSync(path.join(proj, '.claude'));
-  fs.writeFileSync(path.join(proj, '.claude', 'toolkit.json'), JSON.stringify({ check: 'node -e "console.log(\'quebrou\');process.exit(1)"' }));
+  fs.writeFileSync(path.join(proj, '.claude', 'cctk.json'), JSON.stringify({ check: 'node -e "console.log(\'quebrou\');process.exit(1)"' }));
   const edit = () => assert.strictEqual(hook('PostToolUse', { session_id: 'h1', tool_name: 'Edit', tool_input: { file_path: path.join(proj, 'a.js') } }).status, 0);
   edit();
   const untrusted = hook('Stop', { session_id: 'h1', cwd: proj });
@@ -358,10 +428,8 @@ test('hooks.json commands run as Claude Code runs them', () => {
 
 test('doctor: lists what is missing, then all green after install, with the newer-version hint', async () => {
   const home = fakeHome();
-  const tags = http.createServer((req, res) => res.end(JSON.stringify([{ name: 'v99.0.0' }, { name: 'v1.0.0' }])));
-  await new Promise((r) => tags.listen(0, '127.0.0.1', r));
-  try {
-    const e = env(home, { TOOLKIT_TAGS_URL: `http://127.0.0.1:${tags.address().port}/` });
+  {
+    const e = env(home, { SHIM_NPM_VIEW: '99.0.0\n' });
     const doctor = () => new Promise((resolve) => {
       const c = spawn(process.execPath, [CLI, 'doctor'], { env: e });
       let out = '';
@@ -370,18 +438,18 @@ test('doctor: lists what is missing, then all green after install, with the newe
     });
     const before = await doctor();
     assert.strictEqual(before.code, 1);
-    assert.match(before.out, /✖ Configuração do kit[\s\S]*→ Rode: npx/);
-    assert.match(before.out, /✖ Plugin toolkit-dev não instalado/);
+    assert.match(before.out, /✖ Configuração do kit[\s\S]*→ Rode: cctk install/);
+    assert.match(before.out, /✖ Plugin cctk não instalado/);
 
     assert.strictEqual(spawnSync(process.execPath, [CLI, 'install'], { input: 's\nn\n', encoding: 'utf8', env: e }).status, 0);
     const plugins = { [tk.PLUGIN_ID]: [{ version: tk.VERSION }], [tk.SECURITY_PLUGIN]: [{ version: '1.0.0' }] };
     fs.writeFileSync(path.join(home, '.claude', 'plugins', 'installed_plugins.json'), JSON.stringify({ version: 2, plugins }));
+    const sp = path.join(home, '.claude', 'settings.json');
+    fs.writeFileSync(sp, JSON.stringify({ ...JSON.parse(read(sp)), enabledPlugins: { [tk.PLUGIN_ID]: true } }));
     const after = await doctor();
     assert.strictEqual(after.code, 0, after.out);
     assert.doesNotMatch(after.out, /✖/);
-    assert.match(after.out, /↑ Versão nova: v99\.0\.0/);
-  } finally {
-    tags.close();
+    assert.match(after.out, /↑ Versão nova: 99\.0\.0\. Rode: cctk update/);
   }
 });
 
@@ -424,7 +492,7 @@ test('plugin and package structure', () => {
   assert.strictEqual(pack.status, 0, pack.stderr);
   const files = JSON.parse(pack.stdout)[0].files.map((f) => f.path.replace(/\\/g, '/'));
   for (const f of ['cli.mjs', 'lib/toolkit.mjs', 'runtime/statusline.js', 'runtime/ado-mcp.js', 'runtime/creds.js',
-    'plugins/toolkit-dev/hooks/hooks.json', 'plugins/toolkit-dev/hooks/vault.js', 'plugins/toolkit-dev/.claude-plugin/plugin.json']) {
+    'plugins/cctk/hooks/hooks.json', 'plugins/cctk/hooks/vault.js', 'plugins/cctk/.claude-plugin/plugin.json']) {
     assert.ok(files.includes(f), `pacote sem ${f}`);
   }
 });
@@ -441,5 +509,5 @@ test('real claude: validate and install the local plugin in an isolated HOME', {
     assert.strictEqual(r.status, 0, `${args.join(' ')}\n${r.stdout}\n${r.stderr}`);
   }
   const list = tk.run('claude', ['plugin', 'list'], opts);
-  assert.match(list.stdout, /toolkit-dev/);
+  assert.match(list.stdout, /cctk/);
 });

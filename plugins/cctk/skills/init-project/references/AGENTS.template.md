@@ -1,5 +1,5 @@
 # AGENTS.md
-<!-- Modelo do Claude Toolkit Dev: /toolkit-dev:init-project preenche este arquivo.
+<!-- Modelo do Claude Code Toolkit: /cctk:init-project preenche este arquivo.
      Claude Code e outras ferramentas leem AGENTS.md; o CLAUDE.md da raiz fica só com @AGENTS.md.
      Mantenha curto (< 200 linhas): tudo aqui entra no contexto em TODA conversa.
      Comentários HTML como este não entram no contexto. -->
@@ -22,7 +22,7 @@
 | Testes | `<comando com saída só das falhas>` |
 | Formatar | `<dotnet format / npx prettier --write / dart format .>` |
 
-O check obrigatório está em `.claude/toolkit.json` e roda sozinho ao fim de cada turno com edição.
+O check obrigatório está em `.claude/cctk.json` e roda sozinho ao fim de cada turno com edição.
 
 ## Como trabalhar aqui
 
