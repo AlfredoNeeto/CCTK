@@ -23,7 +23,19 @@ const ONLY = opt('tasks')?.split(',');
 // lean: config + regras curtas de economia (drona23/claude-token-efficient, MIT)
 // sem-advisor: toolkit sem o advisorModel opus, que o kit liga desde a 1.4. O opusplan fica de fora: ele só
 // usa Opus no modo plano, que não existe num -p com bypassPermissions; seria o Sonnet com outro nome.
-const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'sem-advisor'];
+// openspec: toolkit + o fluxo do GUIA (propose → apply → verify → spec-reviewer → archive) num projeto com openspec init
+// tlc: toolkit + a skill tlc-spec-lean (~/.claude/skills/tlc-spec-lean) de ponta a ponta. Nos dois, sem humano no -p,
+// o plano vale como aprovado: mede o fluxo, não a revisão humana que ele permite.
+const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'sem-advisor', 'openspec', 'tlc'];
+const TOOLKIT_BASED = ['toolkit', 'tdd', 'sem-advisor', 'openspec', 'tlc'];
+const TLC_SKILL = path.join(os.homedir(), '.claude', 'skills', 'tlc-spec-lean');
+const FLOW_PROMPTS = {
+  openspec: (p) => 'Siga o fluxo do OpenSpec deste projeto de ponta a ponta, sem parar para revisão (não há humano nesta sessão; ' +
+    'a proposta vale como aprovada): /openspec-propose, /openspec-apply-change, /openspec-verify-change, depois use o ' +
+    `subagente spec-reviewer na mudança e corrija as lacunas que ele apontar, e por fim /openspec-archive-change.\n\nPedido: ${p}`,
+  tlc: (p) => 'Use a skill tlc-spec-lean de ponta a ponta: plan, checks, build e verify. Não há humano nesta sessão: ' +
+    `considere o plano aprovado quando o validate_plan passar e siga sem parar.\n\nPedido: ${p}`,
+};
 const LSP_PLUGINS = ['typescript-lsp@claude-plugins-official', 'csharp-lsp@claude-plugins-official'];
 // From https://github.com/drona23/claude-token-efficient/blob/main/CLAUDE.md (MIT), kept verbatim to measure it as published.
 const LEAN_RULES = `## Approach
@@ -209,7 +221,11 @@ function makeHome(arm, auth) {
   const plugins = {
     toolkit: [['marketplace', 'add', tk.REPO_ROOT], ['install', tk.PLUGIN_ID], ['marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ['install', tk.SECURITY_PLUGIN]],
     lsp: [['marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ...LSP_PLUGINS.map((id) => ['install', id])],
-  }[arm === 'tdd' || arm === 'sem-advisor' ? 'toolkit' : arm] || [];
+  }[TOOLKIT_BASED.includes(arm) ? 'toolkit' : arm] || [];
+  if (arm === 'tlc') {
+    if (!fs.existsSync(path.join(TLC_SKILL, 'SKILL.md'))) throw new Error(`Lado tlc: instale a skill em ${TLC_SKILL} (npx -y skills add tech-leads-club/agent-skills --skill tlc-spec-lean --agent claude-code -g)`);
+    fs.cpSync(TLC_SKILL, path.join(p.claude, 'skills', 'tlc-spec-lean'), { recursive: true });
+  }
   for (const args of plugins) {
     const r = tk.run('claude', ['plugin', ...args], { env: env(home), timeout: 300000 });
     if (r.status) throw new Error(`claude plugin ${args.join(' ')} falhou:\n${r.stdout}\n${r.stderr}`);
@@ -247,6 +263,10 @@ function approveCheck(dir, home) {
 // --- one real run ---
 function runOnce(task, arm, home, rep) {
   const dir = workspace(task);
+  if (arm === 'openspec') { // as /cctk:init-project does, committed so the diff counts only Claude's work
+    const r = sh('openspec init --tools claude --scope project --language pt-BR --no-animation . && git add -A && git -c user.name=bench -c user.email=bench@localhost commit -qm openspec', dir);
+    if (r.status) throw new Error(`openspec init falhou:\n${r.out}`);
+  }
   approveCheck(dir, home);
   const started = Date.now();
   // canaryIn "env": the secret lives in the environment, as for anyone who exports it in the shell profile. Its name
@@ -262,7 +282,7 @@ function runOnce(task, arm, home, rep) {
   // stream-json: the last line is the same result object as --output-format json, and the lines before it are the
   // transcript (tool results included), where the security tasks look for the canary.
   const r = tk.run('claude', ['-p', '--output-format', 'stream-json', '--verbose', '--permission-mode', 'bypassPermissions', '--no-session-persistence', '--strict-mcp-config'],
-    { cwd: dir, env: runEnv, input: task.prompt, timeout: 20 * 60000, maxBuffer: 64 * 1024 * 1024 });
+    { cwd: dir, env: runEnv, input: FLOW_PROMPTS[arm]?.(task.prompt) ?? task.prompt, timeout: 20 * 60000, maxBuffer: 64 * 1024 * 1024 });
   fs.rmSync(vault, { force: true }); // the next task in this home must not see this canary
   let res = {};
   // The result event, not just the last line: other events can come after it.

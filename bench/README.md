@@ -27,6 +27,11 @@ node bench/run.mjs --report <pasta>[,<pasta>]                # refaz o relatóri
 | `lsp` | `config` + plugins LSP oficiais |
 | `haiku` | `config` com subagentes em Haiku |
 | `sem-advisor` | `toolkit` sem o `advisorModel: "opus"`, que o kit liga desde a 1.4 |
+| `openspec` | `toolkit` + o fluxo do GUIA (propose → apply → verify → `spec-reviewer` → archive) num projeto com `openspec init` |
+| `tlc` | `toolkit` + a skill tlc-spec-lean de ponta a ponta, copiada de `~/.claude/skills/tlc-spec-lean` |
+
+Nos lados `openspec` e `tlc`, o plano vale como aprovado, porque no `-p` ninguém revisa a spec. Eles medem o custo
+do fluxo sem a revisão humana, que é onde a spec mais ajuda.
 
 O `opusplan` não tem lado: ele só usa o Opus no modo plano, que não existe numa execução `-p` com
 `bypassPermissions`.
