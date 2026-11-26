@@ -114,7 +114,7 @@ No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina ant
 | ✅ | Bloqueio de `.env`, `secrets/`, chaves, `~/.ssh` e user-secrets do .NET | O Claude não lê segredos |
 | ⚙️ | Edit/Write só dentro do projeto (e da pasta de repositórios que você indicar), MCPs sem herdar o ambiente, commit com token barrado | Menos estrago de um erro da IA. Comandos de terminal ficam no sandbox nativo no macOS e no Linux (com `bwrap` e `socat` instalados); no Windows não há sandbox |
 | ⏳ | Estilo Concise, sugestões de prompt desligadas | Menos tokens por resposta |
-| ⏳ | OpenSpec 2.1 | Spec antes do código |
+| ⚙️ | OpenSpec 2.1, com a seção **Dimensões** no proposal (o que o pedido não diz) e o subagente `spec-reviewer` | Spec revisada por você antes do código, em feature com regra de negócio |
 | ⏳ | `security-guidance`, Playwright CLI, MCP context7 | Revisão de segurança, conferir a tela, docs atualizadas |
 | ⚙️ | Statusline com modelo, contexto e cota de 5h e 7 dias | Ver a cota antes de acabar |
 | ⚙️ | Check obrigatório (até 3 min, aprovado por você) | O Claude só encerra com build e teste passando |
@@ -122,7 +122,7 @@ No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina ant
 | ⚙️ | MCP Azure DevOps on-prem e DBHub somente leitura | Cards, PRs e banco sem sair do Claude |
 
 ✅ ganho medido no [benchmark](bench/README.md) · ⏳ ainda não medido isolado · ⚙️ funcionalidade (o
-check e o guarda de segredos não mostraram ganho no benchmark; ficam como proteção no uso real)
+check, o guarda de segredos e o fluxo de spec não mostraram ganho no benchmark; ficam pelo uso real)
 
 ## Limitações conhecidas
 
@@ -130,6 +130,10 @@ check e o guarda de segredos não mostraram ganho no benchmark; ficam como prote
   o Opus nenhuma vez. Numa sessão longa e difícil pode consultar mais, e cada consulta conta na cota. Nas
   primeiras semanas, acompanhe o `5h` e o `7d` da statusline. Para desligar, veja o
   [Guia](docs/GUIA.md).
+- **O fluxo de spec custa cerca de 5× uma tarefa feita direto.** No benchmark, sem ninguém revisando a spec, ele
+  acertou 24/24 contra 22/24 do kit sem spec, diferença que pode ser acaso. O tlc-spec-lean, comparado junto,
+  acertou o mesmo por mais. Use o OpenSpec quando houver regra para você revisar; para tarefa pequena, peça direto
+  ([números](bench/README.md#resultados-19112026)).
 - **O kit depende de recursos do Claude Code que mudam entre versões** (hooks, settings, plugins). Se algo
   parar depois de atualizar o Claude Code, rode `cctk doctor`.
 - **No Windows, comandos de terminal não ficam em sandbox.** As travas cobrem leitura de segredos e
