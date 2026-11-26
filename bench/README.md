@@ -145,8 +145,8 @@ estivesse errada?" no `spec-reviewer`. Entraram por argumento: as duas falhas do
 implícita, e a seção Dimensões é o que você lê ao revisar a spec. **O ganho de acerto não foi medido**: o `openspec`
 já acertava 24/24, então não sobrou erro para corrigir. O que foi medido é o custo, com 2 execuções nas 8 tarefas:
 - regras no proposal, nos specs e nas tasks: +23% por execução (soma das medianas), +44% de tokens de saída. Fora;
-- só a seção Dimensões no proposal (a versão no kit): +13%, 14/14 corretas (2 execuções pararam com o token
-  vencendo). Dentro do limite de +15%, mas por pouco, e com variação de ±20% por tarefa em n=2;
+- só a seção Dimensões no proposal (a versão no kit): +12% (+10% por execução), 16/16 corretas. Dentro do limite de
+  +15%, mas por pouco, e com variação de ±20% por tarefa em n=2;
 - a mudança do `spec-reviewer` estava ligada nas duas medições, então o custo dela está somado e não foi separado.
 
 Para medir acerto, faltam tarefas em que o `openspec` sem as dimensões erre.
