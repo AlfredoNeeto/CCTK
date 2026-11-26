@@ -78,6 +78,8 @@ O OpenSpec (1) e o time (7) são **sempre** feitos. Os outros itens, só quando 
 
 1. **OpenSpec (sempre):** se não houver `openspec/`, rode
    `openspec init --tools claude --scope project --language pt-BR --no-animation .`
+   Depois, mesmo que o `openspec/` já existisse, se o `openspec/config.yaml` não tiver uma chave `rules:` sem comentário, acrescente ao fim dele o
+   conteúdo de [openspec-rules.yaml](references/openspec-rules.yaml), sem mudar nada.
    Se o comando `openspec` não existir, não pule: diga ao usuário para rodar o `install` do kit de novo
    (`cctk install`) e depois o `/cctk:init-project`.
 2. **Azure DevOps:** se o remote for de um servidor Azure DevOps, escreva no AGENTS.md:

@@ -120,6 +120,37 @@ Rodadas anteriores: 1.1.0, 46/48 por US$ 3,98; 1.0.2, 46/48 por US$ 4,80. Em tod
     teste discutível (rejeitar nascimento no futuro);
   - descontado esse teste, só encareceu: +45% por execução como regra, +21% como skill.
 
+**Fluxos de spec de ponta a ponta (26/11/2026):** `toolkit` contra `openspec` e `tlc` (tlc-spec-lean), nas 8
+tarefas de edição (`spec-*`, `node-boleto`, `node-csv-import`, `node-race`, `node-conciliacao`), 3 execuções cada:
+
+| | `toolkit` | `openspec` | `tlc` |
+|---|---:|---:|---:|
+| Execuções 100% corretas | 22/24 | 24/24 | 24/24 |
+| Custo por execução | US$ 0,10 | US$ 0,51 (5×) | US$ 0,71 (6,9×) |
+| Custo por acerto | US$ 0,113 | US$ 0,512 (4,5×) | US$ 0,709 (6,3×) |
+| Tokens sem cache por execução | 19 mil | 86 mil | 129 mil |
+
+- as duas falhas do `toolkit` foram regras que o pedido não diz: nascimento no futuro (o teste discutível) e tirar
+  acentos do slug. Fisher p≈0,49 contra cada fluxo: com n=24, pode ser acaso;
+- em `node-race` e `node-conciliacao`, as maiores, os três lados acertaram 3/3;
+- o `tlc` acertou o mesmo que o `openspec` por 38% a mais por acerto e cerca do dobro do tempo;
+- sem humano no `-p`, o plano valeu como aprovado: isto mede o custo do fluxo sem a revisão da spec, que é onde ela
+  mais ajuda;
+- conclusão: os fluxos passam muito do limite do roadmap para virar padrão de toda tarefa. O OpenSpec continua no
+  kit para feature com regra de negócio, onde você revisa a spec; o tlc-spec-lean não entrou.
+
+**Dimensões de regra implícita no OpenSpec (26/11/2026):** do tlc, o kit trouxe a lista de dimensões
+(`openspec-rules.yaml`, que o `init-project` põe no `openspec/config.yaml`) e a pergunta "o teste falharia se a regra
+estivesse errada?" no `spec-reviewer`. Entraram por argumento: as duas falhas do `toolkit` acima foram regra
+implícita, e a seção Dimensões é o que você lê ao revisar a spec. **O ganho de acerto não foi medido**: o `openspec`
+já acertava 24/24, então não sobrou erro para corrigir. O que foi medido é o custo, com 2 execuções nas 8 tarefas:
+- regras no proposal, nos specs e nas tasks: +23% por execução (soma das medianas), +44% de tokens de saída. Fora;
+- só a seção Dimensões no proposal (a versão no kit): +13%, 14/14 corretas (2 execuções pararam com o token
+  vencendo). Dentro do limite de +15%, mas por pouco, e com variação de ±20% por tarefa em n=2;
+- a mudança do `spec-reviewer` estava ligada nas duas medições, então o custo dela está somado e não foi separado.
+
+Para medir acerto, faltam tarefas em que o `openspec` sem as dimensões erre.
+
 **O que mais importa para qualidade:** o erro vem do que o pedido não diz, não da dificuldade da tarefa.
 - Recorrência de agenda e conciliação bancária, com muitas regras combinadas mas todas escritas, deram
   10/10 com o Sonnet medium.

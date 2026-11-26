@@ -23,11 +23,13 @@ const ONLY = opt('tasks')?.split(',');
 // lean: config + regras curtas de economia (drona23/claude-token-efficient, MIT)
 // sem-advisor: toolkit sem o advisorModel opus, que o kit liga desde a 1.4. O opusplan fica de fora: ele só
 // usa Opus no modo plano, que não existe num -p com bypassPermissions; seria o Sonnet com outro nome.
-// openspec: toolkit + o fluxo do GUIA (propose → apply → verify → spec-reviewer → archive) num projeto com openspec init
+// openspec: toolkit + o fluxo do GUIA (propose → apply → verify → spec-reviewer → archive) num projeto preparado como o
+// /cctk:init-project faz (openspec init + as regras de openspec-rules.yaml)
 // tlc: toolkit + a skill tlc-spec-lean (~/.claude/skills/tlc-spec-lean) de ponta a ponta. Nos dois, sem humano no -p,
 // o plano vale como aprovado: mede o fluxo, não a revisão humana que ele permite.
 const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'sem-advisor', 'openspec', 'tlc'];
 const TOOLKIT_BASED = ['toolkit', 'tdd', 'sem-advisor', 'openspec', 'tlc'];
+const OPENSPEC_RULES = path.join(tk.REPO_ROOT, 'plugins', 'cctk', 'skills', 'init-project', 'references', 'openspec-rules.yaml');
 const TLC_SKILL = path.join(os.homedir(), '.claude', 'skills', 'tlc-spec-lean');
 const FLOW_PROMPTS = {
   openspec: (p) => 'Siga o fluxo do OpenSpec deste projeto de ponta a ponta, sem parar para revisão (não há humano nesta sessão; ' +
@@ -264,8 +266,10 @@ function approveCheck(dir, home) {
 function runOnce(task, arm, home, rep) {
   const dir = workspace(task);
   if (arm === 'openspec') { // as /cctk:init-project does, committed so the diff counts only Claude's work
-    const r = sh('openspec init --tools claude --scope project --language pt-BR --no-animation . && git add -A && git -c user.name=bench -c user.email=bench@localhost commit -qm openspec', dir);
+    const r = sh('openspec init --tools claude --scope project --language pt-BR --no-animation .', dir);
     if (r.status) throw new Error(`openspec init falhou:\n${r.out}`);
+    fs.appendFileSync(path.join(dir, 'openspec', 'config.yaml'), fs.readFileSync(OPENSPEC_RULES, 'utf8'));
+    sh('git add -A && git -c user.name=bench -c user.email=bench@localhost commit -qm openspec', dir);
   }
   approveCheck(dir, home);
   const started = Date.now();

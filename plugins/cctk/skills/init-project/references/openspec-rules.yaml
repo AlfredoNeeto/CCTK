@@ -1,0 +1,10 @@
+
+# cctk: o que o pedido não diz é a maior fonte de erro (bench/README.md). As dimensões vêm do tlc-spec-lean
+# (Tech Leads Club, CC-BY-4.0). Só no proposal: regras também nos specs e nas tasks custaram +21% (bench, 26/11/2026).
+rules:
+  proposal:
+    - >-
+      Termine com "## Dimensões", uma linha curta para cada: validação e limites (formatos, entrada inválida,
+      acentos, caixa, espaços), falha parcial, duplicatas, autorização, concorrência, ciclo de vida dos dados,
+      dependência externa, transições de estado, observabilidade. Cada linha aponta o requisito que a cobre ou diz
+      "n/a - <motivo>". Regra que pede decisão de produto vira pergunta em aberto com o padrão que você assumiu.

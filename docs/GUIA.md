@@ -57,10 +57,13 @@ Até uns 3 arquivos. O que mais faz o Claude errar é o que o pedido não diz, e
 
 Use o OpenSpec: a regra fica escrita **antes** do código, e você revisa a regra, não o código.
 
+O fluxo custa cerca de 5× uma tarefa feita direto ([benchmark](../bench/README.md)). Sem a sua revisão no passo
+2, ele quase não acerta mais. Então use quando houver regra para revisar; para tarefa pequena, a seção acima basta.
+
 | # | Onde | O que fazer |
 |---|---|---|
 | 1 | `claude --model opus` | `/openspec-propose <ideia> @docs/requisitos.md` |
-| 2 | você | Leia `openspec/changes/<nome>/` e corrija o que estiver errado. É a etapa mais barata para corrigir |
+| 2 | você | Leia `openspec/changes/<nome>/` e corrija o que estiver errado, começando pela seção **Dimensões** do `proposal.md`: é onde aparece o que o pedido não disse. É a etapa mais barata para corrigir |
 | 3 | `claude` (Sonnet), sessão nova | `/openspec-apply-change` |
 | 4 | mesma sessão | `/openspec-verify-change` e depois "use o spec-reviewer na mudança <nome>" |
 | 5 | mesma sessão | `/openspec-archive-change` e `/clear` |
