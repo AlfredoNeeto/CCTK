@@ -3,7 +3,9 @@
 // answer, runs the .http files with httpyac, and stops the API on every way out.
 // Usage, in .claude/cctk.json (the check-gate replaces ${CLAUDE_PLUGIN_ROOT}):
 //   node "${CLAUDE_PLUGIN_ROOT}/hooks/api-check.js" --start "<command>" --url <health url> [--wait 60] [--files http/*.http] [--limit 150]
-// --limit keeps the whole run under the check-gate's 3 minutes, so this process always gets to stop the API itself.
+// --limit bounds this process; when the whole check runs past the check-gate's 3 minutes, the gate kills the check's
+// process group and the API goes with it (the API is not detached). Known limit: a --start that forks a daemon and
+// exits is not followed.
 const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -31,13 +33,23 @@ function expand(pattern, cwd) {
 
 // The API stays in the check's own process group (no `detached`): when the check-gate kills that group at its time
 // limit, the API goes with it. To stop it ourselves we kill the child and every descendant (shell, npm, the server).
-function descendants(pid) {
+// pid -> ppid pairs from `ps`, or from /proc where there is no ps (slim Linux containers such as node:*-slim).
+function parents() {
   const r = spawnSync('ps', ['-A', '-o', 'pid=,ppid='], { encoding: 'utf8' });
+  if (!r.error && r.status === 0) return (r.stdout || '').split('\n').map((l) => l.trim().split(/\s+/).map(Number));
+  try {
+    return fs.readdirSync('/proc').filter((d) => /^\d+$/.test(d)).map((d) => {
+      try { // /proc/<pid>/stat: "pid (comm) state ppid ..."; comm may hold spaces, so read after the last ")"
+        const stat = fs.readFileSync(`/proc/${d}/stat`, 'utf8');
+        return [Number(d), Number(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[1])];
+      } catch { return []; }
+    });
+  } catch { return []; }
+}
+
+function descendants(pid) {
   const kids = new Map();
-  for (const l of (r.stdout || '').split('\n')) {
-    const [p, pp] = l.trim().split(/\s+/).map(Number);
-    if (p && pp) kids.set(pp, [...(kids.get(pp) || []), p]);
-  }
+  for (const [p, pp] of parents()) if (p && pp) kids.set(pp, [...(kids.get(pp) || []), p]);
   const all = [];
   for (const queue = [pid]; queue.length;) for (const k of kids.get(queue.shift()) || []) { all.push(k); queue.push(k); }
   return all;

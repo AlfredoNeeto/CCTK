@@ -81,6 +81,8 @@ Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C10 " test/api-ch
 
 ## Handoff
 
+- **Round 3 (verificação de 27/11, FAIL só por C10 pendente):** sem `ps` (contêiner enxuto), o `api-check` acha os descendentes pelo `/proc` (F8); o AC 4 e o cabeçalho do `api-check.js` dizem o que o código faz (o check-gate mata o grupo com SIGKILL; a API fica no grupo). Limite conhecido, registrado no código: um `--start` que vira daemon e sai não é seguido (F9). O caminho do `/proc` não roda neste Windows
+
 - **Round 2 (verificação de 27/11, FAIL por C10 pendente e F1):** a API não usa mais grupo de processos próprio (no Linux e no macOS ela ficava órfã quando o check-gate mata o grupo do check no limite); a limpeza do `api-check` derruba os descendentes pelo `ps`; o corretor roda com prazo e é derrubado com a árvore (C12); servidor já respondendo na URL reprova antes de subir (C11); o lado `sem-http` recria o histórico do git, para o contrato apagado não ficar em `HEAD~1`; a mensagem de espera mostra o tempo que valeu. O ramo POSIX do C4 continua sem rodar aqui (só há Windows)
 
 - **Settled mid-build:** o `api-check.js` passa `--env dev` ao httpyac quando existe `http/http-client.env.json`, para o `{{baseUrl}}` resolver (provado com o httpyac de verdade); o C6 mata o mutante "check-gate sem a troca" (saída 2 contra 0 esperado)

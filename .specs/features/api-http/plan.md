@@ -53,7 +53,7 @@ None - nothing consumed outside (o script é chamado pelo check; contrato em Lan
 1. WHEN o `api-check.js` roda THEN ele SHALL subir a API com `--start`, esperar `--url` responder qualquer status HTTP por até `--wait` segundos (padrão 60), rodar o httpyac nos `--files` e sair com 0 se o httpyac sair com 0
 2. IF a API não responder dentro de `--wait` THEN o `api-check.js` SHALL derrubar o processo e sair com 1, imprimindo as últimas 20 linhas da saída da API
 3. IF o httpyac sair com código ≠ 0 THEN o `api-check.js` SHALL sair com 1 e imprimir a saída do httpyac
-4. The `api-check.js` SHALL derrubar a árvore de processos da API em toda saída, inclusive quando recebe SIGTERM do check-gate
+4. The `api-check.js` SHALL derrubar a árvore de processos da API em toda saída, e a API SHALL ficar no grupo de processos do check, para cair junto quando o check-gate mata a árvore no limite de 3 minutos
 5. IF não houver arquivo que bata com `--files` THEN o `api-check.js` SHALL sair com 0 e avisar que não há teste HTTP
 
 ### S2: o init-project cria os testes (P1)
