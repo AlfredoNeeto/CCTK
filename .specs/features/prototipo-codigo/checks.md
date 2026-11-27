@@ -74,6 +74,8 @@ Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C9 " test/prototi
 
 ## Handoff
 
+- **Rodada real (27/11):** C9 provado em `bench/results/2026-11-27-proto-react-6reps` (junção de `2026-11-27T18-41-36-178Z` e `2026-11-27T18-54-05-969Z`): `toolkit` 6/6 por US$ 0,264 por acerto, `proto-codigo` 6/6 por US$ 0,221 (−16%). A primeira rodada sozinha (3 por lado) deu −14%; o usuário pediu mais 3 por lado antes de decidir. A etapa fica
+
 - **Depois da rodada 3 (achados baixos N1-N3):** `<dialog class="modal" open>` deixou de contar como aberto nos testes ocultos (o CSS do catálogo ainda o esconde); o C10 testa a proteção de aspas e a de parênteses separadas; vírgula dentro de `:not(...)` não divide mais o seletor. Não passou por nova rodada de verificação: as 3 rodadas acabaram
 
 - **Round 3 (verificação de 27/11, FAIL só por C9 pendente):** o escopo acha o fim do `@import` fora de aspas e parênteses (o endereço do Google Fonts tem `;`) e escopa blocos `@layer`/`@container`; o modal dos testes ocultos também conta como aberto por `style.display` e `<dialog open>` (5 variantes conferidas: 4 jeitos válidos passam 7/7, o modal que nunca abre falha); C1 cobre o alvo `test` do Angular

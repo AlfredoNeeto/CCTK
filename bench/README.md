@@ -222,6 +222,21 @@ já acertava 24/24, então não sobrou erro para corrigir. O que foi medido é o
 
 Para medir acerto, faltam tarefas em que o `openspec` sem as dimensões erre.
 
+**Protótipo ao código e testes HTTP (27/11/2026):** as duas peças novas, cada uma contra o kit sem ela. O custo
+inclui a revisão do `security-guidance`, que o bench passou a medir pelo log do plugin.
+
+| Rodada | Lados | Execuções corretas | Custo por acerto | Decisão |
+|---|---|---:|---:|---|
+| `proto-react`, 6 por lado | `toolkit` × `proto-codigo` (a etapa "Levar ao código") | 6/6 e 6/6 | US$ 0,264 × 0,221 (−16%) | entrou: mesmo acerto, 15% ou mais barato |
+| `api-contrato`, 3 por lado | `toolkit` (testes HTTP no check) × `sem-http` | 3/3 e 3/3 | US$ 0,148 × 0,152 | fica como trava, como o check |
+
+- no protótipo, a primeira rodada (3 por lado) deu −14%, abaixo da regra; com mais 3 por lado, −16%. Com n=6 e as duas
+  tarefas saturadas, a diferença ainda tem margem de ruído;
+- nos testes HTTP, a armadilha da tarefa (o `Map.get` que devolve `undefined` e troca o 404 por 200) não pegou o lado
+  sem os testes: o ganho de acerto não foi medido. O que ficou medido é que eles não encarecem a sessão. Ficam como
+  trava, pelo uso real, como o check e o guarda de segredos;
+- o `security-guidance` custou ~US$ 0,023 por execução nessas tarefas (revisão no Opus), cerca de 10% do total.
+
 **O que mais importa para qualidade:** o erro vem do que o pedido não diz, não da dificuldade da tarefa.
 - Recorrência de agenda e conciliação bancária, com muitas regras combinadas mas todas escritas, deram
   10/10 com o Sonnet medium.

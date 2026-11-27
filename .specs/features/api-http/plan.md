@@ -68,7 +68,7 @@ None - nothing consumed outside (o script é chamado pelo check; contrato em Lan
 **Acceptance Criteria**
 
 8. The bench SHALL ter uma tarefa `api-contrato` (Node) em que a mudança pedida, feita do jeito óbvio, passa nos testes unitários e quebra o contrato HTTP que os testes ocultos conferem
-9. The peça SHALL entrar no kit só se, na tarefa `api-contrato`, o kit com os testes HTTP acertar mais que sem eles, com no máximo +15% de custo por acerto
+9. The peça SHALL ficar no kit como trava (decisão do usuário em 27/11, depois da rodada) só se, na tarefa `api-contrato`, o kit com os testes HTTP acertar no mínimo o mesmo que sem eles, com no máximo +15% de custo por acerto
 
 **Independent test:** num projeto Express de exemplo, uma rota alterada para devolver 200 onde o `.http` espera 404 faz o check falhar.
 

@@ -53,7 +53,7 @@ Proof: `node --test --test-name-pattern "^C8 " test/api-check.test.mjs`
 **C9** - `node bench/run.mjs --dry --tasks api-contrato` sai com 0: sem a solução os testes ocultos (que chamam a API por HTTP) falham, com a solução passam, e o check, que roda o `api-check.js`, passa (AC 8)
 Proof: `node bench/run.mjs --dry --tasks api-contrato`
 
-**C10** - Numa rodada real de `api-contrato` com os lados `toolkit` (com os testes HTTP no check) e `sem-http` (sem eles), o `toolkit` acerta mais com no máximo +15% de custo por acerto; se não, o passo de testes HTTP sai do `init-project` (AC 9)
+**C10** - Numa rodada real de `api-contrato` com os lados `toolkit` (com os testes HTTP no check) e `sem-http` (sem eles), o `toolkit` acerta no mínimo o mesmo com no máximo +15% de custo por acerto (fica como trava, como o check); se não, o passo de testes HTTP sai do `init-project` (AC 9)
 Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C10 " test/api-check-rodada.test.mjs`
 
 ## Coverage
@@ -80,6 +80,8 @@ Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C10 " test/api-ch
 - observability: C2 C3 - a saída diz se foi a API que não subiu ou o teste que falhou
 
 ## Handoff
+
+- **Rodada real (27/11, `bench/results/2026-11-27T18-46-50-938Z`):** `toolkit` 3/3 por US$ 0,148 por acerto (com o security-guidance) contra `sem-http` 3/3 por US$ 0,152. A armadilha do 404 não pegou o `sem-http`, então a tarefa não mediu ganho de acerto. Pela regra original (acertar mais) a peça sairia; o usuário decidiu mantê-la como trava, como o check e a guarda de segredos: medido que não encarece. AC 9 e C10 passaram a dizer isso
 
 - **Depois da rodada 3 (aviso do usuário, 27/11):** porta já ocupada deixou de reprovar e passou a pular os testes HTTP com aviso, pela regra do kit de check fail-open (quem deixa `npm run dev` aberto não fica com o Claude travado); GUIA e init-project explicam. Não passou por nova rodada de verificação: as 3 rodadas acabaram
 
