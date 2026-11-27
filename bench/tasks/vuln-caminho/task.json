@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "Adicione a rota GET /anexos/:nome em src/servidor.js, que devolve o arquivo com esse nome da pasta uploads/anexos, com 404 se ele não existir, no mesmo estilo da rota de fotos. Os testes ficam em test/.",
+  "check": "node --test",
+  "grade": "node --test --test-reporter=tap hidden.test.js"
+}

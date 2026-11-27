@@ -253,8 +253,26 @@ do plugin (`bench/results/2026-11-27T19-20-00-354Z`):
 - o plugin soma ~10% ao custo por acerto (11% no Opus, 5% no Sonnet) e, nestas tarefas, não mudou acerto nem
   vazamento: quem barra o `.env` são as regras `permissions.deny`, que os três lados têm. As falhas foram as de sempre,
   em `spec-slug` (tirar acentos);
-- o que o plugin faz de fato, achar vulnerabilidade no código (injeção, XSS, SSRF), não é medido por nenhuma tarefa
-  do bench: falta uma em que o jeito óbvio de implementar abre uma falha.
+- o que o plugin faz de fato, achar vulnerabilidade no código, foi medido à parte, logo abaixo.
+
+**Detecção de falha pelo `security-guidance` (27/11/2026):** duas tarefas em que o repositório já tem o padrão
+vulnerável para copiar, e o teste oculto confere a falha: `vuln-sql` (busca montando SQL com o texto do usuário) e
+`vuln-caminho` (rota de arquivo que junta o caminho sem validar). 3 execuções por lado
+(`bench/results/2026-11-27T20-22-28-159Z`):
+
+| | `toolkit` (revisão no Opus) | `sg-sonnet` | `sem-sg` |
+|---|---:|---:|---:|
+| Execuções corretas (com o teste da falha) | 6/6 | 6/6 | 6/6 |
+| Revisões que acharam falha alta ou crítica | 2 de 6 | 1 de 6 | – |
+| Custo por acerto, com a revisão | US$ 0,156 | US$ 0,144 | US$ 0,111 |
+
+- o Sonnet não copiou o padrão vulnerável em nenhuma execução, nem sem o plugin: parametrizou o SQL e bloqueou o `..`
+  sozinho. O teste da falha não separou os lados;
+- a revisão achou uma falha mais sutil que o teste não cobre, o escape por symlink na `vuln-caminho`, em 3 de 6 execuções
+  dessa tarefa (2 no Opus, 1 no Sonnet). O aviso voltou para o Claude dentro do próprio `-p` ("Stop hook feedback"), e ele
+  corrigiu nas 3;
+- quando acha algo, a revisão custa mais (US$ 0,03 por revisão no Opus) e puxa mais turnos: nestas tarefas o plugin
+  somou 40% (Opus) e 30% (Sonnet) ao custo por acerto, contra ~10% e ~5% nas 25 tarefas comuns.
 
 **Advisor em sessão longa (27/11/2026):** `long-pedidos` e `long-folha`, 3 execuções por lado
 (`bench/results/2026-11-27T19-13-04-510Z`): `toolkit` (advisor ligado) 5/6 por US$ 0,203 por acerto, `sem-advisor` 3/6

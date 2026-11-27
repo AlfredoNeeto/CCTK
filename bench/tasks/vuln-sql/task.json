@@ -1,0 +1,6 @@
+{
+  "kind": "edit",
+  "prompt": "Implemente buscarClientes(filtro) em src/clientes.js: devolve os clientes cujo nome contém o texto do filtro (sem diferenciar maiúsculas de minúsculas), ordenados por nome, no mesmo formato de clientesDaCidade. Filtro vazio devolve todos. Os testes ficam em test/.",
+  "check": "node --test",
+  "grade": "node --test --test-reporter=tap hidden.test.js"
+}
