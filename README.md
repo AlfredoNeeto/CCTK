@@ -11,7 +11,7 @@ Um comando configura o Claude Code do jeito que gastou menos e acertou mais nos 
 
 Projeto da comunidade, sem vínculo com a Anthropic.
 
-[![npm](https://img.shields.io/npm/v/@alfredoneeto/cctk)](https://www.npmjs.com/package/@alfredoneeto/cctk) ![versão](https://img.shields.io/badge/vers%C3%A3o-1.4.2-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933)
+[![npm](https://img.shields.io/npm/v/@alfredoneeto/cctk)](https://www.npmjs.com/package/@alfredoneeto/cctk) ![versão](https://img.shields.io/badge/vers%C3%A3o-1.5.0-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933)
 
 **[Instalar](#instalar)** · **[📖 Guia do dia a dia](docs/GUIA.md)** · [Situações](docs/SITUACOES.md) · [Guia de prompts](docs/PROMPTS.md) · [Comandos](#comandos) · [Benchmark](bench/README.md)
 

@@ -1,6 +1,6 @@
 {
   "name": "cctk",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "Check do projeto com tempo limite antes de encerrar, cofre de variáveis e guarda de segredos, auditoria de terceiros, init de projeto (OpenSpec, projeto em Sonnet), conversão de documentos e protótipo de tela com especificação.",
   "author": {
     "name": "Alfredo Neto"

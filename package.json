@@ -1,6 +1,6 @@
 {
   "name": "@alfredoneeto/cctk",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "Claude Code Toolkit: instala e configura o Claude Code para qualidade e economia no plano Pro.",
   "license": "MIT",
   "bin": {
