@@ -99,7 +99,7 @@ test('C4 the API is down after a pass, after a fail, and after the check-gate ki
   assert.ok(await waitPort(port, false), 'API left running after the tree was killed');
 });
 
-test('C11 something already answering at --url: fails, says so, and never starts this API', async () => {
+test('C11 something already answering at --url: skips the HTTP tests without failing, says so, never starts this API', async () => {
   const port = await freePort();
   const dir = project(port);
   // Its own process: run() blocks this one (spawnSync), so a server here could not answer.
@@ -108,9 +108,10 @@ test('C11 something already answering at --url: fails, says so, and never starts
   try {
     fs.writeFileSync(path.join(dir, 'server.js'), "require('fs').writeFileSync('subiu.txt', 'sim');\n");
     const r = run(dir, args(port));
-    assert.equal(r.status, 1);
-    assert.match(r.stderr, /já tem um servidor respondendo/);
+    assert.equal(r.status, 0, 'fail-open: a running dev server must not block the check');
+    assert.match(r.stdout, /pulei os testes HTTP: já tem um servidor respondendo/);
     assert.ok(!fs.existsSync(path.join(dir, 'subiu.txt')), 'the API was started anyway');
+    assert.doesNotMatch(r.stdout, /corretor:/, 'the runner tested the other server');
   } finally { intruso.kill(); }
 });
 

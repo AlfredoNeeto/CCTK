@@ -133,7 +133,9 @@ O OpenSpec (1) e o time (7) são **sempre** feitos. Os outros itens, só quando 
      `<check atual> && node "${CLAUDE_PLUGIN_ROOT}/hooks/api-check.js" --start "<comando que sobe a API>" --url <endereço que responde quando ela está no ar>`.
      Rode uma vez: build, testes, a API subindo e os `.http` têm que caber em 2 minutos. O primeiro uso baixa o
      httpyac pelo `npx`.
-   - O check mudou: diga ao usuário para aprovar de novo, num terminal na pasta do projeto, com `cctk trust`.
+   - O check mudou: diga ao usuário para aprovar de novo, num terminal na pasta do projeto, com `cctk trust`. Avise também
+     que, com a API dele rodando na mesma porta, o check pula os testes HTTP (não trava); para rodarem, pare a cópia dele ou
+     use outra porta.
 
 ## 7. Modo atualizar (só o AGENTS.md, quando ele já existe)
 

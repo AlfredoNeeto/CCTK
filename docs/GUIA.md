@@ -199,6 +199,10 @@ comando no terminal (`sed -i`, `cat > arquivo`), num repositório git. Editar s�
 
 - Limite de **3 minutos**. Passou disso (ou ficou preso em modo watch)? O check é interrompido, a sessão segue
   e aparece um aviso. Troque o `check` por algo mais rápido, como só build e typecheck.
+- **Projeto com testes HTTP** (os `http/*.http` que o `init-project` cria quando acha uma API): o check sobe a API,
+  chama as rotas e a derruba. Se a **sua** API já estiver rodando na mesma porta (`npm run dev`, `dotnet watch`), o
+  check não trava: ele pula os testes HTTP e avisa. Para eles rodarem, pare a sua cópia antes de pedir algo ao
+  Claude, ou rode-a em outra porta que não a do check (`.claude/cctk.json`).
 - Se o Claude parar duas vezes sem conseguir consertar, o check desiste, para não entrar em loop.
 
 ## Documentos e ferramentas de terceiros

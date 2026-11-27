@@ -439,10 +439,21 @@ const AVISO_CSS = '/* Gerado por `R codigo` a partir do protótipo aprovado (est
   '   contêiner class="prototipo", então as telas que o app já tem não mudam. Para mudar cor ou fonte, mude o tema.css do protótipo e gere de novo. */\n';
 
 // Cada seletor passa a valer só dentro de `raiz`: `.btn` -> `.prototipo .btn`; `:root`, `html`, `body` -> `.prototipo`;
-// `body.mobile` -> `.prototipo.mobile`. @media e @supports são escopados por dentro; @keyframes e @font-face ficam como estão.
+// `body.mobile` -> `.prototipo.mobile`. @media, @supports, @layer e @container são escopados por dentro; @import sobe para
+// o topo; @keyframes e @font-face ficam como estão.
 // shortcut: cobre CSS sem aninhamento, que é o que estilo.css e tema.css usam; CSS aninhado pediria um parser de verdade.
 export function escopo(css, raiz = '.prototipo') {
-  const sel = (s) => s.split(',').map((x) => {
+  // Commas that separate selectors, not the ones inside :not(.a, .b) or :is(...).
+  const separar = (s) => {
+    const partes = [];
+    let nivel = 0, de = 0;
+    for (let j = 0; j < s.length; j++) {
+      if (s[j] === '(') nivel++; else if (s[j] === ')') nivel--;
+      else if (s[j] === ',' && nivel === 0) { partes.push(s.slice(de, j)); de = j + 1; }
+    }
+    return [...partes, s.slice(de)];
+  };
+  const sel = (s) => separar(s).map((x) => {
     x = x.trim();
     if (x === '*') return `${raiz}, ${raiz} *`;
     if (/^(:root|html|body)$/.test(x)) return raiz;

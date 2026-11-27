@@ -103,11 +103,12 @@ async function main() {
     console.error('api-check: faltou --start "<comando que sobe a API>" ou --url <endereço que responde quando ela está no ar>');
     return 1;
   }
-  // Something already answering there (the developer's own instance, a leftover) would be tested instead of the
-  // fresh API, which then dies on a busy port: stop and say so.
+  // Something already answering there (the developer's own `npm run dev` or `dotnet watch`) would be tested instead
+  // of the fresh API. Fail-open, like every automatic check in the kit: skip the HTTP tests and say why, never block.
   if (await answers(o.url)) {
-    console.error(`api-check: já tem um servidor respondendo em ${o.url}. Pare-o antes, para o check testar a API deste código.`);
-    return 1;
+    console.log(`api-check: pulei os testes HTTP: já tem um servidor respondendo em ${o.url} (a sua API rodando?). ` +
+      'Pare-o, ou rode a sua cópia em outra porta, para o check testar a API deste código.');
+    return 0;
   }
   const deadline = Date.now() + Number(o.limit) * 1000;
   const tail = [];

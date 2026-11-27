@@ -34,7 +34,7 @@ Proof: `node --test --test-name-pattern "^C5 " test/api-check.test.mjs`
 Proof: `node --test --test-name-pattern "^C6 " test/api-check.test.mjs`
 Proof: `node bench/run.mjs --dry --tasks api-contrato` (o check da tarefa usa `${CLAUDE_PLUGIN_ROOT}`)
 
-**C11** - Com outro servidor já respondendo em `--url` antes de subir, o `api-check.js` sai com 1, diz "já tem um servidor respondendo" e não roda o `--start` (AC 2)
+**C11** - Com outro servidor já respondendo em `--url` antes de subir, o `api-check.js` pula os testes HTTP e sai com 0 (fail-open: a API do desenvolvedor rodando não trava o check), diz "pulei os testes HTTP", não roda o `--start` nem o corretor (AC 2)
 Proof: `node --test --test-name-pattern "^C11 " test/api-check.test.mjs`
 
 **C12** - Com um corretor que trava e `--limit 4`, o `api-check.js` sai com 1 em menos de 20 s, diz que o corretor foi interrompido, e a porta da API não aceita mais conexão (AC 3, AC 4)
@@ -60,7 +60,7 @@ Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C10 " test/api-ch
 
 | Set (size) | Member -> proof | Unproven |
 | --- | --- | --- |
-| saídas do api-check (7) | passa C1 · API não sobe C2 · corretor falha C3 · sem arquivos C5 · derrubado no limite C4 · porta já ocupada C11 · corretor travado C12 | - |
+| saídas do api-check (7) | passa C1 · API não sobe C2 · corretor falha C3 · sem arquivos C5 · derrubado no limite C4 · porta já ocupada pula sem reprovar C11 · corretor travado C12 | - |
 | door: httpyac fixado (1) | C1 (prova com o httpyac de verdade) | - |
 | door: contrato do api-check.js (1) | C1 C2 C3 C4 C5 | - |
 
@@ -80,6 +80,8 @@ Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C10 " test/api-ch
 - observability: C2 C3 - a saída diz se foi a API que não subiu ou o teste que falhou
 
 ## Handoff
+
+- **Depois da rodada 3 (aviso do usuário, 27/11):** porta já ocupada deixou de reprovar e passou a pular os testes HTTP com aviso, pela regra do kit de check fail-open (quem deixa `npm run dev` aberto não fica com o Claude travado); GUIA e init-project explicam. Não passou por nova rodada de verificação: as 3 rodadas acabaram
 
 - **Round 3 (verificação de 27/11, FAIL só por C10 pendente):** sem `ps` (contêiner enxuto), o `api-check` acha os descendentes pelo `/proc` (F8); o AC 4 e o cabeçalho do `api-check.js` dizem o que o código faz (o check-gate mata o grupo com SIGKILL; a API fica no grupo). Limite conhecido, registrado no código: um `--start` que vira daemon e sai não é seguido (F9). O caminho do `/proc` não roda neste Windows
 

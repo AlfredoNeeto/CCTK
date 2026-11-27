@@ -74,6 +74,8 @@ Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C9 " test/prototi
 
 ## Handoff
 
+- **Depois da rodada 3 (achados baixos N1-N3):** `<dialog class="modal" open>` deixou de contar como aberto nos testes ocultos (o CSS do catálogo ainda o esconde); o C10 testa a proteção de aspas e a de parênteses separadas; vírgula dentro de `:not(...)` não divide mais o seletor. Não passou por nova rodada de verificação: as 3 rodadas acabaram
+
 - **Round 3 (verificação de 27/11, FAIL só por C9 pendente):** o escopo acha o fim do `@import` fora de aspas e parênteses (o endereço do Google Fonts tem `;`) e escopa blocos `@layer`/`@container`; o modal dos testes ocultos também conta como aberto por `style.display` e `<dialog open>` (5 variantes conferidas: 4 jeitos válidos passam 7/7, o modal que nunca abre falha); C1 cobre o alvo `test` do Angular
 
 - **Round 2 (verificação de 27/11, FAIL só por C9 pendente, com achados):** os testes ocultos do `proto-react` passam a aceitar o modal aberto por `:target` (cópia fiel do protótipo) além do aberto por estado, e normalizam o espaço inquebrável do `toLocaleString`; o escopo sobe `@import` e mantém `@layer` de uma linha; no Flutter, `--fundo` vira `surfaceContainer` (era `surfaceContainerLowest`, papel invertido), com aviso de versão e de registrar a fonte; o Angular também põe o estilo no alvo `test`; os mapas avisam sobre portal e overlay; o cache de dependências só vale com a marca `.ok`

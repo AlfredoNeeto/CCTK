@@ -52,6 +52,11 @@ test('C10 every selector outside @keyframes is scoped to .prototipo', () => {
   assert.match(fontes, /^@import url\('https:\/\/fonts\.googleapis\.com\/css2\?family=Inter:wght@400;600&display=swap'\);$/m, 'whole Google Fonts @import');
   assert.match(fontes, /^\.prototipo\{--cor:#1\}/m, ':root after the Google Fonts @import');
   assert.match(fontes, /@layer tema\{\.prototipo \.btn\{x:1\}/, '@layer block scoped inside');
+  // Each guard of the scanner alone: ";" inside quotes only, and inside an unquoted url(...) only.
+  assert.match(escopo('@import "a;b.css";\n:root{--x:1}\n'), /^@import "a;b\.css";\n\.prototipo\{--x:1\}/, 'quotes guard');
+  assert.match(escopo('@import url(a;b.css);\n:root{--x:1}\n'), /^@import url\(a;b\.css\);\n\.prototipo\{--x:1\}/, 'parentheses guard');
+  // A comma inside :not(...) does not split the selector.
+  assert.match(escopo('.a:not(.b,.c){x:1}'), /^\.prototipo \.a:not\(\.b,\.c\)\{x:1\}/);
   assert.match(css, /\.prototipo \.btn\{/);
   assert.match(css, /^\.prototipo\{\s*--cor:/m, ':root becomes .prototipo');
   assert.match(css, /\.prototipo\.mobile\{color:red\}/, 'body.mobile');
