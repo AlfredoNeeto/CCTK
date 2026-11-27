@@ -39,6 +39,10 @@ export const EXPERIMENTS = [
   ['Teste antes do código', 'por execução', 58, ['0,444', '0,701'], false], // "O que não mostrou ganho"
   ['OpenSpec em toda tarefa', 'por acerto', 353, ['0,113', '0,512'], false], // "Fluxos de spec de ponta a ponta"
   ['tlc-spec-lean em toda tarefa', 'por acerto', 527, ['0,113', '0,709'], false], // "Fluxos de spec de ponta a ponta"
+  ['Protótipo ao código', 'por acerto', -16, ['0,264', '0,221'], true], // "Protótipo ao código e testes HTTP"
+  ['Testes HTTP no check*', 'por acerto', -3, ['0,152', '0,148'], true], // "Protótipo ao código e testes HTTP"
+  ['Revisão de segurança no Sonnet*', 'por acerto', 5, ['0,113', '0,119'], true], // "Custo do security-guidance"
+  ['Revisão de segurança no Opus', 'por acerto', 11, ['0,113', '0,125'], false], // "Custo do security-guidance"
 ];
 // [version, total US$, correct runs, runs] on the same 24 tasks: "Regressão da 1.4.0" (without security-commit-secret,
 // which 1.4.0 added), "Regressão da 1.1.1" and "Rodadas anteriores".
@@ -137,11 +141,11 @@ function experimentos(t) {
   const sign = (v) => (v < 0 ? `−${-v}%` : `+${v}%`);
   const kept = EXPERIMENTS.filter((e) => e[4]).length;
   const out = [
-    ...head(H, `Variação de custo de ${EXPERIMENTS.length} mudanças testadas no benchmark, cada uma contra a sua base: ${kept} entraram no kit (custo menor ou até +10%; a seção Dimensões entrou por argumento, sem ganho de acerto medido), ${EXPERIMENTS.length - kept} ficaram de fora por custar de 2% a 527% a mais sem um ganho de acerto que se sustentasse`, t),
+    ...head(H, `Variação de custo de ${EXPERIMENTS.length} mudanças testadas no benchmark, cada uma contra a sua base: ${kept} entraram no kit (custo menor ou até +10%; a seção Dimensões, os testes HTTP e a revisão de segurança entraram sem ganho de acerto medido, por argumento ou como trava), ${EXPERIMENTS.length - kept} ficaram de fora por custar de 2% a 527% a mais sem um ganho de acerto que se sustentasse`, t),
     `<text x="0" y="22" font-size="18" font-weight="600">O que entrou no kit e o que ficou de fora</text>`,
     `<text x="0" y="44" font-size="13" class="m">Variação de custo de cada mudança testada contra a sua base; a métrica está no rótulo. Entra o que acerta mais com</text>`,
     `<text x="0" y="62" font-size="13" class="m">até +15% de custo por acerto, ou o que acerta o mesmo por menos. OpenSpec e tlc passam da escala.</text>`,
-    `<text x="0" y="80" font-size="13" class="m">* Entrou por argumento (é onde você revisa a regra implícita na spec): o ganho de acerto não foi medido.</text>`,
+    `<text x="0" y="80" font-size="13" class="m">* Entrou sem ganho de acerto medido: por argumento (Dimensões) ou como trava (testes HTTP, revisão de segurança).</text>`,
     `<rect x="0" y="96" width="12" height="12" rx="2" fill="${t.kit}"/><text x="18" y="106.5" font-size="13">Entrou no kit</text>`,
     `<rect x="120" y="96" width="12" height="12" rx="2" fill="${t.muted}"/><text x="138" y="106.5" font-size="13">Ficou de fora</text>`,
   ];

@@ -33,8 +33,8 @@ conferimos o resultado com testes que o Claude não vê. O custo é o preço que
 Anthropic. A Anthropic não publica quanto cada modelo gasta da cota do Pro, então esse número serve para comparar,
 não para prever a sua cota.
 
-A versão 1.4 acertou 49 de 50 execuções e não deixou vazar nenhum segredo nos testes de segurança. Das 12 mudanças
-que testamos no placar para gastar menos ou acertar mais, 3 entraram no kit; o que não ajudou ficou de fora.
+A versão 1.4 acertou 49 de 50 execuções e não deixou vazar nenhum segredo nos testes de segurança. Das 16 mudanças
+que testamos no placar para gastar menos ou acertar mais, 6 entraram no kit; o que não ajudou ficou de fora.
 [Como medimos e todos os números →](bench/README.md)
 
 ## Para quem é

@@ -5,8 +5,10 @@
 - Nas mesmas 8 tarefas, o kit custou 52% menos que o Claude Code de fábrica e acertou quase o mesmo (22 de 24 contra 23 de 24).
 - Da versão 1.0.2 à 1.4.0, nas mesmas 24 tarefas, o kit acertou de 96% a 100% das vezes, por US$ 0,08 a 0,11 cada.
 - Com o kit, nenhum segredo vazou em nenhum teste. De fábrica, o Claude leu o `.env` nas 3 vezes em que pedimos.
-- Das 12 mudanças que testamos para gastar menos ou acertar mais, só 3 entraram no kit; as outras custaram mais sem
+- Das 16 mudanças que testamos para gastar menos ou acertar mais, 6 entraram no kit; as outras custaram mais sem
   acertar mais de um jeito confiável ([resultados](#resultados-19112026)).
+- A revisão de segurança do `security-guidance` roda no Sonnet: custa ~5% a mais por tarefa (no Opus, ~10%) e achou
+  falha que os testes não pegavam.
 - O que mais faz o Claude errar é a regra que o pedido não diz, não a dificuldade da tarefa ([como pedir](../docs/PROMPTS.md)).
 
 ## Como ler os números
@@ -123,7 +125,7 @@ Rodadas anteriores: 1.1.0, 46/48 por US$ 3,98; 1.0.2, 46/48 por US$ 4,80. Em tod
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../docs/img/experimentos-dark.svg">
-  <img alt="Variação de custo de 12 mudanças testadas, cada uma contra a sua base: entraram no kit o effort high em tarefa com muitas regras (−38%), advisor (−34%) e, por argumento, sem ganho de acerto medido, a seção Dimensões (+10%); ficaram de fora os outros 9, de +2% a +527%" src="../docs/img/experimentos-light.svg">
+  <img alt="Variação de custo de 16 mudanças testadas, cada uma contra a sua base: entraram no kit o effort high em tarefa com muitas regras (−38%), o advisor (−34%), o protótipo ao código (−16%) e, sem ganho de acerto medido, os testes HTTP (−3%), a revisão de segurança no Sonnet (+5%) e a seção Dimensões (+10%); ficaram de fora os outros 10, de +2% a +527%" src="../docs/img/experimentos-light.svg">
 </picture>
 
 Como ler: cada barra é uma mudança testada, e o tamanho é quanto ela encareceu (para a direita) ou barateou (para
