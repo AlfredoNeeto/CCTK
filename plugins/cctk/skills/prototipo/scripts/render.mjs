@@ -457,8 +457,17 @@ export function escopo(css, raiz = '.prototipo') {
   };
   const semComentario = css.replace(/\/\*[\s\S]*?\*\//g, '');
   let out = '';
+  const imports = []; // @import só vale no topo do arquivo: vai para lá
   for (let i = 0; i < semComentario.length;) {
     const abre = semComentario.indexOf('{', i);
+    const ponto = semComentario.indexOf(';', i);
+    // At-rule sem bloco (@import, @layer a, b;): copiada inteira até o ";".
+    if (semComentario.slice(i).trimStart().startsWith('@') && ponto >= 0 && (abre < 0 || ponto < abre)) {
+      const regra = semComentario.slice(i, ponto + 1).trim();
+      if (regra.startsWith('@import')) imports.push(regra); else out += `${regra}\n`;
+      i = ponto + 1;
+      continue;
+    }
     if (abre < 0) { out += semComentario.slice(i); break; }
     const cabeca = semComentario.slice(i, abre).trim();
     const f = fim(semComentario, abre);
@@ -467,7 +476,7 @@ export function escopo(css, raiz = '.prototipo') {
     else if (cabeca) out += `${sel(cabeca)}${semComentario.slice(abre, f)}\n`;
     i = f;
   }
-  return out;
+  return imports.length ? `${imports.join('\n')}\n${out}` : out;
 }
 
 function variaveis(css) {
@@ -494,6 +503,8 @@ const temaDart = (v) => {
   const fonte = (v.fonte || '').split(',')[0].trim().replace(/^["']|["']$/g, '');
   const sistema = !fonte || /^(system-ui|-apple-system|sans-serif|serif|monospace|inherit)$/i.test(fonte);
   return `// Gerado por \`R codigo flutter\` a partir do protótipo aprovado (prototipo/tema.css). Gere de novo se o tema mudar.
+// Requer Flutter 3.22 ou mais novo (papéis surfaceContainer do Material 3).${sistema ? '' : `
+// A fonte '${fonte}' precisa estar registrada no pubspec.yaml (flutter: fonts:), senão o Flutter usa a padrão sem avisar.`}
 import 'package:flutter/material.dart';
 
 const double raioPrototipo = ${parseFloat(v.raio) || 8};
@@ -505,7 +516,7 @@ final ThemeData temaPrototipo = ThemeData(
     primary: const ${cor('cor')},
     onPrimary: const ${cor('sobre-cor')},
     surface: const ${cor('superficie')},
-    surfaceContainerLowest: const ${cor('fundo')},
+    surfaceContainer: const ${cor('fundo')}, // o fundo da página, mais escuro que os cartões (surface)
     onSurface: const ${cor('texto')},
     error: const ${cor('erro')},
   ),
@@ -538,8 +549,10 @@ export function codigo(alvo, raiz = '.', origem = path.join(raiz, 'prototipo')) 
     const cfg = JSON.parse(fs.readFileSync(f, 'utf8'));
     let n = 0;
     for (const p of Object.values(cfg.projects || {})) {
-      const styles = p.architect?.build?.options?.styles;
-      if (Array.isArray(styles) && !styles.includes(destino)) { styles.unshift(destino); n++; }
+      for (const alvo of ['build', 'test']) { // os testes de componente também precisam do estilo
+        const styles = p.architect?.[alvo]?.options?.styles;
+        if (Array.isArray(styles) && !styles.includes(destino)) { styles.unshift(destino); n++; }
+      }
     }
     if (n) fs.writeFileSync(f, `${JSON.stringify(cfg, null, 2)}\n`);
     else aviso = `angular.json sem "styles" no build: acrescente "${destino}" à mão`;

@@ -33,9 +33,10 @@ const ONLY = opt('tasks')?.split(',');
 // busca-livre: toolkit + o busca instalado, sem pedir: mede se o Claude delega sozinho
 // sg-sonnet: toolkit com a revisão do security-guidance no Sonnet · sem-sg: toolkit sem o security-guidance
 // (o plugin revisa no Opus por padrão; o custo dele sai do log do plugin, fora do total_cost_usd do -p)
+// sem-http: toolkit num projeto sem os testes HTTP (sem http/ e com o check só de testes unitários, o "semHttp" da tarefa)
 // proto-codigo: toolkit + o prompt pede a etapa "Levar ao código" do /cctk:prototipo (R codigo e o mapa do framework)
-const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre', 'sg-sonnet', 'sem-sg', 'proto-codigo'];
-const TOOLKIT_BASED = ['toolkit', 'tdd', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre', 'sg-sonnet', 'sem-sg', 'proto-codigo'];
+const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre', 'sg-sonnet', 'sem-sg', 'proto-codigo', 'sem-http'];
+const TOOLKIT_BASED = ['toolkit', 'tdd', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre', 'sg-sonnet', 'sem-sg', 'proto-codigo', 'sem-http'];
 const SG_ARMS = TOOLKIT_BASED.filter((a) => a !== 'sem-sg'); // arms with security-guidance installed
 const SG_SONNET = 'claude-sonnet-5-5'; // the plugin calls the API directly with the login, which takes no alias
 const OPENSPEC_RULES = path.join(tk.REPO_ROOT, 'plugins', 'cctk', 'skills', 'init-project', 'references', 'openspec-rules.yaml');
@@ -102,11 +103,14 @@ function linkDeps(task, dir) {
   const repo = path.join(task.dir, 'repo');
   const hash = crypto.createHash('sha256').update(fs.readFileSync(path.join(repo, 'package-lock.json'))).digest('hex').slice(0, 12);
   const cache = path.join(BENCH, '.cache', `deps-${task.id}-${hash}`);
-  if (!fs.existsSync(path.join(cache, 'node_modules'))) {
+  // .ok is written only after npm ci finished: an install cut halfway (a killed run) is redone, never reused.
+  if (!fs.existsSync(path.join(cache, '.ok'))) {
+    fs.rmSync(cache, { recursive: true, force: true });
     fs.mkdirSync(cache, { recursive: true });
     for (const f of ['package.json', 'package-lock.json']) fs.copyFileSync(path.join(repo, f), path.join(cache, f));
     const r = sh('npm ci --no-audit --no-fund', cache);
     if (r.status) { fs.rmSync(cache, { recursive: true, force: true }); throw new Error(`npm ci de ${task.id} falhou:\n${r.out}`); }
+    fs.writeFileSync(path.join(cache, '.ok'), '');
   }
   fs.symlinkSync(path.join(cache, 'node_modules'), path.join(dir, 'node_modules'), 'junction');
 }
@@ -139,6 +143,9 @@ function workspace(task, overlay) {
   }
   return dir;
 }
+
+// A task check may call the plugin by ${CLAUDE_PLUGIN_ROOT}, which the check-gate replaces; the bench does the same.
+const checkCmd = (t) => t.check.split('${CLAUDE_PLUGIN_ROOT}').join(path.join(tk.REPO_ROOT, 'plugins', 'cctk'));
 
 // Every file in the workspace except .git and the .env that holds the canary.
 const files = (dir) => fs.readdirSync(dir, { recursive: true, withFileTypes: true })
@@ -195,7 +202,7 @@ function dry() {
     if (t.repoGit) ws(t); // proves the pinned repo can be fetched and copied
     const before = t.kind === 'question' ? grade(t, null, '') : grade(t, ws(t));
     const sol = t.kind === 'question' ? null : ws(t, path.join(t.dir, 'solution'));
-    const check = sol ? sh(t.check, sol).status === 0 : true;
+    const check = sol ? sh(checkCmd(t), sol).status === 0 : true;
     const after = sol ? grade(t, sol) : grade(t, null, fs.readFileSync(path.join(t.dir, 'solution.txt'), 'utf8'));
     const good = !before.pass && after.pass && check;
     ok &&= good;
@@ -351,6 +358,11 @@ function runOnce(task, arm, home, rep) {
     fs.appendFileSync(path.join(dir, 'openspec', 'config.yaml'), fs.readFileSync(OPENSPEC_RULES, 'utf8'));
     sh('git add -A && git -c user.name=bench -c user.email=bench@localhost commit -qm openspec', dir);
   }
+  if (arm === 'sem-http' && task.semHttp) { // the same project, as it was before the HTTP tests: no http/, unit check only
+    for (const f of task.semHttp.remove) fs.rmSync(path.join(dir, f), { recursive: true, force: true });
+    writeJson(path.join(dir, '.claude', 'cctk.json'), { check: task.semHttp.check });
+    sh('git add -A && git -c user.name=bench -c user.email=bench@localhost commit -qm sem-http', dir);
+  }
   approveCheck(dir, home);
   const started = Date.now();
   // canaryIn "env": the secret lives in the environment, as for anyone who exports it in the shell profile. Its name
@@ -401,7 +413,7 @@ function runOnce(task, arm, home, rep) {
     if (sg.incomplete) run.sgIncomplete = sg.incomplete;
   }
   if (task.kind === 'edit') {
-    run.check = sh(task.check, dir).status === 0;
+    run.check = sh(checkCmd(task), dir).status === 0;
     run.diff = sh('git add -A && git diff --cached --numstat', dir).out.trim().split(/\r?\n/).filter(Boolean)
       .reduce((s, l) => s + (Number(l.split('\t')[0]) || 0) + (Number(l.split('\t')[1]) || 0), 0);
   }
@@ -542,6 +554,8 @@ function report(runs, cota) {
     const spent = runs.reduce((s, r) => s + (r.cost || 0) + (r.sgCost || 0), 0); // errors spent quota too
     const q = quota(cota.before, cota.after, spent);
     lines.push('## Cota do Pro', '', `Custo total da rodada (Claude e security-guidance): US$ ${fmt(spent, 2)}.`, '');
+    const semSg = runs.filter((r) => SG_ARMS.includes(r.arm) && unmeasured(r)).length;
+    if (semSg) lines.push(`> **Atenção:** em ${semSg} execuções o custo do security-guidance não foi medido e entrou como zero; o US$ por 1% abaixo sai mais baixo que o real.`, '');
     for (const [k, label] of [['session', 'Sessão de 5 horas'], ['week', 'Semana (todos os modelos)']]) {
       const w = q[k];
       lines.push(w.invalid

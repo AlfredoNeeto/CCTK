@@ -132,7 +132,7 @@ Passo a passo completo, com o que conferir em cada etapa: [Primeiro uso](docs/GU
 | **Advisor:** nos pontos difíceis, o Sonnet pode pedir uma segunda opinião ao Opus (recurso experimental do Claude Code) | Acertou mais quando o pedido deixava uma regra sem dizer | Sim |
 | Bloqueia a leitura de `.env`, da pasta `secrets/`, de chaves, do `~/.ssh` e dos user-secrets do .NET | O Claude não vê suas senhas | Sim |
 | O Claude só edita arquivos dentro do projeto, não faz commit com senha, e no macOS e no Linux roda os comandos isolado do resto do sistema | Um erro da IA estraga menos | Trava de segurança |
-| **Check:** antes de encerrar, o Claude roda o build e os testes (até 3 min; você aprova o comando uma vez) | Ele só diz "pronto" com o projeto passando | Trava de qualidade |
+| **Check:** antes de encerrar, o Claude roda o build e os testes (até 3 min; você aprova o comando uma vez); em projeto com API, também chama as rotas por HTTP | Ele só diz "pronto" com o projeto passando e o contrato da API inteiro | Trava de qualidade |
 | **OpenSpec:** em feature com regra de negócio, o Claude escreve a especificação antes do código e lista o que o pedido não disse | Você corrige a regra antes de virar código | Custa ~5×; veja abaixo |
 | **Cofre:** guarda tokens de desenvolvimento criptografados; o Claude usa `$NOME` sem ver o valor | Usar uma API de teste sem expor o token | Funcionalidade |
 | Rodapé com o modelo, quanto da conversa está ocupado e quanto da cota de 5 horas e de 7 dias já foi | Ver a cota antes de acabar | Funcionalidade |

@@ -16,13 +16,13 @@ entrada (C9) é conferida sobre uma rodada real, em `test/prototipo-codigo-rodad
 **C1** - Num projeto com `angular.json` (um projeto com `architect.build.options.styles: ["src/styles.css"]`), `codigo('angular')` grava `src/styles/prototipo.css` com as regras de `estilo.css` seguidas das de `tema.css` (a regra de `--cor` do tema vem depois da do estilo), e o `styles` passa a ser `["src/styles/prototipo.css", "src/styles.css"]` (AC 1)
 Proof: `node --test --test-name-pattern "^C1 " test/prototipo-codigo.test.mjs`
 
-**C10** - No CSS gerado, todo seletor fora de `@keyframes` começa por `.prototipo` (`.btn` vira `.prototipo .btn`, `:root` e `body` viram `.prototipo`, `body.mobile` vira `.prototipo.mobile`, e as regras dentro de `@media` também), e `@keyframes pulso` fica como está (AC 10)
+**C10** - No CSS gerado, todo seletor fora de `@keyframes` começa por `.prototipo` (`.btn` vira `.prototipo .btn`, `:root` e `body` viram `.prototipo`, `body.mobile` vira `.prototipo.mobile`, e as regras dentro de `@media` também), `@keyframes pulso` fica como está, um `@import` do tema vai para o topo e `@layer base;` fica, e a regra depois deles continua com escopo (AC 10)
 Proof: `node --test --test-name-pattern "^C10 " test/prototipo-codigo.test.mjs`
 
 **C2** - Num projeto com `package.json` que depende de `react` e tem `src/main.jsx`, `codigo('react')` grava `src/styles/prototipo.css` e devolve um aviso com `import './styles/prototipo.css'` e `src/main.jsx` (AC 2)
 Proof: `node --test --test-name-pattern "^C2 " test/prototipo-codigo.test.mjs`
 
-**C3** - Num projeto com `pubspec.yaml` e um `tema.css` com `--cor:#0a7d4f;--erro:#c00`, `codigo('flutter')` grava `lib/tema/tema_prototipo.dart` com `ThemeData`, `ColorScheme`, `Color(0xFF0A7D4F)` como `primary`, `Color(0xFFCC0000)` como `error`, e as cores de `--superficie`, `--fundo` e `--texto` do `estilo.css` (AC 3)
+**C3** - Num projeto com `pubspec.yaml` e um `tema.css` com `--cor:#0a7d4f;--erro:#c00`, `codigo('flutter')` grava `lib/tema/tema_prototipo.dart` com `ThemeData`, `ColorScheme`, `Color(0xFF0A7D4F)` como `primary`, `Color(0xFFCC0000)` como `error`, as cores de `--superficie` (`surface`), `--fundo` (`surfaceContainer` e `scaffoldBackgroundColor`) e `--texto` (`onSurface`) do `estilo.css`, e o aviso de Flutter 3.22 ou mais novo (AC 3)
 Proof: `node --test --test-name-pattern "^C3 " test/prototipo-codigo.test.mjs`
 
 **C4** - Com o arquivo de destino já existente, `codigo` lança erro com o caminho dele e não muda o arquivo; pela linha de comando, `R codigo react` sai com 1 (AC 4)
@@ -73,6 +73,9 @@ Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C9 " test/prototi
 - observability: C2 - o comando diz a linha a pôr no arquivo de entrada
 
 ## Handoff
+
+- **Round 2 (verificação de 27/11, FAIL só por C9 pendente, com achados):** os testes ocultos do `proto-react` passam a aceitar o modal aberto por `:target` (cópia fiel do protótipo) além do aberto por estado, e normalizam o espaço inquebrável do `toLocaleString`; o escopo sobe `@import` e mantém `@layer` de uma linha; no Flutter, `--fundo` vira `surfaceContainer` (era `surfaceContainerLowest`, papel invertido), com aviso de versão e de registrar a fonte; o Angular também põe o estilo no alvo `test`; os mapas avisam sobre portal e overlay; o cache de dependências só vale com a marca `.ok`
+- **Limite conhecido do C9:** os testes ocultos conferem texto, `id` e navegação, não o visual; o C9 mede o custo de levar as telas ao código com o comportamento certo
 
 - S1-S3 tocam `render.mjs` (18 KB), `SKILL.md` (10 KB), 3 mapas novos (~12 KB), a tarefa `proto-react` (~30 KB sem
   dependências), testes (~8 KB) = ~78 KB / 4 ≈ 20k, abaixo do budget de 150k - one builder

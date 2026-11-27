@@ -41,7 +41,10 @@ test('C1 angular: the scoped prototype CSS goes first in styles, estilo before t
 });
 
 test('C10 every selector outside @keyframes is scoped to .prototipo', () => {
-  const css = escopo(`${ESTILO}\nbody.mobile{color:red}\n`);
+  const css = escopo(`${ESTILO}\nbody.mobile{color:red}\n@import url("fonte.css");\n@layer base;\n:root{--fonte:Inter}\n`);
+  assert.match(css, /^@import url\("fonte\.css"\);\n/, '@import goes to the top');
+  assert.match(css, /^@layer base;$/m, '@layer statement kept');
+  assert.match(css, /^\.prototipo\{--fonte:Inter\}/m, 'a rule after an @import is still scoped');
   assert.match(css, /\.prototipo \.btn\{/);
   assert.match(css, /^\.prototipo\{\s*--cor:/m, ':root becomes .prototipo');
   assert.match(css, /\.prototipo\.mobile\{color:red\}/, 'body.mobile');
@@ -56,7 +59,8 @@ test('C10 every selector outside @keyframes is scoped to .prototipo', () => {
       let n = 0, f = a;
       for (; f < txt.length; f++) if (txt[f] === '{') n++; else if (txt[f] === '}' && --n === 0) break;
       const h = txt.slice(i, a).trim();
-      if (/^@media/.test(h)) walk(txt.slice(a + 1, f)); else if (!h.startsWith('@')) heads.push(h);
+      const head = h.replace(/^(@(import|layer)[^;]*;\s*)+/, ''); // statement at-rules before a rule are not its selector
+      if (/^@media/.test(head)) walk(txt.slice(a + 1, f)); else if (!head.startsWith('@')) heads.push(head);
       i = f + 1;
     }
   };
@@ -78,7 +82,8 @@ test('C3 flutter: a ThemeData from the prototype colors, tema over estilo', () =
   assert.equal(codigo('flutter', dir).arquivo, 'lib/tema/tema_prototipo.dart');
   const dart = fs.readFileSync(path.join(dir, 'lib/tema/tema_prototipo.dart'), 'utf8');
   for (const t of ['ThemeData(', 'ColorScheme.fromSeed(', 'primary: const Color(0xFF0A7D4F)', 'error: const Color(0xFFCC0000)',
-    'surface: const Color(0xFFFFFFFF)', 'const Color(0xFFF4F6F9)', 'onSurface: const Color(0xFF0F172A)']) assert.ok(dart.includes(t), t);
+    'surface: const Color(0xFFFFFFFF)', 'surfaceContainer: const Color(0xFFF4F6F9)', 'scaffoldBackgroundColor: const Color(0xFFF4F6F9)',
+    'onSurface: const Color(0xFF0F172A)', 'Flutter 3.22']) assert.ok(dart.includes(t), t);
   assert.ok(!dart.includes('fontFamily'), 'system font: no fontFamily');
 });
 

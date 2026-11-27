@@ -1,0 +1,31 @@
+# Contrato da API de pedidos (o front depende destes status e campos).
+
+GET {{baseUrl}}/pedidos
+
+?? status == 200
+?? js response.parsedBody.length == 3
+?? js response.parsedBody[0].cliente == Ana
+
+###
+
+GET {{baseUrl}}/pedidos/2
+
+?? status == 200
+?? js response.parsedBody.cliente == Bruno
+
+###
+
+GET {{baseUrl}}/pedidos/99
+
+?? status == 404
+?? js response.parsedBody.erro == pedido 99 não existe
+
+###
+
+POST {{baseUrl}}/pedidos
+content-type: application/json
+
+{ "cliente": "", "total": 10 }
+
+?? status == 400
+?? js response.parsedBody.erro == cliente é obrigatório

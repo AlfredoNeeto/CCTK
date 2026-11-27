@@ -31,5 +31,6 @@ serviço; os rótulos e a ordem dos blocos ficam iguais.
 | Login (`.entrada`, `.cartao-entrada`) | rota própria fora do layout: `<div class="prototipo"><div class="entrada">` | submit chama a autenticação |
 | Mobile (`.mobile`, `.tela`, `.barra-app`, `.nav-inferior`, `.fab`) | só se o app Angular for mobile web: `<div class="prototipo"><div class="mobile">` | links viram `routerLink` |
 
-Projeto com Angular Material: mantenha os componentes do Material onde o time já usa, e mapeie as cores do
+Componente que abre em overlay (o `MatDialog`, o CDK Overlay) fica fora do `.prototipo` e perde o estilo: passe
+`panelClass: 'prototipo'` ou use o modal do catálogo. Projeto com Angular Material: mantenha os componentes do Material onde o time já usa, e mapeie as cores do
 `tema.css` para as variáveis `--mat-sys-*` com `mat.theme-overrides(...)` em vez de usar as classes do protótipo.

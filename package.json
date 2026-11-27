@@ -23,7 +23,7 @@
     "node": ">=22.20"
   },
   "scripts": {
-    "test": "node --test test/toolkit.test.mjs test/e2e.test.mjs test/prototipo.test.mjs test/docs.test.mjs test/bench.test.mjs test/bench-cota.test.mjs test/prototipo-codigo.test.mjs plugins/cctk/hooks/hooks.test.js",
+    "test": "node --test test/toolkit.test.mjs test/e2e.test.mjs test/prototipo.test.mjs test/docs.test.mjs test/bench.test.mjs test/bench-cota.test.mjs test/prototipo-codigo.test.mjs test/api-check.test.mjs plugins/cctk/hooks/hooks.test.js",
     "bench": "node bench/run.mjs"
   },
   "repository": {

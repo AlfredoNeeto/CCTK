@@ -1,0 +1,7 @@
+{
+  "kind": "edit",
+  "prompt": "Duas mudanças na API de pedidos. (1) Em src/pedidos.js, troque o armazenamento de array por um Map indexado pelo id, para buscar por id sem percorrer a lista; a lista continua na ordem de criação. (2) Adicione o cancelamento: cancelar(id) em src/pedidos.js e a rota POST /pedidos/:id/cancelar em src/rotas.js, que responde 200 com o pedido (status 'cancelado'), 409 se ele já estiver cancelado e 404 se não existir, no mesmo formato de erro das outras rotas. Os testes ficam em test/.",
+  "check": "node --test && node \"${CLAUDE_PLUGIN_ROOT}/hooks/api-check.js\" --start \"node src/server.js\" --url http://127.0.0.1:3210/saude",
+  "grade": "node --test --test-reporter=tap hidden.test.js",
+  "semHttp": { "check": "node --test", "remove": ["http"] }
+}

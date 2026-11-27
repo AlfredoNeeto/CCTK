@@ -2,133 +2,120 @@
 
 **Verdict**: PASS
 **Profile**: light
-**Diff range**: 01f24e4..48be490
-**Round**: 1 - full
+**Diff range**: 01f24e4..7360c73 (fix: 48be490..7360c73)
+**Round**: 2 - scoped
 **Verifier**: independent sub-agent (author != verifier)
 
-All 11 checks are proven at 48be490, each with a located assertion. Every proof ran in a detached worktree of
-48be490, never in the main tree. `node --test test/bench-cota.test.mjs` printed C1, C2, C3, C4, C5, C7, C8, C9, C10
-and C11 on separate lines, all passing (10/10). C6 is not a node test: `node bench/run.mjs --dry --tasks
-long-pedidos,long-folha` exited 0 with one `ok` line per task. C1's round proof (`test/bench-cota-rodada.test.mjs`)
-was **not run, because no round exists yet** (it needs `BENCH_ROUND`). C1 is judged on its unit proof alone.
+All 11 checks are proven at 7360c73, verified at 7360c73 in a detached worktree checked out with
+`core.autocrlf=false`. Nothing ran in the main tree. `node --test test/bench-cota.test.mjs` printed C1, C2, C3, C4,
+C5, C7, C8, C9, C10 and C11 on separate lines, all passing (10/10, exit 0). C6 is the `--dry` command:
+`node bench/run.mjs --dry --tasks long-pedidos,long-folha` exited 0 with one `ok` line per task. C1's round proof
+(`test/bench-cota-rodada.test.mjs`) was **still not run, because no round exists yet** (it needs `BENCH_ROUND`). C1
+is judged on its unit proof alone.
 
-The verdict is PASS against the checks as written. Finding 1 still needs a decision from the user: C5 is weaker than
-the AC it lands. AC 5 says the request must *require changing* at least 3 files. C5 only asks that the request
-*name* 3. Each long task's reference solution changes exactly one file.
+Scope of this round: the fix's diff in `48be490..7360c73`, as far as it touches bench-cota. That is `bench/run.mjs`,
+`test/bench-cota.test.mjs`, `bench/tasks/long-*` (`task.json`, `solution/`, `hidden/`) and `checks.md` (C5's claim).
+Round 1 had no non-PASS verdict. The same range also holds the prototipo-codigo feature. I did not judge its checks.
+I did check that its changes to `bench/run.mjs` broke no bench-cota check: the `deps` linking (`linkDeps`),
+`removeWorkspace`, `fs.realpathSync.native` for the workspace and the new `proto-codigo` arm. C2, C3, C8, C9, C10
+and C11 have unchanged claims, tests and covered code (only line numbers moved), so their judgement is carried from
+48be490 with refreshed citations. C1 and C7 sit in code next to the prototipo-codigo edits (`ALL_ARMS`,
+`TOOLKIT_BASED`), so I re-read them. C4, C5 and C6 are re-judged in full.
 
 ## Binding sources
 
-None. The plan marks no source as binding, and step 1 runs only under `ui`.
+None. The plan marks no source as binding, and step 1 runs only under `ui`. Carried from 48be490.
 
 ## Checks
 
 | Check | Claim | Proof run | Evidence | Result |
 | --- | --- | --- | --- | --- |
-| C1 | `sg-sonnet` gets `SECURITY_REVIEW_MODEL`/`SG_AGENTIC_MODEL` = `claude-sonnet-5-5`; `sem-sg` installs `cctk` and no `security-guidance` | `node --test test/bench-cota.test.mjs`, line `✔ C1 ...` exit 0; round proof not run (no round yet) | `test/bench-cota.test.mjs:46` - `assert.deepEqual(s.env, { SECURITY_REVIEW_MODEL: 'claude-sonnet-5-5', SG_AGENTIC_MODEL: 'claude-sonnet-5-5' })`; `:49` - `n.plugins.includes('install cctk@cctk')`; `:50` - `!n.plugins.some((p) => /security-guidance/.test(p))` | PASS |
-| C2 | two `Review usage:` lines give cost 0.0313, both models, reviews 2 | same run, `✔ C2` | `test/bench-cota.test.mjs:61` - `assert.equal(u.cost, 0.0313)`; `:62` - `assert.deepEqual(u.models, ['claude-opus-5-5', 'claude-sonnet-5-5'])`; `:63` - `assert.equal(u.reviews, 2)` | PASS |
-| C3 | 2 `Stop hook: reviewing` + 1 `review=stop` gives incomplete 1; an empty or missing log gives zeros | same run, `✔ C3` | `test/bench-cota.test.mjs:72` - `assert.equal(sgUsage(log).incomplete, 1)`; `:73`/`:74` - `assert.deepEqual(sgUsage(''), { cost: 0, models: [], reviews: 0, incomplete: 0 })` | PASS |
-| C4 | report rows: plugin cost `0,020`, with-plugin `0,120`; a toolkit run without `sgCost` shows `não medido` | same run, `✔ C4` | `test/bench-cota.test.mjs:79` - `cell(md, ..., 'Custo do security-guidance (US$)', 'toolkit') === '0,020'`; `:81` - `'**Custo com o plugin (US$)**' ... '0,120'`; `:84` - `... 'toolkit') === 'não medido'` | PASS |
-| C5 | ≥2 `long-*` tasks, each with ≥6 code files in `repo/` and a request naming ≥3 of them | same run, `✔ C5` | `test/bench-cota.test.mjs:90` - `assert.ok(longs.length >= 2)`; `:95` - `assert.ok(code.length >= 6)`; `:98` - `assert.ok(named.length >= 3)` (see finding 1: weaker than AC 5) | PASS |
-| C6 | `--dry` on the long tasks: hidden tests fail without the solution, pass with it, check passes | `node bench/run.mjs --dry --tasks long-pedidos,long-folha` exit 0: `ok long-folha: sem solução 3/14, com solução 14/14, check passa` / `ok long-pedidos: sem solução 3/11, com solução 11/11, check passa` | `bench/run.mjs:174` - `const good = !before.pass && after.pass && check`; `bench/run.mjs:180` - `process.exit(ok ? 0 : 1)` | PASS |
-| C7 | per-arm Opus consultations: `toolkit` 1 de 2, `sem-advisor` 0 de 2 | same run, `✔ C7` | `test/bench-cota.test.mjs:107` - `assert.match(md, /\*\*toolkit\*\* consultou o Opus em 1 de 2 execuções/)`; `:108` - `/\*\*sem-advisor\*\* consultou o Opus em 0 de 2 execuções/` | PASS |
-| C8 | `parseUsage` of the 27/11 text gives session 45, week 34 and both reset texts | same run, `✔ C8` | `test/bench-cota.test.mjs:113` - `assert.equal(u.session.pct, 45)`; `:114` - `assert.equal(u.week.pct, 34)`; `:115`/`:116` - the two `resets` strings | PASS |
-| C9 | a session reset during the round makes that window invalid; the week is still computed | same run, `✔ C9` | `test/bench-cota.test.mjs:124` - `/Sessão de 5 horas: 40% → 50%, inválida \(a janela reiniciou durante a rodada\)/`; `:125` - `/Semana ... 30% → 33% \(\+3 pontos\): \*\*US\$ 2,00 por 1%\*\*/` | PASS |
-| C10 | US$ 6,00 total (Claude plus plugin) gives `US$ 0,60`/1% session and `US$ 2,00`/1% week | same run, `✔ C10` | `test/bench-cota.test.mjs:130` - `/Custo total da rodada \(Claude e security-guidance\): US\$ 6,00/`; `:131` - `/... \(\+10 pontos\): \*\*US\$ 0,60 por 1%\*\*/`; `:132` - `/\*\*US\$ 2,00 por 1%\*\*/` | PASS |
-| C11 | no percentages returns `null`; `--cota` exits 1 before preparing any arm | same run, `✔ C11`; also reproduced by hand: stderr `--cota: o /usage não devolveu as porcentagens ... Nada foi rodado.`, exit 1, no `bench/results/` folder created | `test/bench-cota.test.mjs:136` - `assert.equal(parseUsage('Current session: 45% used'), null)`; `:141` - `assert.equal(r.status, 1, ...)`; `:143` - `assert.doesNotMatch(r.stdout, /Preparando o lado/)` | PASS |
+| C1 | `sg-sonnet` gets `SECURITY_REVIEW_MODEL`/`SG_AGENTIC_MODEL` = `claude-sonnet-5-5`; `sem-sg` installs `cctk` and no `security-guidance` | `✔ C1` at 7360c73; round proof not run (no round yet) | verified at 7360c73: `test/bench-cota.test.mjs:46` - `assert.deepEqual(s.env, {...'claude-sonnet-5-5'...})`; `:49` - `install cctk@cctk`; `:50` - no `security-guidance`. `proto-codigo` joins `TOOLKIT_BASED` (`bench/run.mjs:38`), so it gets the plugin through `SG_ARMS` (`:39`). That does not touch the two arms C1 covers. | PASS |
+| C2 | two `Review usage:` lines give cost 0.0313, both models, reviews 2 | `✔ C2` | carried from 48be490 (unchanged): `test/bench-cota.test.mjs:61`, `:62`, `:63` | PASS |
+| C3 | 2 `Stop hook: reviewing` + 1 `review=stop` gives incomplete 1; an empty or missing log gives zeros | `✔ C3` | carried from 48be490 (unchanged): `test/bench-cota.test.mjs:72`, `:73`, `:74` | PASS |
+| C4 | plugin cost `0,020`, with-plugin `0,120`; a toolkit run without `sgCost`, or with `sgCost: null`, shows `não medido` | `✔ C4` | verified at 7360c73: `test/bench-cota.test.mjs:78` - `'0,020'`; `:80` - `'0,120'`; `:83` - field missing → `'não medido'`; `:86` - `sgCost: null` → `'não medido'` (new). Producer: `bench/run.mjs:398` sets `sgCost: null` when the log file does not exist; `:400` writes the measured fields only when it does. Consumer: `:489` - `unmeasured` is true when `!('sgCost' in r)` or `r.sgCost === null`, used at `:493` and `:529`. | PASS |
+| C5 | ≥2 `long-*` tasks, each with ≥6 code files in `repo/`, a request naming ≥3 of them, and a reference solution that changes ≥3 of them | `✔ C5` | verified at 7360c73: `test/bench-cota.test.mjs:92` - `longs.length >= 2`; `:97` - `code.length >= 6`; `:101` - `named.length >= 3`; `:104` - `changed.length >= 3` (new). I diffed every `solution/` file against `repo/`. Each one really changes: pedidos changes `src/cupons.js` (new `desconto`), `src/frete.js` (new `freteDoPedido`) and `src/pedidos.js`. Folha changes `TabelaInss.cs` and `TabelaIrrf.cs` (new `Calcular` in each) and `FolhaService.cs`. | PASS |
+| C6 | `--dry` on the long tasks: hidden tests fail without the solution, pass with it, check passes | `node bench/run.mjs --dry --tasks long-pedidos,long-folha` exit 0: `ok long-folha: sem solução NaN/NaN, com solução 16/16, check passa` / `ok long-pedidos: sem solução 0/14, com solução 14/14, check passa` | verified at 7360c73: `bench/run.mjs:200` - `const good = !before.pass && after.pass && check`; `:206` - `process.exit(ok ? 0 : 1)`. Workspaces are now built with `realpathSync.native` (`:123`) and removed with `removeWorkspace` (`:115-119`, `:205`). Both long tasks have no `deps`, so `linkDeps` does not run. | PASS |
+| C7 | per-arm Opus consultations: `toolkit` 1 de 2, `sem-advisor` 0 de 2 | `✔ C7` | verified at 7360c73: `test/bench-cota.test.mjs:113`, `:114`; `bench/run.mjs:472-475` (unchanged logic) | PASS |
+| C8 | `parseUsage` of the 27/11 text gives 45, 34 and both reset texts | `✔ C8` | carried from 48be490 (unchanged): `test/bench-cota.test.mjs:119`, `:120`, `:121`, `:122` | PASS |
+| C9 | a session reset during the round makes that window invalid; the week is still computed | `✔ C9` | carried from 48be490 (unchanged): `test/bench-cota.test.mjs:130`, `:131` | PASS |
+| C10 | US$ 6,00 total gives `US$ 0,60`/1% session and `US$ 2,00`/1% week | `✔ C10` | carried from 48be490 (unchanged): `test/bench-cota.test.mjs:136`, `:137`, `:138` | PASS |
+| C11 | no percentages returns `null`; `--cota` exits 1 before preparing any arm | `✔ C11` | carried from 48be490 (unchanged): `test/bench-cota.test.mjs:142`, `:147`, `:149`. The `cota` setup is still at `bench/run.mjs:594`, before any arm is prepared. | PASS |
 
-Every named test exists: `rg -n "^test\('C[0-9]+ " test/bench-cota.test.mjs` found C1-C5 and C7-C11 at lines
-44, 54, 66, 77, 87, 102, 111, 122, 128 and 135. C6 is the `--dry` command. Every proof resolves to code this diff
-added or changed: `bench/medidas.mjs` (new), `bench/run.mjs` (`armEnv`/`armPlugins`, the `sgRows` and `Cota do
-Pro` report sections, `readUsage`, `--home-plan`) and the two new `bench/tasks/long-*` folders.
+**Discrimination of the hidden tests (re-checked by hand at 7360c73).** In temp copies (repo + solution + hidden),
+I built a naive solution for each task. It does everything the request says and ignores the unstated rules.
+- long-pedidos: no `Math.min` cap in `desconto`, and `baixar` called line by line with no up-front stock check.
+  Result 10/14. The only failures were the 4 `regra implícita` tests (`hidden.test.js:72`, `:81`, `:89`, `:107`).
+- long-folha: IRRF base without subtracting the INSS, and FGTS subtracted from the net pay. Result 14/16. The only
+  failures were `Regra_implicita_irrf_desconta_o_inss_da_base` and `Regra_implicita_fgts_nao_sai_do_liquido`
+  (`HiddenFolhaTests.cs:77`, `:85`).
 
-**Precision gaps in the checks** (all PASS as written):
+## Round-1 findings
 
-- C1: the unit proof asserts what `--home-plan` prints (`armEnv`/`armPlugins`), not the `settings.json` that
-  `makeHome` writes. `makeHome` uses the same `armEnv` (`bench/run.mjs:238-242`), so the gap is small. Only the
-  round proof, not run yet, shows the effect in a real HOME.
-- C5: see finding 1.
-- C6: "sem a solução os testes ocultos falham" holds because `!before.pass` needs only one failing test. With the
-  stub in place, 3/11 and 3/14 already pass (see finding 3).
+1. **C5 weaker than AC 5 (1 file changed, not 3): resolved.** The C5 claim in `checks.md` now asks for a solution
+   that changes ≥3 files, which matches AC 5 ("exige mudar no mínimo 3", `plan.md:78`). `test/bench-cota.test.mjs:102-104`
+   asserts it. Each `task.json` prompt now asks for changes in (a), (b) and (c), naming three files and the functions
+   to create in them. The hidden tests call those functions directly (`hidden.test.js:94`, `:101`;
+   `HiddenFolhaTests.cs:21`, `:29`), so the change is required, not just named. The second half of round-1 finding 1
+   (would the task draw the advisor out?) is still open as a judgement call. See remaining finding 3.
+2. **long-folha IRRF and the simplified deduction: resolved.** The prompt now says "a empresa usa só as deduções
+   legais, sem o desconto simplificado" (`bench/tasks/long-folha/task.json:3`). It also spells out the bracket formula
+   in (b), which rules out the 2026 reduction as well. Ana's 23,83 (`HiddenFolhaTests.cs:79`) is now the only
+   reading the request allows.
+3. **long-pedidos bare `assert.throws` passing on the stub: resolved.** Every `assert.throws` now takes
+   `erroDeVerdade` (`hidden.test.js:12`, used at `:46`, `:66`, `:69`, `:75`, `:84`, `:97`). Without the solution,
+   0/14 pass (it was 3/11).
+4. **`0,000` instead of `não medido` when the plugin log is missing: resolved** (`bench/run.mjs:398-400`, `:489`).
+   See remaining finding 2 for the one place `null` still counts as 0.
+5. **"consultou o Opus" for every arm except `padrao`: not addressed, carried.** Still `bench/run.mjs:472-475`.
+   `proto-codigo` now gets the line too.
+6. **`--cota` safety: (b) resolved.** The final `readUsage` is wrapped in a try (`bench/run.mjs:622`), so the report
+   still comes out. (a) Windows `EBUSY` leaving a temp HOME is unchanged and carried.
+7. **Existing behaviour: nothing broken.** `npm test` 98 tests, 97 passed, 0 failed, 1 skipped. The docs F6/F17
+   `autocrlf` fragility is unchanged. This round was checked out with LF and did not hit it.
+8. **C11 test portability: not addressed, carried.** Now at `test/bench-cota.test.mjs:145`.
 
 ## Gate
 
-- `node --test test/bench-cota.test.mjs`: 10 passed, 0 failed.
-- `node bench/run.mjs --dry --tasks long-pedidos,long-folha`: 2 ok, exit 0.
-- `npm test` (worktree checked out with LF line endings): 90 tests, 89 passed, 0 failed, 1 skipped (`E2E_REAL`).
-  The first run used the machine's `core.autocrlf=true` checkout and failed `docs.test.mjs` F6 and F17 on `\r\n`. That
-  is a line-ending artifact of the checkout and does not come from this diff (finding 7).
-- `--cota` end to end, with a fake `claude` on PATH (no quota spent): `cota.json` was written with both readings, the
-  report gained `## Cota do Pro`, and no `bench-home-*` folder was left in `%TEMP%`.
+- `node --test test/bench-cota.test.mjs`: 10 passed, 0 failed (verified at 7360c73).
+- `node bench/run.mjs --dry --tasks long-pedidos,long-folha`: 2 ok, exit 0 (needs node and dotnet; both present).
+- `npm test` (worktree with `core.autocrlf=false`): 98 tests, 97 passed, 0 failed, 1 skipped (`E2E_REAL`).
+- prototipo-codigo's `bench/run.mjs` changes break no bench-cota proof. All proofs above ran against them.
 
 ## Findings
 
 Ranked, most important first. None of them turns a check red.
 
-1. **C5 is weaker than AC 5. The long tasks require changing 1 file, not 3** - `plan.md` AC 5 vs
-   `test/bench-cota.test.mjs:97-98`. AC 5 (unchanged in this diff) says the request "exige mudar no mínimo 3" of
-   the code files. C5 only checks that the request *names* 3. Each reference solution changes exactly one file:
-   `bench/tasks/long-pedidos/solution/src/pedidos.js` and `bench/tasks/long-folha/solution/src/Folha/FolhaService.cs`.
-   The other files are read, not changed. This also weakens the S2 premise of a "sessão longa e difícil": two
-   single-function tasks of about 30-50 lines may not draw the advisor out any more than the short tasks did. The
-   user should decide whether to amend AC 5 to "nomeia/usa ≥3" or to make the tasks require multi-file changes.
-2. **long-folha's IRRF test can fail an implementation that is more correct for the domain** -
-   `bench/tasks/long-folha/hidden/tests/Folha.Tests/HiddenFolhaTests.cs:63`, `:71`. The IRRF table in
-   `repo/src/Folha/TabelaIrrf.cs` is the May-2025 table, which coexists with the *desconto simplificado* (R$ 607,20).
-   A payroll specialist applies whichever deduction is larger. For Ana (R$ 3.000, INSS 253,41) the simplified
-   discount wins: base 2.392,80, exempt, IRRF 0. The test expects 23,83. A model that knows the 2026 rules (IRRF
-   relief up to R$ 5.000) would also diverge. So the "expert would expect it" premise points in two directions.
-   Pin it by saying in the request that the simplified discount does not apply, or change Ana's salary to a
-   case where legal deductions win. The FGTS rule (`:69-73`) and the INSS-from-base rule for Caio and Davi are
-   unambiguous.
-3. **long-pedidos: 2 of its 3 implicit-rule tests pass against the unimplemented stub** -
-   `bench/tasks/long-pedidos/hidden/hidden.test.js:70`, `:79` (also `:41`). They use bare `assert.throws(...)` with
-   no error matcher, so the stub's `throw new Error('... não foi implementado')` satisfies them, which is the "3/11"
-   in `--dry`. They only discriminate because a run passes only when *all* hidden tests pass. Through that gate they
-   do test the unstated rules: a naive `baixar` loop leaves `CAM-01` at 8 or 1 and fails `:71`/`:80`. Do not read
-   the per-test pass counts as "which rule the model missed". The rules really are unstated: the request
-   (`task.json`) says nothing about all-or-nothing stock, summing repeated SKUs or capping a fixed coupon at the
-   subtotal. The explicit tests could not fail for other reasons that I found. Order of steps, rounding (`percentual`),
-   freight (`frete.js`), the free-freight threshold (`>=`) and the message format are all spelled out. `:86` pins
-   `desconto: 1990`, so a model that rejects an oversized coupon with an error instead of capping it fails. That is
-   defensible, but it is one specific choice.
-4. **Report shows `0,000`, not `não medido`, when an SG arm's plugin log is missing** - `bench/run.mjs:371-373`
-   with `bench/medidas.mjs:7`. `sgUsage('')` records `sgCost: 0`, so the `sgCost` field exists and the cell prints
-   a measured zero. I reproduced it with a fake `claude`: the toolkit row read `0,000`. That makes "the plugin did not
-   run or did not write its log" (an env var not honoured, a failed install) look the same as "the plugin cost
-   nothing". `sgReviews: 0` is kept in `runs.jsonl` but not shown. The Swept row "dependency failure: log ausente
-   vira custo 0" chose this on purpose, but the report label can still mislead. Suggestion: show `não medido` (or
-   `0 revisões`) when `sgReviews === 0` in an SG arm. Other labelling is correct. `–` appears only for arms without
-   the plugin, and only in the plugin-cost row (`:465`). The with-plugin row always aggregates. `não medido` covers
-   a whole cell when *any* run in it lacks `sgCost`, which is conservative and hides measured runs when an old round
-   is merged with a new one. Errored runs are excluded through `cell`/`armRuns` (`:420`).
-5. **The "consultou o Opus" line now prints for every arm except `padrao`** - `bench/run.mjs:443-447`. The old line
-   was toolkit-only and said "(advisor ligado)". Now `config`, `high`, `haiku`, `lean` and the rest also get "consultou
-   o Opus em 0 de N". The wording assumes any Opus in `modelUsage` is an advisor consultation, which is true today
-   because no arm other than `padrao` runs Opus as its main model. A future Opus-main arm would be mislabelled. No
-   consumer parses the old text (`rg "advisor ligado"` finds nothing).
-6. **`--cota` safety (c): no leak found** - `bench/run.mjs:529-536`. `readUsage` builds a `padrao` HOME with the
-   access token copied by `login()` without the refresh token (`:202-204`), runs `claude -p` with the
-   `CLAUDE*`-stripped env (`:184-189`) and removes the HOME in `finally`. I confirmed 0 `bench-home-*` left after both
-   the failure path (C11, by hand) and the success path (fake `claude`). Residual risks, both shared with the
-   existing homes: (a) `fs.rmSync` throws on a Windows `EBUSY` after 3 retries and leaves that temp HOME (access
-   token only) behind; (b) the final `readUsage` runs inside the main `finally` before `report.md` is written
-   (`:592-598`), so if it throws (for example, `makeHome` fails) the round writes no report. `runs.jsonl` is still on
-   disk and `--report` can rebuild it. The per-run `sg/*.log` files sit in `bench/results/` (gitignored), next to the
-   transcripts that already hold the same content.
-7. **Existing behaviour (d): nothing broken** - `npm test` 89/0/1. The `makeHome` refactor gives the same plugins
-   to every old arm (`armPlugins`, `bench/run.mjs:212-219`), and `haiku` keeps its env through `armEnv`. Two notes.
-   Every toolkit-based arm now runs with `SECURITY_GUIDANCE_DEBUG_LOG` set (`:341-344`), so future toolkit rounds are
-   not byte-identical in setup to earlier ones. The plan accepts that, and it should only add logging. Separately,
-   `test/docs.test.mjs` F6/F17 fail on an `autocrlf=true` checkout because their regexes expect `\n`. That is a
-   pre-existing fragility, not caused here.
-8. **C11's test portability** - `test/bench-cota.test.mjs:139`. The test hides `claude` by setting PATH to node's
-   folder. With nvm on Linux or macOS, a global `claude` lives in that same folder, so the test would call a real
-   `claude` with the token `x`. It still exits 1, but over the network. On Windows (`%APPDATA%\npm`) this does not
-   happen.
+1. **long-folha: the hidden tests only compile if the model uses the exact method names, so a near miss scores 0
+   on every test** - `bench/tasks/long-folha/hidden/tests/Folha.Tests/HiddenFolhaTests.cs:23`, `:31`. Without the
+   solution the hidden project does not build, which is the `NaN/NaN` in `--dry`. That still counts as "fails", so C6
+   passes. In a real run, a model that writes `TabelaInss.CalcularInss`, takes a `double`, or puts the method on
+   another class fails the build. It then scores 0 on every hidden test, including the INSS, FGTS and implicit-rule
+   ones it may have right. The prompt names both signatures exactly (`task.json:3`), so the risk is low. But the
+   report's quality row will lump a naming slip in with a wrong payroll. long-pedidos has the same exposure through
+   its named imports (`hidden.test.js:8-9`), except that a missing export gives `undefined` at call time and fails
+   only those tests. The `NaN/NaN` in the `--dry` line is cosmetic (`bench/run.mjs:202`).
+2. **The `Cota do Pro` total counts a missing plugin log as US$ 0** - `bench/run.mjs:542`
+   (`(r.sgCost || 0)`). The cost rows now show `não medido` for `sgCost: null` (`:493`, `:529`). The quota section
+   still adds 0 for such runs and prints "Custo total da rodada (Claude e security-guidance)" with no warning, so US$
+   per 1% comes out low. C10's claim does not cover this case, so C10 stays PASS. Suggestion: add a line to the
+   section when any run has `sgCost === null`.
+3. **The long tasks are now spelled out step by step** - `bench/tasks/long-pedidos/task.json:3`,
+   `bench/tasks/long-folha/task.json:3`. To require three files, the prompts now name each function to create, its
+   file and its signature. That meets AC 5 to the letter. It also leaves less design to the model, which may weaken the
+   S2 premise of a "sessão longa e difícil" that draws the advisor out. This is the half of round-1 finding 1 that the
+   checks cannot settle. Only a real round (C7's "consultou o Opus" count on `long-*`) will show it.
+4. **C5 counts files present in `solution/`, not files that differ** - `test/bench-cota.test.mjs:103`. A solution
+   file copied unchanged from `repo/` would count. Today every one differs (diffed by hand), so this is a
+   precision gap only. The test name at `:90` still says only "the prompt naming 3+".
+5. **The producer side of C4 has no unit proof** - `bench/run.mjs:398-400`. C4 tests the report with a synthetic
+   `sgCost: null`. That `runOnce` writes `null` when the log file is missing is shown only by reading the code (or
+   by a real round).
+6. Carried, unchanged: round-1 finding 5 (`bench/run.mjs:472-475`), 6(a) (`EBUSY` temp HOME) and 8
+   (`test/bench-cota.test.mjs:145`).
 
 ## Distilled lessons
 
-- A check that rewords an AC (from "exige mudar" to "nomeia") turns a green proof into evidence for a weaker claim.
-  Compare each check's verb with its AC's verb.
-- An implicit-rule hidden test that uses a bare `throws` passes against a stub. Match the error, or rely on the
-  all-pass gate on purpose and say so.
+- A hidden test file that calls a function the stub does not have fails to compile, not just to pass. In a compiled
+  language, that turns any naming slip into a zero on every test. Keep the stub's signatures in `repo/`, or accept the
+  all-or-nothing gate on purpose and say so.

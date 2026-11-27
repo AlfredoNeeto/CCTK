@@ -4,9 +4,24 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, expect, test } from 'vitest';
 import App from '../src/App.jsx';
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); window.location.hash = ''; });
 const abrir = (rota) => render(<MemoryRouter initialEntries={[rota]}><App /></MemoryRouter>);
 const id = (x) => document.getElementById(x);
+// Text as a reader sees it: toLocaleString puts a non-breaking space after "R$".
+const texto = (el) => (el?.textContent || '').replace(/\s+/g, ' ');
+// A field is visible when it is rendered and its modal (if any) is open: by state (class "aberto", or not rendered
+// until opened) or, as in the prototype, by :target (the address points at the modal's id). jsdom has no CSS.
+// A click on a link to "#x" moves the address to #x, as a browser does (jsdom may skip it on a synthetic click).
+function clicar(el) {
+  fireEvent.click(el);
+  const href = el?.getAttribute('href');
+  if (el?.tagName === 'A' && href?.startsWith('#')) window.location.hash = href === '#' ? '' : href;
+}
+function visivel(el) {
+  if (!el) return false;
+  const modal = el.closest('.modal');
+  return !modal || modal.classList.contains('aberto') || (modal.id !== '' && window.location.hash === `#${modal.id}`);
+}
 
 test('login: título, CPF, senha e o botão Entrar', () => {
   abrir('/login');
@@ -35,8 +50,8 @@ test('contas: uma linha por conta, com fornecedor, vencimento, valor e status', 
 test('contas: total no rodapé da tabela', () => {
   abrir('/contas');
   const rodape = id('contas').querySelector('tfoot');
-  expect(rodape?.textContent).toContain('4 contas');
-  expect(rodape?.textContent).toContain('R$ 2.247,80');
+  expect(texto(rodape)).toContain('4 contas');
+  expect(texto(rodape)).toContain('R$ 2.247,80');
 });
 
 test('contas: trilha, filtro de período e o botão Nova conta', () => {
@@ -49,11 +64,11 @@ test('contas: trilha, filtro de período e o botão Nova conta', () => {
 
 test('contas: Nova conta abre o formulário e Cancelar fecha', () => {
   abrir('/contas');
-  expect(id('fornecedor')).toBeNull();
-  fireEvent.click(id('nova-conta'));
-  expect(id('fornecedor')?.tagName).toBe('INPUT');
-  fireEvent.click(id('cancelar'));
-  expect(id('fornecedor')).toBeNull();
+  expect(visivel(id('fornecedor'))).toBe(false);
+  clicar(id('nova-conta'));
+  expect(visivel(id('fornecedor'))).toBe(true);
+  clicar(id('cancelar'));
+  expect(visivel(id('fornecedor'))).toBe(false);
 });
 
 test('contas: Sair volta ao login', async () => {

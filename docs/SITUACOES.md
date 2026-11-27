@@ -24,7 +24,8 @@ entram e o que conferir no fim. Troque o que está entre `< >`. Palavra desconhe
 ```
 
 1. Ele descobre a linguagem e as ferramentas do projeto e cria `AGENTS.md`, `CLAUDE.md`, `openspec/` e o check em `.claude/cctk.json`. Se achar
-   banco ou front web, oferece o DBHub e o Playwright (veja abaixo).
+   banco ou front web, oferece o DBHub e o Playwright (veja abaixo). Se achar uma API, oferece testes HTTP em `http/*.http`
+   (os mesmos que abrem no Visual Studio e no VS Code): o check passa a subir a API e conferir status e corpo de cada rota.
 2. Commite o que ele criou: quem clonar recebe o mesmo jeito de trabalhar e a sugestão de instalar o kit.
 3. Num terminal, na pasta do projeto: `cctk trust`, para aprovar o check.
 

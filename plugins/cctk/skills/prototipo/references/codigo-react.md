@@ -31,5 +31,6 @@ rótulos, os `id` e a ordem dos blocos ficam iguais.
 | Login (`.entrada`, `.cartao-entrada`) | rota fora do layout: `<div className="prototipo"><div className="entrada">` | submit chama a autenticação |
 | Mobile (`.mobile`, `.tela`, `.barra-app`, `.nav-inferior`, `.fab`) | só se o app for mobile web: `<div className="prototipo"><div className="mobile">` | links viram `<Link>` |
 
-Os links do protótipo (`contas.html`) viram rotas (`/contas`). Se o projeto já usa uma biblioteca de componentes,
+Componente que abre em portal (o `Dialog` do MUI, o `createPortal`) sai do `.prototipo` e perde o estilo: dê ao portal
+um contêiner com `className="prototipo"` ou use o modal do catálogo. Os links do protótipo (`contas.html`) viram rotas (`/contas`). Se o projeto já usa uma biblioteca de componentes,
 mantenha a dela onde o time já usa e passe as cores do `tema.css` para o tema dela.

@@ -121,7 +121,9 @@ function killTree(pid) {
 
 function runCheck() {
   return new Promise((resolve) => {
-    const child = spawn(check, { cwd, shell: true, windowsHide: true, detached: process.platform !== 'win32' });
+    // ${CLAUDE_PLUGIN_ROOT} works in a check shared across Windows and Unix (no %VAR% vs $VAR): replaced here.
+    const cmd = check.split('${CLAUDE_PLUGIN_ROOT}').join(path.resolve(__dirname, '..'));
+    const child = spawn(cmd, { cwd, shell: true, windowsHide: true, detached: process.platform !== 'win32' });
     let out = '';
     const keep = (d) => { out = (out + d).slice(-64 * 1024); };
     child.stdout.on('data', keep);

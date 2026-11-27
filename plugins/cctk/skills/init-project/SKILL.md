@@ -120,6 +120,20 @@ O OpenSpec (1) e o time (7) são **sempre** feitos. Os outros itens, só quando 
    Assim, quem clonar o repositório recebe a sugestão de instalar o toolkit e trabalha em Sonnet, que no
    benchmark custou cerca de metade do Opus em custo de API, pela mesma qualidade. Para planejar, `claude --model opus`
    continua valendo, porque a opção de linha de comando tem precedência sobre o `settings.json`.
+8. **Testes HTTP** (se o projeto tem API: .NET com `WebApplication`, `MapGet` ou controllers; Node com Express,
+   Fastify, Nest ou `http.createServer`): ofereça e só faça depois de um "sim". O check passa a pegar erro de
+   contrato (status e corpo que quem chama a API espera), não só de teste unitário.
+   - Crie `http/<recurso>.http` para as rotas principais (as que o front ou outro sistema chama), uma requisição por
+     rota, cada uma com uma asserção de status (`?? status == 200`) e uma de corpo
+     (`?? js response.parsedBody.<campo> == <valor>`), contra dados que existem em dev. Inclua o erro mais importante
+     de cada recurso (o 404 de um id que não existe, o 400 de um corpo inválido).
+   - Crie `http/http-client.env.json` com `{ "dev": { "baseUrl": "http://localhost:<porta>" } }` e use `{{baseUrl}}`
+     nos `.http`. Os mesmos arquivos abrem no Visual Studio e no VS Code.
+   - Grave o check composto:
+     `<check atual> && node "${CLAUDE_PLUGIN_ROOT}/hooks/api-check.js" --start "<comando que sobe a API>" --url <endereço que responde quando ela está no ar>`.
+     Rode uma vez: build, testes, a API subindo e os `.http` têm que caber em 2 minutos. O primeiro uso baixa o
+     httpyac pelo `npx`.
+   - O check mudou: diga ao usuário para aprovar de novo, num terminal na pasta do projeto, com `cctk trust`.
 
 ## 7. Modo atualizar (só o AGENTS.md, quando ele já existe)
 
