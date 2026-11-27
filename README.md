@@ -28,7 +28,7 @@ medida sozinha nas 25 tarefas do benchmark, 2 execuções cada: **49/50 execuç�
 execução** e **0 vazamentos** em 10 execuções de segurança ([detalhes](bench/README.md#resultados-19112026)).
 
 Medido com o Claude Code real, em HOMEs isoladas e com testes ocultos. O custo é o equivalente em dólar na
-API; quanto cada modelo pesa na cota do Pro não é documentado. Das 13 mudanças testadas no placar, 4 entraram;
+API; quanto cada modelo pesa na cota do Pro não é documentado. Das 12 mudanças testadas no placar, 3 entraram;
 o que não ajudou ficou de fora. [Método, números e o placar dos experimentos →](bench/README.md)
 
 ## Para quem é

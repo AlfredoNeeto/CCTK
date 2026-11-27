@@ -150,6 +150,9 @@ test('F6 SITUACOES.md has at least 12 situations with Quando, a prompt and Confi
   for (const it of items) {
     const name = it.split('\n')[0];
     for (const t of ['Quando', '```text', 'Confira']) assert.ok(it.includes(t), `${name}: ${t}`);
+    // The prompt is something said to Claude: a block that is only a terminal command (cctk ...) does not count.
+    const blocks = [...it.matchAll(/```text\n([\s\S]*?)```/g)].map((m) => m[1].trim());
+    assert.ok(blocks.some((b) => !/^cctk /.test(b)), `${name}: a prompt for Claude, not only a terminal command`);
   }
 });
 
@@ -198,9 +201,9 @@ test('F13 experiments chart: one bar per experiment, in vs out colored, sorted, 
 test('F14 every experiment and version number is written in bench/README.md', async () => {
   const { EXPERIMENTS, VERSIONS } = await charts();
   const b = read('bench/README.md');
-  for (const [v, total, ok, runs] of VERSIONS) {
-    assert.ok(b.includes(`US$ ${total.toFixed(2).replace('.', ',')}`), `${v}: US$ ${total}`);
-    assert.ok(b.includes(`${ok}/${runs}`), `${v}: ${ok}/${runs}`);
+  for (const [v, total, ok, runs] of VERSIONS) { // cost and correct runs of a round sit on the same line
+    const line = b.split('\n').find((l) => l.includes(`US$ ${total.toFixed(2).replace('.', ',')}`) && l.includes(`${ok}/${runs}`));
+    assert.ok(line, `${v}: ${ok}/${runs} and US$ ${total} on one line`);
   }
   for (const [label, , pct, evidence] of EXPERIMENTS) {
     for (const e of evidence) assert.ok(b.includes(e), `${label}: "${e}"`);

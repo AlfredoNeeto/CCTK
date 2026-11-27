@@ -222,8 +222,6 @@ Marque como "em aberto" o que o documento não decide. Não escreva código aind
 
 Corrigir cedo custa menos que desfazer depois.
 
-| Quando | Faça |
-|---|---|
 | Quando | Faça | Fonte |
 |---|---|---|
 | O Claude começou a ir pelo caminho errado | `Esc` para no meio da ação e mantém o que já foi feito. Diga o que mudar | [Steer the session](https://code.claude.com/docs/en/best-practices#steer-the-session) |

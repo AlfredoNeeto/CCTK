@@ -66,7 +66,11 @@ test('F7 SITUACOES.md covers every tool in the kit', () => {
 });
 
 test('F11 PROMPTS.md tells how to steer the session back', () => {
-  const rows = section(PROMPTS(), 'corrigir-o-rumo').split('\n').filter((l) => l.startsWith('|') && !/^\|[-|]+\|$/.test(l)).slice(1);
+  const table = section(PROMPTS(), 'corrigir-o-rumo').split('\n').filter((l) => l.startsWith('|'));
+  // GFM sizes the table by its first header, so a 2-cell header would drop the Fonte column when rendered.
+  assert.equal(table[0].split('|').length - 2, 3, `header has 3 cells: ${table[0]}`);
+  assert.equal(table.filter((l) => /^\|[-| ]+\|$/.test(l)).length, 1, 'one delimiter row');
+  const rows = table.slice(2);
   for (const t of ['Esc', '/rewind', '/clear']) {
     const row = rows.find((r) => r.includes(t));
     assert.ok(row, t);

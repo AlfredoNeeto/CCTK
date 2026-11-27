@@ -26,7 +26,6 @@ const FLOWS = [ // [arm, US$ per run, correct runs, out of]
 // [label, metric, % vs its base, numbers as written in bench/README.md (base, arm in US$ when two), in the kit?]
 // "por execução" with a US$ pair is the sum of the per-task medians, as the bench reports print it.
 export const EXPERIMENTS = [
-  ['Kit no lugar do de fábrica (Opus)', 'por execução', -52, ['1,707', '0,813'], true], // "Resultados" chart caption
   ['/effort high com muitas regras', 'por acerto', -38, ['0,34', '0,21'], true], // "O que tem ganho medido"
   ['Advisor (consulta ao Opus)', 'por acerto', -34, ['0,156', '0,103'], true], // "O que tem ganho medido"
   ['Seção Dimensões no proposal*', 'por execução', 10, ['+10% por execução'], true], // "Dimensões de regra implícita"

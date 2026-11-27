@@ -67,7 +67,7 @@ Proof: `node --test --test-name-pattern "^F14 " test/docs.test.mjs`
 **C15** - Cada `versoes-*.svg` tem 4 círculos, os rótulos `1.0.2`, `1.1.0`, `1.1.1`, `1.4.0`, os rótulos de ponto `US$ 0,10 · 46/48`, `US$ 0,08 · 46/48`, `US$ 0,08 · 48/48`, `US$ 0,11 · 47/48`, e o subtítulo cita `mesmas 24 tarefas` (AC 15)
 Proof: `node --test --test-name-pattern "^F15 " test/docs.test.mjs`
 
-**C16** - Os SVGs novos têm `role="img"` e um `aria-label` que cita `custo`; as cores de série usadas estão em `THEMES` (AC 16)
+**C16** - Os SVGs novos têm `role="img"` e um `aria-label` que cita `custo`; toda cor usada está em `THEMES`; as barras usam só `kit` e `muted` (C13), e o par `kit`/`muted` passa no contraste e na separação CVD do validador da dataviz nos dois modos (AC 16)
 Proof: `node --test --test-name-pattern "^F16 " test/docs.test.mjs`
 
 **C17** - `bench/README.md` tem `## Resumo` logo abaixo do título, com no máximo 8 linhas não vazias, e tem `<picture>` com `experimentos-dark.svg`/`experimentos-light.svg` e com `versoes-dark.svg`/`versoes-light.svg` (AC 17)
@@ -122,4 +122,6 @@ Proof: `node --test --test-name-pattern "^F19 " test/docs.test.mjs`
 - **Round 2, pedido do usuário:** o gráfico de versões passou a comparar as mesmas 24 tarefas (a 1.4.0 sem a `security-commit-secret`: 47/48 por US$ 5,21, de `bench/results/2026-11-20T14-22-01-864Z`); AC 15 e C15 mudaram, e o C14 passou a cobrir as versões
 - **Round 2, fatos:** "Sonnet no lugar do Opus" virou "Kit no lugar do de fábrica", por execução (soma das medianas, US$ 1,707 contra 0,813); o TDD ganhou o par US$ 0,444 → 0,701; o Explore fica em +49% (custo sem arredondar 0,1845/0,1236); "13 experimentos decididos" virou "13 mudanças testadas"
 - **Round 2, C16:** o cinza (`muted`) das barras de fora passa no contraste e na separação CVD do validador da dataviz e falha só o piso de croma, de propósito: é a cor de contexto, contra o azul de destaque
+- **Round 3 (verificação FAIL de 27/11):** o cabeçalho antigo de 2 colunas de "Corrigir o rumo" ficou duplicado e escondia a coluna Fonte no GitHub; removido, e o F11 exige cabeçalho de 3 células e uma só linha delimitadora. TDD corrigido para 18/20 (`config`) contra 17/20 (`tdd`). A linha "Kit no lugar do de fábrica" saiu do placar (o kit não "entra no kit"; o resultado dele tem o gráfico `custo-*` próprio): 12 mudanças, 3 entraram. F14 exige custo e acerto da versão na mesma linha; F6 exige um bloco que não seja só comando `cctk`
+- **Round 3, C16:** AC 16 reescrito com a decisão do cinza de contexto (o usuário delegou as escolhas recomendadas); a prova do par `kit`/`muted` é o validador, olhando as linhas de contraste e CVD
 - **Abandoned:** nada

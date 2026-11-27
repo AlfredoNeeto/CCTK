@@ -5,7 +5,7 @@
 - O kit custou 52% menos que o Claude Code de fábrica nas mesmas 8 tarefas, com 22/24 execuções corretas contra 23/24.
 - Nas mesmas 24 tarefas, 4 rodadas de regressão (1.0.2 a 1.4.0) deram de 96% a 100% de acerto, por US$ 0,08 a 0,11.
 - 0 vazamentos de segredo com o kit, em todas as rodadas. De fábrica, o Claude leu o `.env` em 3 de 3 execuções.
-- Das 13 mudanças testadas no gráfico, 4 entraram no kit; as outras custaram mais sem um ganho de acerto que se
+- Das 12 mudanças testadas no gráfico, 3 entraram no kit; as outras custaram mais sem um ganho de acerto que se
   sustentasse ([resultados](#resultados-19112026)).
 - O erro vem do que o pedido não diz, não da dificuldade da tarefa ([como pedir](../docs/PROMPTS.md)).
 
@@ -102,7 +102,7 @@ Rodadas anteriores: 1.1.0, 46/48 por US$ 3,98; 1.0.2, 46/48 por US$ 4,80. Em tod
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../docs/img/experimentos-dark.svg">
-  <img alt="Variação de custo de 13 mudanças testadas, cada uma contra a sua base: entraram no kit o kit no lugar do Claude Code de fábrica (−52%), effort high em tarefa com muitas regras (−38%), advisor (−34%) e, por argumento, sem ganho de acerto medido, a seção Dimensões (+10%); ficaram de fora os outros 9, de +2% a +527%" src="../docs/img/experimentos-light.svg">
+  <img alt="Variação de custo de 12 mudanças testadas, cada uma contra a sua base: entraram no kit o effort high em tarefa com muitas regras (−38%), advisor (−34%) e, por argumento, sem ganho de acerto medido, a seção Dimensões (+10%); ficaram de fora os outros 9, de +2% a +527%" src="../docs/img/experimentos-light.svg">
 </picture>
 
 O detalhe de cada mudança está abaixo. O custo é contra a base de cada uma (a métrica está no rótulo), então as
@@ -158,7 +158,7 @@ estão no gráfico.
     `explore`, sem acertar menos). O agente fica só no bench.
 - **Regras curtas de economia (`claude-token-efficient`):** mais turnos e custo um pouco maior.
 - **Teste antes do código (`tdd`):** custou 58% a mais sem acertar mais (soma das medianas por tarefa: US$ 0,444
-  do `config` contra 0,701; 17/20 contra 18/20 corretas).
+  do `config` contra 0,701; 18/20 contra 17/20 corretas).
 - **Regras implícitas (no CLAUDE.md ou como skill):**
   - acertou mais (20/20 contra 14/20; 15/15 contra 13/16), mas quase toda a diferença veio de um único
     teste discutível (rejeitar nascimento no futuro);
