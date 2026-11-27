@@ -349,7 +349,7 @@ export function unico(dir) {
     for (const m of h.matchAll(/<link[^>]+href="([^"]+\.css)"/gi)) if (!/^https?:/i.test(m[1])) css.add(m[1]);
     const classe = h.match(/<body[^>]*class="([^"]*)"/i)?.[1] || '';
     h = (h.match(/<body[^>]*>([\s\S]*)<\/body>/i)?.[1] ?? h)
-      .replace(/href="([^"#:]+\.html?)(#[^"]*)?"/gi, (m, alvo) => fs_.includes(alvo) ? `href="#${id(alvo)}"` : m)
+      .replace(/(href|action)="([^"#:]+\.html?)(#[^"]*)?"/gi, (m, attr, alvo) => fs_.includes(alvo) ? `${attr}="#${id(alvo)}"` : m)
       .replace(/src="([^":]+\.(png|jpe?g|svg|gif|webp))"/gi, (m, s, ext) => {
         const p = path.join(dir, s);
         return fs.existsSync(p) ? `src="data:${MIME['.' + ext.toLowerCase()]};base64,${fs.readFileSync(p).toString('base64')}"` : m;
@@ -362,9 +362,10 @@ export function unico(dir) {
 <title>${titulo}</title>${fontes}<style>${estilos}
 .pagina[hidden]{display:none!important}</style></head><body>
 ${secoes.join('\n')}
-<script>function mostrar(){var a=location.hash.slice(1),e=a&&document.getElementById(a),s=e&&e.closest('.pagina')||document.querySelector('.pagina');
+<script>function mostrar(){var a=location.hash.slice(1),e=a&&document.getElementById(a),s=e&&e.closest('.pagina')||document.querySelector('.pagina:not([hidden])');
 document.querySelectorAll('.pagina').forEach(function(p){p.hidden=p!==s});document.body.className=s.dataset.classe;if(e===s)scrollTo(0,0)}
-addEventListener('hashchange',mostrar);mostrar();</script></body></html>`;
+addEventListener('hashchange',mostrar);mostrar();
+addEventListener('submit',function(ev){var a=ev.target.getAttribute('action');if(a&&a[0]==='#'){ev.preventDefault();location.hash=a}});</script></body></html>`;
 }
 
 const FORA = /^(prints|revisao|\.[^/]*)(\/|$)|^notas\.md$|^anotacoes\.json$|^especificacao\.(md|html?)$|\.zip$/i;

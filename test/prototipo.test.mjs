@@ -35,7 +35,7 @@ test('zip: abre e devolve o conteúdo original', () => {
 test('zip e HTML único: arquivos certos e links trocados por âncoras', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'proto-'));
   fs.writeFileSync(path.join(dir, 'estilo.css'), '.x{color:red}');
-  fs.writeFileSync(path.join(dir, 'login.html'), '<html><head><title>T</title><link rel="stylesheet" href="estilo.css"></head><body class="entrada"><a href="painel.html">ir</a></body></html>');
+  fs.writeFileSync(path.join(dir, 'login.html'), '<html><head><title>T</title><link rel="stylesheet" href="estilo.css"></head><body class="entrada"><a href="painel.html">ir</a><form action="painel.html"></form></body></html>');
   fs.writeFileSync(path.join(dir, 'painel.html'), '<html><body><a href="login.html#x">sair</a><a href="https://e.com/a.html">fora</a></body></html>');
   fs.writeFileSync(path.join(dir, 'notas.md'), 'interno');
   fs.writeFileSync(path.join(dir, 'anotacoes.json'), '{"login.html":["#a","#b"],"painel.html":[".x"],"login.html#m":["#m"]}');
@@ -48,6 +48,7 @@ test('zip e HTML único: arquivos certos e links trocados por âncoras', () => {
   assert.match(u, /\.x\{color:red\}/);
   assert.match(u, /<section class="pagina" data-classe="entrada" id="p-login"><a href="#p-painel">/);
   assert.match(u, /href="#p-login">sair/);
+  assert.match(u, /<form action="#p-painel">/);
   assert.match(u, /href="https:\/\/e.com\/a.html"/);
   assert.ok(u.indexOf('p-login') < u.indexOf('p-painel'));
 });
