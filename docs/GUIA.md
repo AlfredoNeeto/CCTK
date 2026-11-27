@@ -4,17 +4,37 @@ Como trabalhar com o Claude Code depois de instalar o kit. Leva 5 minutos para l
 
 [← Voltar ao README](../README.md)
 
-- [Um dia típico](#um-dia-típico)
-- [Ler a statusline](#ler-a-statusline)
-- [Tarefa pequena](#tarefa-pequena)
-- [Feature ou bug com regra de negócio](#feature-ou-bug-com-regra-de-negócio)
-- [Protótipo de tela](#protótipo-de-tela)
-- [Economizar cota](#economizar-cota)
-- [O check antes de encerrar](#o-check-antes-de-encerrar)
-- [Documentos e ferramentas de terceiros](#documentos-e-ferramentas-de-terceiros)
-- [Tokens e senhas (cofre)](#tokens-e-senhas-cofre)
-- [Azure DevOps Server](#azure-devops-server)
-- [Deu problema?](#deu-problema)
+## O que você quer fazer?
+
+| Quero | Vá para |
+|---|---|
+| Começar: acabei de instalar | [Primeiro uso](#primeiro-uso) |
+| Corrigir um bug ou construir uma feature | [Desenvolver](#desenvolver) |
+| Mostrar telas ao cliente ou escrever a especificação | [Prototipar e especificar](#prototipar-e-especificar) |
+| Escrever pedidos que o Claude acerta de primeira | [Guia de prompts](PROMPTS.md) |
+| Dar um token ao Claude sem ele ver o valor | [Tokens e senhas (cofre)](#tokens-e-senhas-cofre) |
+| Gastar menos cota | [Economizar cota](#economizar-cota) |
+| Resolver um erro | [Deu problema?](#deu-problema) |
+
+Referência: [statusline](#ler-a-statusline) · [o check](#o-check-antes-de-encerrar) ·
+[documentos e ferramentas de terceiros](#documentos-e-ferramentas-de-terceiros) · [Azure DevOps Server](#azure-devops-server)
+
+## Primeiro uso
+
+Os passos 1 e 2 são uma vez por máquina; do 3 em diante, uma vez por projeto.
+
+1. **Instale**, num terminal comum, com o Claude Code fechado: `npm i -g @alfredoneeto/cctk` e depois
+   `cctk install`. Ele mostra o que vai remover, faz backup e pede confirmação ([detalhes](../README.md#instalar)).
+2. **Confira** com `cctk doctor`. Algum item falhou? A linha dele diz o que fazer.
+3. **Abra o projeto:** `cd meu-projeto` e `claude`.
+4. **Prepare o repositório:** `/cctk:init-project`. Ele descobre a stack e cria `AGENTS.md`, `CLAUDE.md`,
+   `openspec/` e o check em `.claude/cctk.json`.
+5. **Commite** o que ele criou, para o time receber o mesmo jeito de trabalhar.
+6. **Aprove o check**, num terminal na pasta do projeto: `cctk trust`. O Claude não consegue aprovar sozinho
+   ([por quê](#o-check-antes-de-encerrar)).
+7. **Confira a statusline:** o rodapé do Claude Code deve começar por `Sonnet` ([o que cada campo diz](#ler-a-statusline)).
+8. **Faça um pedido pequeno** dizendo o sintoma, onde olhar e o que é "pronto" ([exemplo](#tarefa-pequena)).
+   Terminou? `/clear` antes do próximo assunto.
 
 ## Um dia típico
 
@@ -28,23 +48,21 @@ claude                      # abre no Sonnet: o modelo do dia a dia
 3. **Feature com regra de negócio?** Planeje no Opus, implemente no Sonnet ([fluxo](#feature-ou-bug-com-regra-de-negócio)).
 4. **No fim da semana:** `cctk stats` mostra para onde foi a cota.
 
-Primeira vez num repositório? Rode `/cctk:init-project` uma vez, commite o que ele criar e
-[aprove o check](#o-check-antes-de-encerrar).
+## Desenvolver
 
-## Ler a statusline
+Escolha o caminho pelo pedido:
 
-```
-Sonnet | ctx 12% | cache 87% | 5h 8% (reset 14:30) | 7d 21% (reset 24/11 09:00)
-```
+| O pedido | Caminho | Custo no benchmark |
+|---|---|---|
+| Até uns 3 arquivos e a regra está clara: bug com sintoma, ajuste, pergunta sobre o código | Peça direto, no Sonnet ([tarefa pequena](#tarefa-pequena)) | US$ 0,10 por tarefa |
+| Feature ou bug com regra de negócio que alguém precisa decidir: cálculo, validação, importação | OpenSpec: você revisa a regra antes do código ([fluxo](#feature-ou-bug-com-regra-de-negócio)) | cerca de 5× o pedido direto |
 
-| Campo | O que fazer |
-|---|---|
-| `Sonnet` | Tudo certo. Se aparecer `Opus ⚠ mais caro`, só continue se estiver planejando |
-| `ctx 12%` | Contexto usado. Perto de 80% (`!`), termine a tarefa e dê `/clear` |
-| `cache 87%` | Quanto da conversa veio do cache, que custa bem menos. Com `frio`, a pausa passou da validade do cache e a próxima mensagem reenvia a conversa inteira a preço cheio: com contexto grande, prefira `/clear` e retome com um resumo |
-| `5h` / `7d` | Cota do Pro gasta e quando ela volta. Com `!` (80%+), deixe o que for grande para depois do reset |
+Na dúvida, tente responder "e se...?" para o caso estranho (data no futuro, valor zerado, arquivo repetido). Se
+você não sabe a resposta, o Claude também não sabe: é OpenSpec.
 
-## Tarefa pequena
+Como escrever o pedido nos dois casos: [Guia de prompts](PROMPTS.md).
+
+### Tarefa pequena
 
 Até uns 3 arquivos. O que mais faz o Claude errar é o que o pedido não diz, então diga três coisas:
 **o sintoma**, **onde olhar** e **o que é "pronto"**.
@@ -54,7 +72,7 @@ Até uns 3 arquivos. O que mais faz o Claude errar é o que o pedido não diz, e
 > ✅ "Cupom de 15% num pedido de R$ 99,90 dá R$ 84,92, mas o certo é R$ 84,91 (arredondar para baixo
 > no centavo). A conta fica em `src/desconto.js`. Pronto = esse caso num teste e `npm test` passando."
 
-## Feature ou bug com regra de negócio
+### Feature ou bug com regra de negócio
 
 Use o OpenSpec: a regra fica escrita **antes** do código, e você revisa a regra, não o código.
 
@@ -71,7 +89,33 @@ O fluxo custa cerca de 5× uma tarefa feita direto ([benchmark](../bench/README.
 
 Uma mudança por sessão de implementação.
 
-## Protótipo de tela
+**Exemplo.** Juros de boleto pago em atraso:
+
+1. `claude --model opus` e
+   `/openspec-propose boleto pago depois do vencimento cobra multa de 2% e juros de 1% ao mês, proporcional aos dias`.
+2. Em `openspec/changes/<nome>/proposal.md`, a seção **Dimensões** traz o que o pedido não disse, como "vencimento
+   no fim de semana conta como atraso?" e "os juros incidem sobre o valor com ou sem a multa?". Responda ali e
+   corrija os `specs/` se a regra saiu errada. Cada resposta vira um teste.
+3. `/clear`, `claude` (Sonnet) e `/openspec-apply-change`.
+4. `/openspec-verify-change` e "use o spec-reviewer na mudança <nome>". O revisor confere se cada regra tem um
+   teste que falharia com a regra errada.
+5. `/openspec-archive-change` e `/clear`.
+
+## Prototipar e especificar
+
+Do pedido à especificação aprovada pelo cliente e, depois, ao código. Tudo fica na pasta `prototipo/`.
+
+1. **Peça o protótipo:** `/cctk:prototipo` com as telas e o que cada uma mostra, ou com o print de um sistema
+   ([exemplos](#protótipo-de-tela)).
+2. **Abra os HTML** de `prototipo/` no navegador e clique. Junte todos os ajustes num pedido só.
+3. **Mande ao cliente:** peça **zip** ou **HTML único**. Sem dados reais de cliente.
+4. **Peça a especificação**, numa sessão nova: sai `prototipo/especificacao.pdf` (para o cliente) e
+   `prototipo/especificacao.md` (para versionar). O que ninguém decidiu sai como questão em aberto: leve essas
+   perguntas ao cliente.
+5. **Leve ao código** com o OpenSpec: `claude --model opus` e
+   `/openspec-propose <feature> @prototipo/especificacao.md`, e siga o [fluxo](#feature-ou-bug-com-regra-de-negócio).
+
+### Protótipo de tela
 
 Para o cliente clicar e aprovar antes de construir. Use `/cctk:prototipo`: o Claude escreve um HTML por tela sobre
 um CSS base que vem pronto, confere links e layout por script e, no fim, entrega o que você escolher.
@@ -98,6 +142,19 @@ inventou funcionalidades e usou marcas reais.
 | Especificação | No fim, peça a **especificação**: PDF com as telas numeradas e a legenda de cada número, no modelo de mercado (escopo, requisitos, regras, mensagens, telas, questões em aberto). As seções opcionais você escolhe. De 3 telas, numa sessão nova, custou US$ 0,25 a 0,31; o que ninguém decidiu sai como questão em aberto, não como regra inventada. Para implementar, siga com o [OpenSpec](#feature-ou-bug-com-regra-de-negócio) citando o `especificacao.md` |
 
 Não use dados reais de cliente no protótipo: ele vai para fora.
+
+## Ler a statusline
+
+```
+Sonnet | ctx 12% | cache 87% | 5h 8% (reset 14:30) | 7d 21% (reset 24/11 09:00)
+```
+
+| Campo | O que fazer |
+|---|---|
+| `Sonnet` | Tudo certo. Se aparecer `Opus ⚠ mais caro`, só continue se estiver planejando |
+| `ctx 12%` | Contexto usado. Perto de 80% (`!`), termine a tarefa e dê `/clear` |
+| `cache 87%` | Quanto da conversa veio do cache, que custa bem menos. Com `frio`, a pausa passou da validade do cache e a próxima mensagem reenvia a conversa inteira a preço cheio: com contexto grande, prefira `/clear` e retome com um resumo |
+| `5h` / `7d` | Cota do Pro gasta e quando ela volta. Com `!` (80%+), deixe o que for grande para depois do reset |
 
 ## Economizar cota
 
@@ -145,22 +202,57 @@ comando no terminal (`sed -i`, `cat > arquivo`), num repositório git. Editar s�
 
 ## Tokens e senhas (cofre)
 
-Dê ao Claude um token de desenvolvimento sem que ele veja o valor:
+Para o Claude usar um token de desenvolvimento (API de homologação, banco local) sem ver o valor.
+
+**Como o valor chega ao comando:**
+
+1. Você grava, num terminal fora do Claude Code: `cctk secret set API_TOKEN`. O valor é pedido sem aparecer na tela.
+2. O valor vai criptografado para o cofre do sistema (DPAPI no Windows, Keychain no macOS, libsecret no Linux).
+   Em `~/.cctk/secrets.names` ficam só os nomes.
+3. No Claude Code, rode `/clear` ou abra uma sessão nova: o cofre é lido no início da sessão.
+4. O kit põe o valor no ambiente do terminal que o Claude usa e conta a ele só o nome.
+5. O Claude escreve `$API_TOKEN` dentro do comando. Se um comando fosse mostrar o valor (`echo $API_TOKEN`,
+   `printenv`), o guarda de segredos bloqueia.
+
+**Exemplo.** Peça "chame a rota /pedidos da API de homologação usando o API_TOKEN". O Claude roda:
+
+```bash
+curl -H "Authorization: Bearer $API_TOKEN" https://api-homolog.exemplo.com/pedidos
+```
+
+No PowerShell:
+
+```powershell
+curl.exe -H "Authorization: Bearer $env:API_TOKEN" https://api-homolog.exemplo.com/pedidos
+```
+
+Um teste ou script que o Claude roda (`npm test`, `dotnet test`) também enxerga a variável, porque herda o
+ambiente do terminal.
+
+**Onde a variável não chega:**
+
+| Onde | Por quê | O que fazer |
+|---|---|---|
+| MCP | Quem inicia o MCP é o Claude Code, não o terminal da sessão | Crie uma variável de ambiente do usuário e declare `"env": { "NOME": "${NOME}" }` no servidor. Para o Azure DevOps, use o `cctk ado add`, que já guarda o PAT no cofre |
+| Sua IDE e o que você roda fora do Claude | O cofre só abastece as sessões do Claude Code | Use o `.env` do projeto, fora do git (o Claude não lê `.env`), ou o user-secrets do .NET |
+
+**Trocar, listar e remover:**
 
 ```
-cctk secret set API_TOKEN   # pede o valor sem mostrar
-cctk secret list
+cctk secret set API_TOKEN   # de novo: sobrescreve o valor
+cctk secret list            # só os nomes
 cctk secret rm API_TOKEN
 ```
 
-Na sessão, o Claude recebe só o nome e usa `$API_TOKEN` nos comandos.
+Depois de mudar, `/clear` para a sessão pegar o valor novo.
+
+**Limites:**
 
 - Isso evita o vazamento **acidental**. Um programa escrito pela IA ainda consegue ler o próprio ambiente,
   então guarde só credenciais de desenvolvimento.
-- Os valores ficam criptografados no cofre do sistema (DPAPI, Keychain ou libsecret), como o PAT do Azure
-  DevOps. Em `~/.cctk/secrets.names` ficam só os nomes. Quem tinha a 1.2.0 tem o cofre em texto puro
-  migrado no `cctk install`.
-- No Windows, valores com `/` ou `\` não chegam ao PowerShell.
+- No Windows, valores com `/` ou `\` (URLs, connection strings) não chegam ao PowerShell. Para esses, crie uma
+  variável de ambiente do usuário e reinicie o Claude Code.
+- Quem tinha a 1.2.0 tem o cofre em texto puro migrado no `cctk install`.
 
 ## Azure DevOps Server
 

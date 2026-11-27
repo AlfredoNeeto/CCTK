@@ -123,6 +123,11 @@ Rodadas anteriores: 1.1.0, 46/48 por US$ 3,98; 1.0.2, 46/48 por US$ 4,80. Em tod
 **Fluxos de spec de ponta a ponta (26/11/2026):** `toolkit` contra `openspec` e `tlc` (tlc-spec-lean), nas 8
 tarefas de edição (`spec-*`, `node-boleto`, `node-csv-import`, `node-race`, `node-conciliacao`), 3 execuções cada:
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../docs/img/fluxos-dark.svg">
+  <img alt="Fluxos de spec: toolkit US$ 0,10 por execução com 22/24 corretas; openspec US$ 0,51 e tlc US$ 0,71, ambos com 24/24" src="../docs/img/fluxos-light.svg">
+</picture>
+
 | | `toolkit` | `openspec` | `tlc` |
 |---|---:|---:|---:|
 | Execuções 100% corretas | 22/24 | 24/24 | 24/24 |

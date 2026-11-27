@@ -11,7 +11,7 @@ npm test                                             # instalador, hooks e ponta
 E2E_REAL=1 npm test                                  # + claude real numa HOME isolada (PowerShell: $env:E2E_REAL=1; npm test)
 CCTK_MARKETPLACE=/caminho/do/clone node cli.mjs install   # instala a partir do clone local
 node bench/run.mjs --dry                             # benchmark: veja bench/README.md
-node docs/charts.mjs                                 # regera o gráfico do README
+node docs/charts.mjs                                 # regera os gráficos do README e do bench
 vhs demo/cctk.tape                                   # regera o GIF: siga os passos no topo do cctk.tape
 ```
 
