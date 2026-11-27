@@ -250,8 +250,9 @@ Depois de mudar, `/clear` para a sessão pegar o valor novo.
 
 - Isso evita o vazamento **acidental**. Um programa escrito pela IA ainda consegue ler o próprio ambiente,
   então guarde só credenciais de desenvolvimento.
-- No Windows, valores com `/` ou `\` (URLs, connection strings) não chegam ao PowerShell. Para esses, crie uma
-  variável de ambiente do usuário e reinicie o Claude Code.
+- No Windows, um valor com `/` (como uma URL) chega vazio ao PowerShell, e um valor com `\` (como `C:\pasta` ou
+  `Server=.\SQL`) perde as barras no PowerShell e no Bash. Para esses, crie uma variável de ambiente do usuário e
+  reinicie o Claude Code. Connection string com `;`, `:` e espaço chega inteira (Claude Code 2.1.332, 27/11/2026).
 - Quem tinha a 1.2.0 tem o cofre em texto puro migrado no `cctk install`.
 
 ## Azure DevOps Server

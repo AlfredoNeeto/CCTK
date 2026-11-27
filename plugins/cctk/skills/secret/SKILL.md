@@ -24,7 +24,8 @@ Como usar uma variável num comando: `$NOME` no bash e `$env:NOME` no PowerShell
 comando que precisa dela (ex.: `curl -H "Authorization: Bearer $API_TOKEN" ...`), nunca com `echo`.
 
 Limites:
-- No Windows, valores com `/` ou `\` (URLs, connection strings) não chegam ao PowerShell. Para esses,
-  grave a variável como variável de ambiente do usuário e reinicie o Claude Code.
+- No Windows, um valor com `/` (como uma URL) chega vazio ao PowerShell, e um valor com `\` perde as barras
+  no PowerShell e no Bash. Para esses, grave a variável como variável de ambiente do usuário e reinicie o
+  Claude Code. Connection string com `;`, `:` e espaço chega inteira.
 - O bloqueio evita vazamento acidental. Um programa que o próprio Claude escreva ainda consegue ler
   o ambiente. Por isso, use no cofre credenciais de desenvolvimento, nunca de produção.

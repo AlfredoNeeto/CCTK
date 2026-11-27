@@ -44,7 +44,7 @@ nova, e o teste de links de `test/toolkit.test.mjs`.
 | Front | What changes |
 | --- | --- |
 | domain | nenhum termo novo; "trilha" é só título de seção |
-| docs | âncoras do GUIA mudam se seções forem renomeadas - quem linka hoje: `README.md` (`#tokens-e-senhas-cofre`, `#azure-devops-server`), `plugins/cctk/skills/*` e o próprio GUIA |
+| docs | âncoras do GUIA mudam se seções forem renomeadas - quem linka hoje: `README.md` (`#tokens-e-senhas-cofre`, `#azure-devops-server`) e o próprio GUIA; as skills não linkam âncoras |
 | docs | `docs/img/custo-*.svg` mantém o nome; o desenho muda. README e `bench/README.md` seguem apontando para ele |
 | stored data | nada a migrar |
 

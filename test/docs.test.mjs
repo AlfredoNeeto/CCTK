@@ -72,7 +72,12 @@ test('C18 flows chart plots cost x correct runs for the three arms', () => {
   for (const n of ['fluxos-light', 'fluxos-dark']) {
     const s = all[n];
     assert.equal(count(s, /<circle /g), 3, `${n}: dots`);
-    for (const t of ['toolkit', 'openspec', 'tlc', '0,10', '0,51', '0,71', '22/24', '24/24']) assert.ok(s.includes(t), `${n}: ${t}`);
+    // Point labels are their own <text> elements, so the aria-label and the axis ticks can't stand in for them.
+    for (const [arm, value] of [['toolkit', 'US$ 0,10 · 22/24'], ['openspec', 'US$ 0,51 · 24/24'], ['tlc', 'US$ 0,71 · 24/24']]) {
+      assert.match(s, new RegExp(`>${arm}</text>`), `${n}: ${arm} label`);
+      assert.ok(s.includes(`>${value}</text>`), `${n}: ${value} label`);
+    }
+    for (const tick of ['18/24', '24/24', 'US$ 0,20', 'US$ 0,80']) assert.ok(s.includes(`>${tick}</text>`), `${n}: axis ${tick}`);
   }
 });
 

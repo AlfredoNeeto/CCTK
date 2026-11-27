@@ -128,3 +128,4 @@ Proof: `node --test --test-name-pattern "relative links exist" test/toolkit.test
   passaram para `test/docs-conteudo.test.mjs`, rodado à mão; a afirmação de cada check não mudou
 - **Settled mid-build:** legenda do gráfico de halteres desenhada com `rect rx=6` para que os `<circle>` sejam só dados (C17 conta 16)
 - **Abandoned:** nada
+- **Settled mid-build (pós-verificação):** C18 passou a exigir os rótulos de ponto e os ticks como `<text>` próprios (mutante sem rótulos morto); cofre corrigido por experimento com `claude -p` 2.1.332 no Windows: `/` chega vazio ao PowerShell, `\` perde as barras nos dois terminais, `;`/`:`/espaço chegam
