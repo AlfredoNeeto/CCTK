@@ -45,7 +45,7 @@ node bench/run.mjs --arms toolkit --cota --reps 2                # mede US$ por 
 |---|---|
 | `padrao` | Claude Code de fábrica (Opus) |
 | `config` | só a configuração do toolkit (`settings.json` e CLAUDE.md) |
-| `toolkit` | instalação completa, com o plugin |
+| `toolkit` | instalação completa, com o plugin (desde 27/11/2026, com a revisão do `security-guidance` no Sonnet, como o kit grava) |
 | `high` | `config` com esforço high |
 | `tdd`, `spec`, `lean` | `config`/`toolkit` + uma regra a mais no CLAUDE.md |
 | `lsp` | `config` + plugins LSP oficiais |

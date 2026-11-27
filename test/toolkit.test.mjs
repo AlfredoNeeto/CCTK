@@ -64,6 +64,9 @@ test('backup → clean → writeConfig → restore round trip', () => {
   assert.ok(s.permissions.deny.includes('Read(**/.env)'));
   assert.strictEqual(s.permissions.blockWritesOutsideWorkingDirectories, true);
   assert.strictEqual(s.env.CLAUDE_CODE_MCP_ALLOWLIST_ENV, '1');
+  // security-guidance reviews on Sonnet (bench 27/11/2026), by full id: the plugin calls the API, which takes no alias.
+  assert.strictEqual(s.env.SECURITY_REVIEW_MODEL, 'claude-sonnet-5-5');
+  assert.strictEqual(s.env.SG_AGENTIC_MODEL, 'claude-sonnet-5-5');
   assert.match(s.statusLine.command, /statusline\.js/);
   assert.ok(fs.existsSync(path.join(p.runtime, 'ado-mcp.js')));
 

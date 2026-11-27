@@ -176,6 +176,11 @@ Sonnet | ctx 12% | cache 87% | 5h 8% (reset 14:30) | 7d 21% (reset 24/11 09:00)
    menos por execução, mas errou no rastreio entre arquivos e empatou no custo por acerto
    ([benchmark](../bench/README.md#resultados-19112026)).
    Subagente serve para isolar uma saída longa ou para uma revisão independente.
+7. **A revisão de segurança roda no Sonnet.** O `security-guidance` revisa as mudanças no fim de cada resposta e a
+   cada commit; de fábrica ele usa o Opus. No kit, `SECURITY_REVIEW_MODEL` e `SG_AGENTIC_MODEL` no `env` do
+   `~/.claude/settings.json` apontam para o Sonnet: no bench, a revisão custou ~5% a mais por tarefa, contra ~10% no
+   Opus, e o Sonnet também achou falha que os testes não pegavam ([benchmark](../bench/README.md#resultados-19112026)).
+   Para voltar ao Opus, troque o valor das duas por `claude-opus-5-5` (o próximo `cctk install` volta ao Sonnet).
 
 ## O check antes de encerrar
 
