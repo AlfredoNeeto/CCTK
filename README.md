@@ -138,7 +138,7 @@ Passo a passo completo, com o que conferir em cada etapa: [Primeiro uso](docs/GU
 | Rodapé com o modelo, quanto da conversa está ocupado e quanto da cota de 5 horas e de 7 dias já foi | Ver a cota antes de acabar | Funcionalidade |
 | Azure DevOps on-premises e consulta ao banco só para leitura (DBHub) | Ler cards, PRs e dados sem sair do Claude | Funcionalidade |
 | Respostas mais curtas e sem sugestão de próximo pedido | Menos texto, menos custo | Ainda não |
-| Revisão de segurança automática (`security-guidance`), navegador para conferir a tela (Playwright CLI) e documentação atualizada de bibliotecas (context7) | Achar falha de segurança, ver a tela, não usar API velha | Ainda não |
+| Revisão de segurança automática (`security-guidance`), navegador para conferir a tela (Playwright CLI) e documentação atualizada de bibliotecas (context7) | Achar falha de segurança, ver a tela, não usar API velha | Ainda não (a revisão custa ~10% a mais por tarefa; o ganho não foi medido) |
 
 "Sim" é ganho medido no [benchmark](bench/README.md). As travas e o OpenSpec não deixaram o Claude mais barato
 nem mais certeiro nos testes; ficam porque protegem no uso real.

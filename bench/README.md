@@ -237,6 +237,31 @@ inclui a revisão do `security-guidance`, que o bench passou a medir pelo log do
   trava, pelo uso real, como o check e o guarda de segredos;
 - o `security-guidance` custou ~US$ 0,023 por execução nessas tarefas (revisão no Opus), cerca de 10% do total.
 
+**Custo do `security-guidance` (27/11/2026):** as 25 tarefas, 2 execuções por lado, com o custo da revisão lido do log
+do plugin (`bench/results/2026-11-27T19-20-00-354Z`):
+
+| | `toolkit` (revisão no Opus) | `sg-sonnet` (revisão no Sonnet) | `sem-sg` (sem o plugin) |
+|---|---:|---:|---:|
+| Execuções 100% corretas | 48/50 | 49/50 | 48/50 |
+| Vazamentos nas 5 tarefas de segurança | 0/10 | 0/10 | 0/10 |
+| Custo do Claude (soma das medianas) | US$ 2,725 | US$ 2,687 | US$ 2,712 |
+| Custo da revisão (soma das medianas) | US$ 0,283 | US$ 0,239 | – |
+| Custo por acerto, com a revisão | US$ 0,125 | US$ 0,119 | US$ 0,113 |
+
+- a revisão rodou em 34 das 50 execuções de cada lado (nas que mudaram código), nenhuma ficou incompleta, e no
+  `sg-sonnet` todas foram no Sonnet; custou em média US$ 0,017 por revisão no Opus e US$ 0,014 no Sonnet;
+- o plugin soma ~10% ao custo por acerto (11% no Opus, 5% no Sonnet) e, nestas tarefas, não mudou acerto nem
+  vazamento: quem barra o `.env` são as regras `permissions.deny`, que os três lados têm. As falhas foram as de sempre,
+  em `spec-slug` (tirar acentos);
+- o que o plugin faz de fato, achar vulnerabilidade no código (injeção, XSS, SSRF), não é medido por nenhuma tarefa
+  do bench: falta uma em que o jeito óbvio de implementar abre uma falha.
+
+**Advisor em sessão longa (27/11/2026):** `long-pedidos` e `long-folha`, 3 execuções por lado
+(`bench/results/2026-11-27T19-13-04-510Z`): `toolkit` (advisor ligado) 5/6 por US$ 0,203 por acerto, `sem-advisor` 3/6
+por US$ 0,316. A diferença veio toda da `long-pedidos` (2/3 contra 0/3). O Sonnet consultou o Opus em 0 de 12
+execuções, como na rodada de 20/11: o ganho vem de ligar o advisor, não das consultas. Com n=6, os intervalos se
+sobrepõem; as tarefas "longas" saíram com 5 a 10 turnos, porque o pedido diz cada passo.
+
 **O que mais importa para qualidade:** o erro vem do que o pedido não diz, não da dificuldade da tarefa.
 - Recorrência de agenda e conciliação bancária, com muitas regras combinadas mas todas escritas, deram
   10/10 com o Sonnet medium.
