@@ -3,6 +3,8 @@
 Profile: light
 Plan: `.specs/features/subagente-busca/plan.md`
 
+Status: C1-C12 verdes; rodada `bench/results/2026-11-27T14-45-03-319Z` (a regra não passou: C12 e C10, C9 e C11 vazios).
+
 12 checks in 2 slices · 2 one-way doors · 0 open, of which 0 block
 
 Dois arquivos de teste, um teste por check, nomeado `C<n>`:
