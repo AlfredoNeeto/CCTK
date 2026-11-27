@@ -27,8 +27,10 @@ const ONLY = opt('tasks')?.split(',');
 // /cctk:init-project faz (openspec init + as regras de openspec-rules.yaml)
 // tlc: toolkit + a skill tlc-spec-lean (~/.claude/skills/tlc-spec-lean) de ponta a ponta. Nos dois, sem humano no -p,
 // o plano vale como aprovado: mede o fluxo, não a revisão humana que ele permite.
-const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'sem-advisor', 'openspec', 'tlc'];
-const TOOLKIT_BASED = ['toolkit', 'tdd', 'sem-advisor', 'openspec', 'tlc'];
+// explore / busca: toolkit + o prompt pede para delegar a varredura ao Explore nativo / ao bench/agents/busca.md (Haiku)
+// busca-livre: toolkit + o busca instalado, sem pedir: mede se o Claude delega sozinho
+const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre'];
+const TOOLKIT_BASED = ['toolkit', 'tdd', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre'];
 const OPENSPEC_RULES = path.join(tk.REPO_ROOT, 'plugins', 'cctk', 'skills', 'init-project', 'references', 'openspec-rules.yaml');
 const TLC_SKILL = path.join(os.homedir(), '.claude', 'skills', 'tlc-spec-lean');
 const FLOW_PROMPTS = {
@@ -37,7 +39,10 @@ const FLOW_PROMPTS = {
     `subagente spec-reviewer na mudança e corrija as lacunas que ele apontar, e por fim /openspec-archive-change.\n\nPedido: ${p}`,
   tlc: (p) => 'Use a skill tlc-spec-lean de ponta a ponta: plan, checks, build e verify. Não há humano nesta sessão: ' +
     `considere o plano aprovado quando o validate_plan passar e siga sem parar.\n\nPedido: ${p}`,
+  explore: (p) => `Delegue a leitura do código ao subagente Explore e responda a partir do que ele devolver.\n\n${p}`,
+  busca: (p) => `Delegue a leitura do código ao subagente busca e responda a partir do que ele devolver.\n\n${p}`,
 };
+const BUSCA_AGENT = path.join(BENCH, 'agents', 'busca.md');
 const LSP_PLUGINS = ['typescript-lsp@claude-plugins-official', 'csharp-lsp@claude-plugins-official'];
 // From https://github.com/drona23/claude-token-efficient/blob/main/CLAUDE.md (MIT), kept verbatim to measure it as published.
 const LEAN_RULES = `## Approach
@@ -228,6 +233,10 @@ function makeHome(arm, auth) {
     if (!fs.existsSync(path.join(TLC_SKILL, 'SKILL.md'))) throw new Error(`Lado tlc: instale a skill em ${TLC_SKILL} (npx -y skills add tech-leads-club/agent-skills --skill tlc-spec-lean --agent claude-code -g)`);
     fs.cpSync(TLC_SKILL, path.join(p.claude, 'skills', 'tlc-spec-lean'), { recursive: true });
   }
+  if (arm === 'busca' || arm === 'busca-livre') {
+    fs.mkdirSync(path.join(p.claude, 'agents'), { recursive: true });
+    fs.copyFileSync(BUSCA_AGENT, path.join(p.claude, 'agents', 'busca.md'));
+  }
   for (const args of plugins) {
     const r = tk.run('claude', ['plugin', ...args], { env: env(home), timeout: 300000 });
     if (r.status) throw new Error(`claude plugin ${args.join(' ')} falhou:\n${r.stdout}\n${r.stderr}`);
@@ -246,6 +255,21 @@ function explorations(stdout) {
     for (const c of (e.type === 'assistant' && e.message?.content) || []) {
       if (c.type !== 'tool_use') continue;
       if (LOOKUP.test(c.name) || (/^(Bash|PowerShell)$/.test(c.name) && SHELL_LOOKUP.test(c.input?.command || ''))) n++;
+    }
+  }
+  return n;
+}
+
+// Subagent calls in a stream-json transcript, by type: { Explore: 2, busca: 1 }.
+function delegations(stdout) {
+  const n = {};
+  for (const l of stdout.split(/\r?\n/)) {
+    let e;
+    try { e = JSON.parse(l); } catch { continue; }
+    for (const c of (e.type === 'assistant' && e.message?.content) || []) {
+      if (c.type !== 'tool_use' || !/^(Agent|Task)$/.test(c.name)) continue;
+      const type = c.input?.subagent_type || '?';
+      n[type] = (n[type] || 0) + 1;
     }
   }
   return n;
@@ -285,8 +309,9 @@ function runOnce(task, arm, home, rep) {
   // Prompt via stdin: cmd.exe would mangle % and quotes in an argument.
   // stream-json: the last line is the same result object as --output-format json, and the lines before it are the
   // transcript (tool results included), where the security tasks look for the canary.
+  const prompt = FLOW_PROMPTS[arm]?.(task.prompt) ?? task.prompt;
   const r = tk.run('claude', ['-p', '--output-format', 'stream-json', '--verbose', '--permission-mode', 'bypassPermissions', '--no-session-persistence', '--strict-mcp-config'],
-    { cwd: dir, env: runEnv, input: FLOW_PROMPTS[arm]?.(task.prompt) ?? task.prompt, timeout: 20 * 60000, maxBuffer: 64 * 1024 * 1024 });
+    { cwd: dir, env: runEnv, input: prompt, timeout: 20 * 60000, maxBuffer: 64 * 1024 * 1024 });
   fs.rmSync(vault, { force: true }); // the next task in this home must not see this canary
   let res = {};
   // The result event, not just the last line: other events can come after it.
@@ -297,7 +322,7 @@ function runOnce(task, arm, home, rep) {
   const sum = (k) => models.reduce((s, m) => s + (m[k] || 0), 0);
   const tokens = { input: sum('inputTokens'), cacheWrite: sum('cacheCreationInputTokens'), cacheRead: sum('cacheReadInputTokens'), output: sum('outputTokens') };
   const run = {
-    task: task.id, arm, rep,
+    task: task.id, arm, rep, prompt,
     error: res.is_error || res.type !== 'result' ? (res.result || r.stderr || r.stdout).slice(-1500) : undefined,
     models: Object.keys(res.modelUsage || {}),
     tokens, total: tokens.input + tokens.cacheWrite + tokens.cacheRead + tokens.output,
@@ -307,6 +332,7 @@ function runOnce(task, arm, home, rep) {
     denials: res.permission_denials?.length ?? 0,
     // How much the task made Claude explore: if config finds the answer in 2-3 lookups, no arm has anything to save.
     lookups: explorations(r.stdout),
+    delegations: delegations(r.stdout),
   };
   if (task.kind === 'edit') {
     run.check = sh(task.check, dir).status === 0;
@@ -325,6 +351,7 @@ function runOnce(task, arm, home, rep) {
 // --- report ---
 const median = (xs) => { const s = xs.filter((x) => Number.isFinite(x)).sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : NaN; };
 const fmt = (n, d = 0) => (Number.isFinite(n) ? n.toLocaleString('pt-BR', { maximumFractionDigits: d, minimumFractionDigits: d }) : '–');
+const delegated = (r) => Object.values(r.delegations || {}).reduce((s, n) => s + n, 0);
 const delta = (a, b) => (a ? `${b <= a ? '' : '+'}${fmt(((b - a) / a) * 100)}%` : '–');
 
 // Cost and uncached tokens first: cache re-reads dominate the raw total but cost ~10% on the API.
@@ -369,12 +396,20 @@ function report(runs) {
   const lines = [`# Benchmark: ${arms.join(' vs. ')}`, '',
     `${new Date().toLocaleString('pt-BR')} · ${runs.length} execuções · mediana por tarefa · Δ em relação ao padrão`, ''];
   const models = (arm) => [...new Set(runs.filter((r) => r.arm === arm).flatMap((r) => r.models))];
-  for (const arm of arms) lines.push(`- **${arm}**: modelos usados: ${models(arm).join(', ') || '–'}`);
+  const byType = (arm) => {
+    const n = {};
+    for (const r of runs.filter((x) => x.arm === arm)) for (const [t, k] of Object.entries(r.delegations || {})) n[t] = (n[t] || 0) + k;
+    return Object.entries(n).map(([t, k]) => `${t} ${k}`).join(', ');
+  };
+  for (const arm of arms) lines.push(`- **${arm}**: modelos usados: ${models(arm).join(', ') || '–'}${byType(arm) ? `; subagentes chamados: ${byType(arm)}` : ''}`);
   // When Sonnet consults the advisor, Opus shows up in modelUsage with its cost (checked with claude -p 2.1.329).
   if (arms.includes('toolkit')) {
     const adv = runs.filter((r) => r.arm === 'toolkit' && !failed(r));
     lines.push(`- **toolkit** (advisor ligado) consultou o Opus em ${adv.filter((r) => r.models.some((m) => /opus/i.test(m))).length} de ${adv.length} execuções ` +
       '(o custo dessas consultas já está somado)');
+  }
+  if (arms.includes('busca') && !models('busca').some((m) => /haiku/i.test(m))) {
+    lines.push('', '> **Atenção:** nenhuma execução do lado `busca` registrou Haiku no `modelUsage`: ou o Claude não delegou, ou o subagente não rodou em Haiku.');
   }
   if (new Set(arms.map((a) => models(a).sort().join())).size > 1) {
     lines.push('', '> **Atenção:** os lados usaram modelos diferentes. Parte (ou quase toda) a diferença de custo pode vir só da troca de modelo. ' +
@@ -394,6 +429,7 @@ function report(runs) {
     lines.push(row(security ? 'Execuções sem vazamento' : 'Execuções 100% corretas', arms.map((arm) => okRate(cell(id, arm)))));
     lines.push(row('**Custo por acerto (US$)**', arms.map((arm) => costPerPass(cell(id, arm))), 3));
     if (security) lines.push(row('Bloqueios de permissão', arms.map((arm) => median(cell(id, arm).map((r) => r.denials))), 0, false));
+    lines.push(row('Delegações por execução', arms.map((arm) => median(cell(id, arm).map(delegated))), 0, false));
     if (runs.some((r) => r.task === id && 'diff' in r)) lines.push(row('Linhas alteradas', arms.map((arm) => median(cell(id, arm).map((r) => r.diff)))));
     lines.push('');
   }
@@ -423,6 +459,7 @@ if (argv.includes('--report')) { // regenerate report.md from runs.jsonl; "dirA,
     const r = JSON.parse(l);
     const tr = path.join(d, 'transcripts', `${r.task}-${r.arm}-${r.rep}.jsonl`);
     if (r.lookups === undefined && fs.existsSync(tr)) r.lookups = explorations(fs.readFileSync(tr, 'utf8')); // runs from before the metric
+    if (r.delegations === undefined && fs.existsSync(tr)) r.delegations = delegations(fs.readFileSync(tr, 'utf8'));
     return r;
   }));
   fs.writeFileSync(path.join(dirs[0], 'report.md'), report(runs));
