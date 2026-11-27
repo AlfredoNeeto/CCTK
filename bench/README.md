@@ -116,17 +116,17 @@ Rodadas anteriores: 1.1.0, 46/48 por US$ 3,98; 1.0.2, 46/48 por US$ 4,80. Em tod
 - **Subagente de busca em Haiku** (`bench/agents/busca.md`, 27/11/2026): lados `toolkit`, `explore`, `busca` e
   `busca-livre`, nas 4 tarefas de pergunta, 3 execuções cada. Custo por acerto e acertos:
 
-  | Lado | Custo por acerto | Acertos |
-  |---|---:|---:|
-  | `toolkit` (o Sonnet lê sozinho) | US$ 0,124 | 12/12 |
-  | `explore` (o prompt pede o Explore) | US$ 0,184 | 12/12 |
-  | `busca` (o prompt pede o busca) | US$ 0,127 | 10/12 |
-  | `busca-livre` (busca instalado, sem pedir) | US$ 0,123 | 12/12 |
+  | Lado | Custo por acerto | Acertos | Delegações por execução |
+  |---|---:|---:|---:|
+  | `toolkit` (o Sonnet lê sozinho) | US$ 0,124 | 12/12 | 0 |
+  | `explore` (o prompt pede o Explore) | US$ 0,184 | 12/12 | 1 |
+  | `busca` (o prompt pede o busca) | US$ 0,127 | 10/12 | 1 |
+  | `busca-livre` (busca instalado, sem pedir) | US$ 0,123 | 12/12 | 0 |
 
   - o `busca` rodou em Haiku e custou ~35% menos por execução nas tarefas do Humanizer, mas errou 2 de 3 no
     rastreio (`dotnet-humanizer-trace`): apontou `NumberToWordsEngineContractFactory.cs` em vez de
     `GenerationHelpers.cs`. Nas tarefas pequenas, delegar custou o mesmo ou mais que ler direto;
-  - o Explore rodou em Sonnet (claude-sonnet-5-5) e custou ~48% mais por acerto que o Sonnet sozinho;
+  - o Explore rodou em Sonnet (claude-sonnet-5-5) e custou ~49% mais por acerto que o Sonnet sozinho;
   - sem pedir, o Claude não chamou o `busca` nenhuma vez (0 em 12 no `busca-livre`);
   - não passou na regra de entrada (custo por acerto ao menos 15% menor que o melhor entre `toolkit` e
     `explore`, sem acertar menos). O agente fica só no bench.

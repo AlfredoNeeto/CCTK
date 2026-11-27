@@ -44,6 +44,15 @@ test('C3 busca.md declares haiku, read-only tools and the arquivo:linha answer',
   assert.match(front, /^model: haiku$/m);
   assert.match(front, /^tools: Read, Grep, Glob$/m);
   assert.ok(body.includes('arquivo:linha'));
+  assert.ok(body.includes('Não copie arquivos inteiros'));
+});
+
+test('C13 turns add up across result segments; cost comes from the last one', () => {
+  const result = (turns, cost) => JSON.stringify({ type: 'result', num_turns: turns, total_cost_usd: cost, permission_denials: [] });
+  const md = report([run({ delegations: { Explore: 1 }, turns: 1 })], {
+    'node-question-busca-1': [result(2, 0.2), '{"type":"system","subtype":"init"}', result(1, 0.2)],
+  });
+  assert.equal(cell(md, 'node-question', 'Turnos', 'busca'), '3');
 });
 
 test('C5 Agent and Task calls in a transcript are counted by subagent type', () => {

@@ -168,6 +168,10 @@ Sonnet | ctx 12% | cache 87% | 5h 8% (reset 14:30) | 7d 21% (reset 24/11 09:00)
    statusline. O recurso ainda é experimental no Claude Code.
 4. **`/effort high` só em tarefa com muitas regras** (validação, importação, cálculo). Depois, `/effort medium`.
 5. **`/clear` entre assuntos diferentes.**
+6. **Não peça subagente para ler o código achando que economiza.** No kit, o Explore roda em Sonnet, e pedir
+   "use o Explore" custou ~49% mais por acerto que deixar o Sonnet ler sozinho. Um subagente em Haiku saiu
+   mais barato, mas errou no rastreio entre arquivos ([benchmark](../bench/README.md#resultados-19112026)).
+   Subagente serve para isolar uma saída longa ou para uma revisão independente.
 
 ## O check antes de encerrar
 

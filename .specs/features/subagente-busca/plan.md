@@ -32,7 +32,8 @@ Wilson) e as 4 tarefas `question` que já existem. Nenhuma tarefa nova.
    `bench/agents/busca.md` (door 1) para `<home>/.claude/agents/`
 3. `runOnce` (exists) - `FLOW_PROMPTS` (exists) ganha um prefixo para `explore` e outro para `busca`, que mandam
    delegar a varredura ao subagente; `busca-livre` recebe o pedido sem prefixo. Cada execução grava o prompt usado
-   e quantas delegações houve para cada `subagent_type`, lidas do transcrito
+   e quantas delegações houve para cada `subagent_type`, lidas do transcrito; turnos somam todos os eventos `result`
+   (o subagente em segundo plano parte a execução em trechos) e o tempo é o relógio da execução
 4. `report` (exists) - acrescenta a linha de delegações por execução e o aviso de modelo do `busca`; os modelos
    por lado já saem
 5. out: `bench/results/<data>/report.md`. Se a regra de entrada passar (critério 9), `bench/agents/busca.md`
@@ -81,6 +82,7 @@ Um comando roda os 4 lados nas 4 tarefas de pergunta e o relatório diz custo po
 6. The relatório SHALL ter, por tarefa, a linha "Delegações por execução" com a mediana de chamadas de subagente de cada lado
 7. IF nenhuma execução do lado `busca` registrar um modelo Haiku no `modelUsage` THEN o relatório SHALL dizer isso numa linha de atenção, como já faz com o advisor
 8. WHEN o `--report` junta uma rodada antiga sem `delegations` THEN o relatório SHALL sair sem erro, tratando o campo ausente como 0 delegações
+13. WHEN o transcrito tem mais de um evento `result` THEN a execução SHALL somar os turnos de todos eles, tirar custo e modelos do último e medir o tempo pelo relógio da execução
 
 **Independent test:** `node bench/run.mjs --dry` continua passando; uma rodada com `--reps 1` gera um `report.md` com as linhas dos critérios 6 e 7.
 
@@ -94,6 +96,7 @@ O resultado da rodada vira registro no `bench/README.md` e, se passar, um agente
 10. The `bench/README.md` SHALL registrar o resultado da rodada (custo por acerto, acertos e delegações dos 4 lados, e o modelo em que o `Explore` rodou), em "Resultados" se entrou ou em "O que não mostrou ganho" se não entrou
 11. WHERE o `busca` entrou e o `busca-livre` teve mediana de 0 delegações, the GUIA SHALL dizer para pedir "use o subagente busca" em perguntas que exigem ler muitos arquivos
 12. IF a regra do critério 9 não passar THEN o `bench/agents/busca.md` SHALL continuar só no bench e nada em `plugins/` SHALL mudar
+14. The GUIA SHALL avisar, em "Economizar cota", que no kit o Explore roda em Sonnet e quanto a mais ele custou por acerto na rodada, com link para o benchmark
 
 **Independent test:** ler o `report.md` da rodada, aplicar a regra do critério 9 à mão e conferir que o `bench/README.md` e o `plugins/cctk/agents/` batem com ela.
 

@@ -260,6 +260,20 @@ function explorations(stdout) {
   return n;
 }
 
+// With a background subagent, -p ends a segment, wakes on its notification and emits one result per segment.
+// Cost and modelUsage are cumulative (the last result has them all); turns and denials are per segment.
+function segments(stdout) {
+  const results = [];
+  for (const l of stdout.split(/\r?\n/)) {
+    try { const e = JSON.parse(l); if (e.type === 'result') results.push(e); } catch { /* not JSON */ }
+  }
+  return {
+    res: results.at(-1) || {},
+    turns: results.reduce((s, e) => s + (e.num_turns ?? 0), 0),
+    denials: results.reduce((s, e) => s + (e.permission_denials?.length ?? 0), 0),
+  };
+}
+
 // Subagent calls in a stream-json transcript, by type: { Explore: 2, busca: 1 }.
 function delegations(stdout) {
   const n = {};
@@ -313,11 +327,8 @@ function runOnce(task, arm, home, rep) {
   const r = tk.run('claude', ['-p', '--output-format', 'stream-json', '--verbose', '--permission-mode', 'bypassPermissions', '--no-session-persistence', '--strict-mcp-config'],
     { cwd: dir, env: runEnv, input: prompt, timeout: 20 * 60000, maxBuffer: 64 * 1024 * 1024 });
   fs.rmSync(vault, { force: true }); // the next task in this home must not see this canary
-  let res = {};
-  // The result event, not just the last line: other events can come after it.
-  for (const l of r.stdout.trim().split(/\r?\n/).reverse()) {
-    try { const e = JSON.parse(l); if (e.type === 'result') { res = e; break; } } catch { /* not JSON: keep looking */ }
-  }
+  const seconds = Math.round((Date.now() - started) / 1000); // wall clock: a background subagent runs between result segments
+  const { res, turns, denials } = segments(r.stdout);
   const models = Object.values(res.modelUsage || {});
   const sum = (k) => models.reduce((s, m) => s + (m[k] || 0), 0);
   const tokens = { input: sum('inputTokens'), cacheWrite: sum('cacheCreationInputTokens'), cacheRead: sum('cacheReadInputTokens'), output: sum('outputTokens') };
@@ -327,9 +338,9 @@ function runOnce(task, arm, home, rep) {
     models: Object.keys(res.modelUsage || {}),
     tokens, total: tokens.input + tokens.cacheWrite + tokens.cacheRead + tokens.output,
     fresh: tokens.input + tokens.cacheWrite + tokens.output, // what cache reads don't discount
-    cost: res.total_cost_usd ?? 0, turns: res.num_turns ?? 0, seconds: Math.round((res.duration_ms ?? Date.now() - started) / 1000),
+    cost: res.total_cost_usd ?? 0, turns, seconds,
     answerChars: (res.result || '').length,
-    denials: res.permission_denials?.length ?? 0,
+    denials,
     // How much the task made Claude explore: if config finds the answer in 2-3 lookups, no arm has anything to save.
     lookups: explorations(r.stdout),
     delegations: delegations(r.stdout),
@@ -459,7 +470,11 @@ if (argv.includes('--report')) { // regenerate report.md from runs.jsonl; "dirA,
     const r = JSON.parse(l);
     const tr = path.join(d, 'transcripts', `${r.task}-${r.arm}-${r.rep}.jsonl`);
     if (r.lookups === undefined && fs.existsSync(tr)) r.lookups = explorations(fs.readFileSync(tr, 'utf8')); // runs from before the metric
-    if (r.delegations === undefined && fs.existsSync(tr)) r.delegations = delegations(fs.readFileSync(tr, 'utf8'));
+    if (fs.existsSync(tr)) {
+      const text = fs.readFileSync(tr, 'utf8');
+      if (r.delegations === undefined) r.delegations = delegations(text);
+      if (segments(text).turns) r.turns = segments(text).turns; // runs that kept only the last segment's turns
+    }
     return r;
   }));
   fs.writeFileSync(path.join(dirs[0], 'report.md'), report(runs));
