@@ -22,12 +22,26 @@ export function parseUsage(text = '') {
   return session && week ? { session, week } : null;
 }
 
+// "Nov 27, 8:19pm (America/Cuiaba)" or "Dec 4, 3pm (...)" as minutes in a year, to compare two readings; null if unreadable.
+const MESES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+export function minutos(texto = '') {
+  const m = texto.match(/^(\w{3})\w*\s+(\d{1,2}),\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
+  const mes = m && MESES.indexOf(m[1].toLowerCase());
+  if (!m || mes < 0) return null;
+  const h = (Number(m[3]) % 12) + (m[5].toLowerCase() === 'pm' ? 12 : 0);
+  return ((mes * 31 + Number(m[2])) * 24 + h) * 60 + Number(m[4] || 0);
+}
+
 // US$ per 1% of each window, or why that window can't be used. `cost` is everything the round spent.
 export function quota(before, after, cost) {
   const out = {};
   for (const k of ['session', 'week']) {
     const delta = after[k].pct - before[k].pct;
-    if (before[k].resets !== after[k].resets) out[k] = { invalid: 'a janela reiniciou durante a rodada' };
+    // /usage rounds the reset time ("8:19pm" then "8:20pm", "2:59pm" then "3pm"): only a jump of more than 30 min, or
+    // usage going down, is a real reset. An unreadable time falls back to comparing the text.
+    const a = minutos(before[k].resets), b = minutos(after[k].resets);
+    const reiniciou = delta < 0 || (a !== null && b !== null ? Math.abs(b - a) > 30 : before[k].resets !== after[k].resets);
+    if (reiniciou) out[k] = { invalid: 'a janela reiniciou durante a rodada' };
     else if (delta <= 0) out[k] = { invalid: 'a cota não se moveu: a rodada foi pequena demais para medir' };
     else out[k] = { delta, perPct: cost / delta };
   }

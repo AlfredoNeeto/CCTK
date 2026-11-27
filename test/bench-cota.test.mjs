@@ -129,6 +129,20 @@ test('C9 a window that reset during the round is invalid; the other is still com
   const md = report(spent, { before: { session: w(40, 'A'), week: w(30, 'W') }, after: { session: w(50, 'B'), week: w(33, 'W') } });
   assert.match(md, /Sessão de 5 horas: 40% → 50%, inválida \(a janela reiniciou durante a rodada\)/);
   assert.match(md, /Semana \(todos os modelos\): 30% → 33% \(\+3 pontos\): \*\*US\$ 2,00 por 1%\*\*/);
+  // What /usage prints: the reset time rounds by a minute between readings ("8:19pm" -> "8:20pm", "2:59pm" -> "3pm");
+  // that is the same window. A jump of hours, or usage going down, is a real reset.
+  const real = report(spent, {
+    before: { session: w(36, 'Nov 27, 8:19pm (America/Cuiaba)'), week: w(30, 'Dec 4, 2:59pm (America/Cuiaba)') },
+    after: { session: w(44, 'Nov 27, 8:20pm (America/Cuiaba)'), week: w(33, 'Dec 4, 3pm (America/Cuiaba)') },
+  });
+  assert.match(real, /Sessão de 5 horas: 36% → 44% \(\+8 pontos\): \*\*US\$ 0,75 por 1%\*\*/);
+  assert.match(real, /Semana \(todos os modelos\): 30% → 33% \(\+3 pontos\)/);
+  const saltou = report(spent, {
+    before: { session: w(36, 'Nov 27, 3:19pm (America/Cuiaba)'), week: w(30, 'Dec 4, 3pm (America/Cuiaba)') },
+    after: { session: w(44, 'Nov 27, 8:20pm (America/Cuiaba)'), week: w(2, 'Dec 4, 3pm (America/Cuiaba)') },
+  });
+  assert.match(saltou, /Sessão de 5 horas: 36% → 44%, inválida/);
+  assert.match(saltou, /Semana \(todos os modelos\): 30% → 2%, inválida/);
 });
 
 test('C10 US$ per 1% is the round total, Claude plus plugin, over the points used', () => {

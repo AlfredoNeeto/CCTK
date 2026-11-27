@@ -288,6 +288,26 @@ sobrepõem; as tarefas "longas" saíram com 5 a 10 turnos, porque o pedido diz c
 - Quase todas as falhas na importação de CSV eram uma regra que faltava no enunciado.
 - Por isso o fluxo do toolkit põe a spec (OpenSpec) antes do código.
 
+## Cota do Pro (27/11/2026)
+
+Quanto custo de API cabe na cota do plano Pro. A rodada leu o `/usage` antes e depois de rodar o kit (Sonnet, com a
+revisão do `security-guidance` no Sonnet) nas 25 tarefas, 2 execuções cada, sem outro uso da conta
+(`bench/results/2026-11-27T20-52-44-965Z`, `node bench/run.mjs --cota`):
+
+| Janela | Antes → depois | Custo da rodada | US$ por 1% | A janela inteira |
+|---|---|---:|---:|---:|
+| Sessão de 5 horas | 36% → 44% | US$ 6,02 | **US$ 0,67 a 0,86** (≈ 0,75) | ≈ US$ 75 |
+| Semana (todos os modelos) | 4% → 5% | US$ 6,02 | **mais de US$ 3** | mais de US$ 300 |
+
+- o `/usage` mostra % inteiro, então a variação real da sessão está entre 7 e 9 pontos, e a da semana entre 0 e 2: a
+  semana precisa de uma rodada bem maior para virar um número;
+- em tarefas do bench (US$ 0,12 por execução, em média, com a revisão), 1% da janela de 5 horas são umas 6 tarefas.
+  Tarefas reais costumam ser maiores; use o dólar, não a contagem;
+- vale para o Sonnet. Quanto o Opus pesa na cota por dólar não foi medido: a conta "o kit custa metade" assume que a
+  cota segue o custo de API, o que não foi testado;
+- a primeira versão do relatório marcou as duas janelas como inválidas porque o `/usage` arredonda o horário do reset
+  ("8:19pm" depois "8:20pm"); a regra agora só vê reset num salto de mais de 30 minutos ou com o uso caindo.
+
 ## Avaliado e fora
 
 - **rtk** (rtk-ai/rtk, 18/11/2026):

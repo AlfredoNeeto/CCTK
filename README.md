@@ -30,8 +30,8 @@ Projeto da comunidade, sem vínculo com a Anthropic.
 
 **Como medimos:** rodamos o Claude Code de verdade nas mesmas tarefas, com e sem o kit, várias vezes cada, e
 conferimos o resultado com testes que o Claude não vê. O custo é o preço que essas execuções teriam na API da
-Anthropic. A Anthropic não publica quanto cada modelo gasta da cota do Pro, então esse número serve para comparar,
-não para prever a sua cota.
+Anthropic. A Anthropic não publica quanto isso gasta da cota do Pro; numa rodada medida com o kit (Sonnet), 1% da
+janela de 5 horas foi cerca de US$ 0,75, ou umas 6 tarefas pequenas ([cota](bench/README.md#cota-do-pro-27112026)).
 
 A versão 1.4 acertou 49 de 50 execuções e não deixou vazar nenhum segredo nos testes de segurança. Das 16 mudanças
 que testamos no placar para gastar menos ou acertar mais, 6 entraram no kit; o que não ajudou ficou de fora.
