@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "cctk",
-      "description": "Check obrigatório antes de encerrar, cofre de variáveis, auditoria de terceiros, init de projeto com OpenSpec e conversão de documentos.",
+      "description": "Check obrigatório antes de encerrar, cofre de variáveis, auditoria de terceiros, init de projeto com OpenSpec, conversão de documentos e protótipo de tela com especificação.",
       "source": "./plugins/cctk",
       "category": "productivity"
     }

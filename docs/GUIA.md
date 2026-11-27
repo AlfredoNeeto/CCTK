@@ -8,6 +8,7 @@ Como trabalhar com o Claude Code depois de instalar o kit. Leva 5 minutos para l
 - [Ler a statusline](#ler-a-statusline)
 - [Tarefa pequena](#tarefa-pequena)
 - [Feature ou bug com regra de negócio](#feature-ou-bug-com-regra-de-negócio)
+- [Protótipo de tela](#protótipo-de-tela)
 - [Economizar cota](#economizar-cota)
 - [O check antes de encerrar](#o-check-antes-de-encerrar)
 - [Documentos e ferramentas de terceiros](#documentos-e-ferramentas-de-terceiros)
@@ -69,6 +70,34 @@ O fluxo custa cerca de 5× uma tarefa feita direto ([benchmark](../bench/README.
 | 5 | mesma sessão | `/openspec-archive-change` e `/clear` |
 
 Uma mudança por sessão de implementação.
+
+## Protótipo de tela
+
+Para o cliente clicar e aprovar antes de construir. Use `/cctk:prototipo`: o Claude escreve um HTML por tela sobre
+um CSS base que vem pronto, confere links e layout por script e, no fim, entrega o que você escolher.
+
+```text
+/cctk:prototipo login, painel (resumo do mês e próximos vencimentos) e contas a pagar (lista com filtro por período)
+/cctk:prototipo recrie esta tela: C:\prints\tela-atual.png
+/cctk:prototipo app de celular: lista de pedidos e detalhe do pedido
+```
+
+Num teste de 3 telas com 2 rodadas de ajuste, 3 execuções de cada lado (27/11/2026), a skill custou em média 18%
+menos que pedir sem ela (US$ 0,31 a 0,37 contra 0,37 a 0,44), com a mesma qualidade: a troca de cor mexe só no
+`tema.css`, e o Claude não reescreve CSS. O Google Stitch custou parecido por script e 3,6× mais pelo MCP, e
+inventou funcionalidades e usou marcas reais.
+
+| Para | Faça |
+|---|---|
+| Telas do zero | Descreva as telas e o que cada uma mostra. Dados fictícios coerentes entre as telas, nada além do pedido |
+| A partir de um sistema que já existe | Mande o print. A skill copia layout, rótulos e menus, **troca todo dado do print por fictício** e compara uma vez com o original. Custa mais: numa tela densa, US$ 0,35 a 0,50 (3 execuções), contra 0,20 a 0,30 de um pedido simples, que nas 3 vezes copiou para o protótipo nomes, marcas e CNPJ do print. Mesmo assim, tarje nome e CPF antes de mandar |
+| Telas com a cara do app | Diga de onde vêm as cores: "use as cores de `src/theme.css`". Um arquivo, não o app inteiro |
+| App mobile (Flutter) | Diga "app" ou "celular": 390 px, visual Material |
+| Ajustes | Peça todos de uma vez |
+| Mandar ao cliente | No fim, peça **zip** (com LEIA-ME para extrair antes de abrir) ou **HTML único** (um arquivo, bom para e-mail e WhatsApp). Não publique em hospedagem aberta |
+| Especificação | No fim, peça a **especificação**: PDF com as telas numeradas e a legenda de cada número, no modelo de mercado (escopo, requisitos, regras, mensagens, telas, questões em aberto). As seções opcionais você escolhe. Para implementar, siga com o [OpenSpec](#feature-ou-bug-com-regra-de-negócio) citando o `especificacao.md` |
+
+Não use dados reais de cliente no protótipo: ele vai para fora.
 
 ## Economizar cota
 

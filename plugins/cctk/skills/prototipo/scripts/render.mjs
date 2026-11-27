@@ -1,0 +1,391 @@
+#!/usr/bin/env node
+// Ferramentas do /cctk:prototipo. Usa o Playwright que o cctk já instala (o CLI bloqueia file:, por isso o script).
+// Saída curta de propósito: o Claude lê só o resumo, nunca o HTML nem a imagem, salvo quando pede.
+//   init <pasta> [--mobile]           copia estilo.css e cria tema.css
+//   medir <print>                     tamanho real da tela do print (zoom 200% de tela retina)
+//   checar <pasta>                    links quebrados, rolagem horizontal, texto estourando, erros de console
+//   prints <pasta> [--anotar] [tela.html[#estado] ...]   PNG de cada tela em <pasta>/prints/
+//   lado <original.png|jpg> <tela.html> <saida.png>     original x protótipo numa imagem só, já reduzida
+//   pdf <especificacao.md|html> [saida.pdf]             PDF A4 com número de página
+//   unico <pasta> <saida.html>        um HTML só, com CSS e imagens dentro e navegação entre as telas
+//   zip <pasta> <saida.zip>           zip para mandar ao cliente (sem prints, notas e rascunhos)
+import fs from 'node:fs';
+import path from 'node:path';
+import zlib from 'node:zlib';
+import { execSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const ASSETS = path.join(HERE, '..', 'assets');
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const url = (f) => pathToFileURL(path.resolve(f)).href;
+const telas = (dir) => fs.readdirSync(dir).filter((f) => /\.html?$/i.test(f) && !f.startsWith('.') && !/^especificacao/i.test(f)).sort();
+
+// ---------- Markdown -> HTML (o subconjunto que o modelo de especificação usa) ----------
+function inline(s) {
+  const codes = [];
+  s = esc(s).replace(/`([^`]+)`/g, (_, c) => `\u0000${codes.push(c) - 1}\u0000`);
+  s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, '<img src="$2" alt="$1">')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*\w])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
+    .replace(/~~([^~]+)~~/g, '<del>$1</del>')
+    .replace(/\\([\\`*_{}\[\]()#+\-.!|>~])/g, '$1');
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[i]}</code>`);
+}
+const cells = (l) => l.trim().replace(/^\||\|$/g, '').split(/(?<!\\)\|/).map((c) => c.trim());
+
+export function md2html(md) {
+  const L = md.replace(/<!--[\s\S]*?-->/g, '').replace(/\r/g, '').split('\n');
+  const out = [];
+  for (let i = 0; i < L.length;) {
+    const l = L[i];
+    let m;
+    if (!l.trim()) { i++; continue; }
+    if ((m = l.match(/^```\s*(\w*)/))) {
+      const buf = [];
+      for (i++; i < L.length && !/^```/.test(L[i]); i++) buf.push(L[i]);
+      i++;
+      out.push(m[1] === 'mermaid' ? `<pre class="mermaid">${esc(buf.join('\n'))}</pre>` : `<pre><code>${esc(buf.join('\n'))}</code></pre>`);
+    } else if ((m = l.match(/^(#{1,6})\s+(.*)/))) {
+      out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`); i++;
+    } else if (/^\s*([-*_])\s*\1\s*\1[\s\1]*$/.test(l)) {
+      out.push('<hr>'); i++;
+    } else if (/^\s*\|/.test(l) && /^\s*\|?\s*:?-{3,}/.test(L[i + 1] || '')) {
+      const head = cells(l);
+      const rows = [];
+      for (i += 2; i < L.length && /^\s*\|/.test(L[i]); i++) rows.push(cells(L[i]));
+      out.push(`<table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${
+        rows.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
+    } else if (/^\s*([-*]|\d+\.)\s+/.test(l)) {
+      const ol = /^\s*\d+\./.test(l);
+      const items = [];
+      for (; i < L.length && L[i].trim() && (/^\s*([-*]|\d+\.)\s+/.test(L[i]) || /^\s{2,}/.test(L[i])); i++) {
+        if (/^\s*([-*]|\d+\.)\s+/.test(L[i]) && !/^\s{2,}/.test(L[i])) items.push(L[i].replace(/^\s*([-*]|\d+\.)\s+/, ''));
+        else items[items.length - 1] += ' ' + L[i].trim().replace(/^([-*]|\d+\.)\s+/, '· ');
+      }
+      out.push(`<${ol ? 'ol' : 'ul'}>${items.map((t) => `<li>${inline(t)}</li>`).join('')}</${ol ? 'ol' : 'ul'}>`);
+    } else if (/^>\s?/.test(l)) {
+      const buf = [];
+      for (; i < L.length && /^>\s?/.test(L[i]); i++) buf.push(L[i].replace(/^>\s?/, ''));
+      out.push(`<blockquote>${inline(buf.join(' '))}</blockquote>`);
+    } else if ((m = l.match(/^!\[([^\]]*)\]\(([^)\s]+)\)\s*$/))) {
+      out.push(`<figure><img src="${esc(m[2])}" alt="${esc(m[1])}">${m[1] ? `<figcaption>${inline(m[1])}</figcaption>` : ''}</figure>`); i++;
+    } else {
+      const buf = [];
+      for (; i < L.length && L[i].trim() && !/^(#{1,6}\s|```|>|\s*\||\s*([-*]|\d+\.)\s+)/.test(L[i]); i++) buf.push(L[i].trim());
+      if (!buf.length) buf.push(L[i++].trim());
+      out.push(`<p>${inline(buf.join(' '))}</p>`);
+    }
+  }
+  return out.join('\n');
+}
+
+const PDF_CSS = `@page{size:A4;margin:16mm 15mm 18mm}
+body{font:10pt/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#0f172a;margin:0}
+h1{font-size:20pt;margin:0 0 8pt;padding-bottom:6pt;border-bottom:2px solid #0f172a}
+h2{font-size:14pt;margin:20pt 0 6pt;padding-bottom:3pt;border-bottom:1px solid #cbd5e1}
+h3{font-size:11.5pt;margin:14pt 0 4pt}h4{font-size:10.5pt;margin:12pt 0 4pt}
+h1,h2,h3,h4{break-after:avoid}p,li{orphans:3;widows:3}p{margin:0 0 6pt}ul,ol{margin:0 0 6pt;padding-left:18pt}
+table{width:100%;border-collapse:collapse;margin:4pt 0 10pt;font-size:9pt}tr{break-inside:avoid}
+th,td{border:1px solid #cbd5e1;padding:4pt 6pt;text-align:left;vertical-align:top}th{background:#f1f5f9}
+code{font:8.5pt Consolas,monospace;background:#f1f5f9;padding:0 3px;border-radius:3px}
+pre{font:8.5pt/1.4 Consolas,monospace;background:#f8fafc;border:1px solid #e2e8f0;padding:8pt;white-space:pre-wrap;break-inside:avoid}
+pre code{background:none;padding:0}pre.mermaid{background:none;border:0;text-align:center}
+figure{margin:6pt 0 10pt;break-inside:avoid;text-align:center}
+figure img{max-width:100%;max-height:205mm;border:1px solid #cbd5e1}
+figcaption{font-size:8.5pt;color:#64748b;margin-top:3pt}
+blockquote{margin:6pt 0;padding:6pt 10pt;border-left:3px solid #94a3b8;background:#f8fafc}
+hr{border:0;break-after:page}`;
+
+// ---------- Playwright ----------
+let pwCache;
+function playwright() {
+  if (pwCache) return pwCache;
+  let root;
+  try { root = execSync('npm root -g', { encoding: 'utf8', timeout: 20000, stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch {}
+  for (const base of [process.cwd(), root && path.join(root, '@playwright', 'cli'), root].filter(Boolean)) {
+    const req = createRequire(path.join(base, 'noop.js'));
+    for (const name of ['playwright-core', 'playwright']) { try { return (pwCache = req(name)); } catch {} }
+  }
+  throw new Error('Playwright não encontrado. Rode: npm install -g @playwright/cli');
+}
+async function browser() {
+  const { chromium } = playwright();
+  for (const opts of [{ channel: 'chrome' }, { channel: 'msedge' }, {}]) {
+    try { return await chromium.launch(opts); } catch {}
+  }
+  throw new Error('Nenhum Chrome/Edge encontrado. Instale o Chrome ou rode: npx playwright install chromium');
+}
+async function abrir(page, file, hash = '') {
+  await page.goto(url(file) + hash, { waitUntil: 'load', timeout: 30000 });
+  await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+  if (await page.evaluate(() => document.body.classList.contains('mobile'))) await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => document.fonts.ready);
+}
+
+async function checar(dir) {
+  const b = await browser();
+  let problemas = 0;
+  try {
+    for (const f of telas(dir)) {
+      const page = await b.newPage({ viewport: { width: 1440, height: 900 } });
+      const erros = [];
+      page.on('pageerror', (e) => erros.push(`erro de script: ${e.message}`));
+      page.on('console', (m) => m.type() === 'error' && erros.push(`console: ${m.text().slice(0, 120)}`));
+      page.on('requestfailed', (r) => erros.push(`não carregou: ${decodeURI(r.url()).split('/').slice(-2).join('/')}`));
+      await abrir(page, path.join(dir, f));
+      const r = await page.evaluate(() => {
+        const out = [];
+        const sel = (e) => e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + [...e.classList].map((c) => '.' + c).join('') +
+          ` "${(e.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 30)}"`;
+        const W = document.documentElement.clientWidth;
+        if (document.documentElement.scrollWidth > W + 1) out.push(`rolagem horizontal: ${document.documentElement.scrollWidth}px numa janela de ${W}px`);
+        if (!document.querySelector('link[href*="estilo.css"]')) out.push('não liga o estilo.css');
+        const estouro = [...document.querySelectorAll('.btn,.selo,.valor,label,th,.card,.caixa>header,.barra-app,.nav-inferior a,.menu nav a')]
+          .filter((e) => e.scrollWidth > e.clientWidth + 2 && getComputedStyle(e).overflowX === 'visible').slice(0, 3);
+        for (const e of estouro) out.push(`texto estourando: ${sel(e)}`);
+        const nums = [...document.querySelectorAll('[data-anotacao]')].map((e) => e.dataset.anotacao);
+        const dup = nums.filter((n, i) => nums.indexOf(n) !== i);
+        if (dup.length) out.push(`anotação repetida: ${[...new Set(dup)].join(', ')}`);
+        const links = [...document.querySelectorAll('a[href]')].map((a) => a.getAttribute('href'))
+          .filter((h) => h && !/^(#|https?:|mailto:|tel:|javascript:)/i.test(h));
+        return { out, links };
+      });
+      for (const h of new Set(r.links)) {
+        if (!fs.existsSync(path.resolve(dir, decodeURI(h.split(/[?#]/)[0])))) r.out.push(`link quebrado: ${h}`);
+      }
+      const todos = [...r.out, ...new Set(erros)];
+      problemas += todos.length;
+      console.log(todos.length ? `${f}:\n  - ${todos.join('\n  - ')}` : `${f}: ok`);
+      await page.close();
+    }
+  } finally { await b.close(); }
+  if (problemas) process.exitCode = 1;
+}
+
+const ANOTAR = () => {
+  for (const el of document.querySelectorAll('[data-anotacao]')) {
+    const r = el.getBoundingClientRect();
+    const b = document.createElement('span');
+    b.textContent = el.dataset.anotacao;
+    Object.assign(b.style, { position: 'absolute', left: `${Math.max(2, r.left + scrollX - 12)}px`, top: `${Math.max(2, r.top + scrollY - 12)}px`,
+      width: '24px', height: '24px', borderRadius: '50%', background: '#ea580c', color: '#fff', font: '700 13px/24px system-ui,sans-serif',
+      textAlign: 'center', zIndex: 2147483647, boxShadow: '0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.3)' });
+    el.style.outline = '2px solid rgba(234,88,12,.75)';
+    el.style.outlineOffset = '2px';
+    document.body.appendChild(b);
+  }
+};
+
+async function prints(dir, anotar, lista) {
+  const alvo = lista.length ? lista : telas(dir);
+  fs.mkdirSync(path.join(dir, 'prints'), { recursive: true });
+  const b = await browser();
+  try {
+    for (const t of alvo) {
+      const [f, h] = t.split('#');
+      const page = await b.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+      await abrir(page, path.join(dir, f), h ? '#' + h : '');
+      if (anotar) await page.evaluate(ANOTAR);
+      const nome = f.replace(/\.html?$/i, '') + (h ? `--${h}` : '') + '.png';
+      await page.screenshot({ path: path.join(dir, 'prints', nome), fullPage: !h });
+      console.log(`ok prints/${nome}`);
+      await page.close();
+    }
+  } finally { await b.close(); }
+}
+
+async function lado(original, tela, saida) {
+  const b = await browser();
+  const tmp = path.join(path.dirname(path.resolve(saida)), `.lado-${process.pid}`);
+  try {
+    const page = await b.newPage();
+    await page.goto(url(original));
+    let { w, h } = await page.evaluate(() => ({ w: document.images[0].naturalWidth, h: document.images[0].naturalHeight }));
+    const dpr = zoom(w, h);
+    await page.setViewportSize({ width: Math.round(w / dpr), height: Math.round(h / dpr) });
+    const p2 = await b.newPage({ viewport: { width: Math.round(w / dpr), height: Math.round(h / dpr) }, deviceScaleFactor: dpr });
+    await abrir(p2, tela);
+    await p2.screenshot({ path: tmp + '.png' });
+    const W = 1560; // cabe no limite de imagem do Claude sem ser reduzida de novo
+    fs.writeFileSync(tmp + '.html', `<!doctype html><meta charset="utf-8"><style>body{margin:0;font:600 14px system-ui;background:#fff}
+      .l{display:flex;gap:8px;width:${W}px}.l div{flex:1}.l p{margin:4px 0;background:#0f172a;color:#fff;padding:4px 8px}img{width:100%;display:block;outline:1px solid #cbd5e1}</style>
+      <div class="l"><div><p>ORIGINAL</p><img src="${url(original)}"></div><div><p>PROTÓTIPO</p><img src="${url(tmp + '.png')}"></div></div>`);
+    await page.setViewportSize({ width: W, height: 400 });
+    await page.goto(url(tmp + '.html'));
+    await page.screenshot({ path: saida, fullPage: true });
+    console.log(`ok ${saida} (abra esta imagem para comparar)`);
+  } finally {
+    await b.close();
+    for (const e of ['.png', '.html']) fs.rmSync(tmp + e, { force: true });
+  }
+}
+
+async function pdf(entrada, saida) {
+  saida ||= entrada.replace(/\.(md|html?)$/i, '') + '.pdf';
+  const dir = path.dirname(path.resolve(entrada));
+  const src = fs.readFileSync(entrada, 'utf8');
+  const corpo = /\.md$/i.test(entrada) ? md2html(src) : src;
+  const titulo = (corpo.match(/<h1[^>]*>(.*?)<\/h1>/i)?.[1] || path.basename(entrada)).replace(/<[^>]+>/g, '');
+  const tmp = path.join(dir, `.pdf-${process.pid}.html`);
+  fs.writeFileSync(tmp, /<html/i.test(corpo) ? corpo
+    : `<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>${esc(titulo)}</title><style>${PDF_CSS}</style><body>${corpo}</body></html>`);
+  const b = await browser();
+  try {
+    const page = await b.newPage();
+    await page.goto(url(tmp), { waitUntil: 'load', timeout: 30000 });
+    if (await page.$('pre.mermaid')) { // diagrama: precisa de rede; sem rede fica o texto do diagrama
+      const ok = await Promise.race([
+        page.addScriptTag({ url: 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js' })
+          .then(() => page.evaluate(async () => { mermaid.initialize({ startOnLoad: false }); await mermaid.run(); return true; })),
+        new Promise((r) => setTimeout(() => r(false), 10000)),
+      ]).catch(() => false);
+      if (!ok) console.log('aviso: diagrama mermaid sem rede, ficou como texto');
+    }
+    await page.evaluate(() => document.fonts.ready);
+    await page.pdf({ path: saida, format: 'A4', printBackground: true, preferCSSPageSize: true, displayHeaderFooter: true, outline: true, tagged: true,
+      headerTemplate: '<span></span>',
+      footerTemplate: `<div style="font:8px system-ui,sans-serif;color:#64748b;width:100%;padding:0 15mm;display:flex;justify-content:space-between">
+        <span>${esc(titulo)}</span><span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span></div>` });
+    console.log(`ok ${saida}`);
+  } finally {
+    await b.close();
+    fs.rmSync(tmp, { force: true });
+  }
+}
+
+// ---------- HTML único e zip ----------
+const MIME = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.gif': 'image/gif', '.webp': 'image/webp' };
+export function unico(dir) {
+  const fs_ = telas(dir);
+  if (!fs_.length) throw new Error(`nenhuma tela em ${dir}`);
+  const primeira = ['index.html', 'login.html'].find((f) => fs_.includes(f)) || fs_[0];
+  const ordem = [primeira, ...fs_.filter((f) => f !== primeira)];
+  const id = (f) => 'p-' + f.replace(/\.html?$/i, '').replace(/[^\w-]/g, '-');
+  const css = new Set();
+  let titulo = '';
+  const secoes = ordem.map((f) => {
+    let h = fs.readFileSync(path.join(dir, f), 'utf8');
+    titulo ||= h.match(/<title>(.*?)<\/title>/i)?.[1] || 'Protótipo';
+    for (const m of h.matchAll(/<link[^>]+href="([^"]+\.css)"/gi)) if (!/^https?:/i.test(m[1])) css.add(m[1]);
+    const classe = h.match(/<body[^>]*class="([^"]*)"/i)?.[1] || '';
+    h = (h.match(/<body[^>]*>([\s\S]*)<\/body>/i)?.[1] ?? h)
+      .replace(/href="([^"#:]+\.html?)(#[^"]*)?"/gi, (m, alvo) => fs_.includes(alvo) ? `href="#${id(alvo)}"` : m)
+      .replace(/src="([^":]+\.(png|jpe?g|svg|gif|webp))"/gi, (m, s, ext) => {
+        const p = path.join(dir, s);
+        return fs.existsSync(p) ? `src="data:${MIME['.' + ext.toLowerCase()]};base64,${fs.readFileSync(p).toString('base64')}"` : m;
+      });
+    return `<section class="pagina" data-classe="${classe}" id="${id(f)}">${h}</section>`;
+  });
+  const estilos = [...css].map((c) => (fs.existsSync(path.join(dir, c)) ? fs.readFileSync(path.join(dir, c), 'utf8') : '')).join('\n');
+  const fontes = [...new Set([...fs.readFileSync(path.join(dir, primeira), 'utf8').matchAll(/<link[^>]+href="(https:\/\/fonts[^"]+)"[^>]*>/gi)].map((m) => m[0]))].join('');
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${titulo}</title>${fontes}<style>${estilos}
+.pagina[hidden]{display:none!important}</style></head><body>
+${secoes.join('\n')}
+<script>function mostrar(){var a=location.hash.slice(1),e=a&&document.getElementById(a),s=e&&e.closest('.pagina')||document.querySelector('.pagina');
+document.querySelectorAll('.pagina').forEach(function(p){p.hidden=p!==s});document.body.className=s.dataset.classe;if(e===s)scrollTo(0,0)}
+addEventListener('hashchange',mostrar);mostrar();</script></body></html>`;
+}
+
+const FORA = /^(prints|revisao|\.[^/]*)(\/|$)|^notas\.md$|^especificacao\.(md|html?)$|\.zip$/i;
+export function zip(files) {
+  const d = new Date();
+  const tempo = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const data = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  const partes = [];
+  const central = [];
+  let off = 0;
+  for (const f of files) {
+    const nome = Buffer.from(f.name);
+    const comp = zlib.deflateRawSync(f.data);
+    const crc = zlib.crc32(f.data);
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(20, 4); local.writeUInt16LE(0x0800, 6); local.writeUInt16LE(8, 8);
+    local.writeUInt16LE(tempo, 10); local.writeUInt16LE(data, 12); local.writeUInt32LE(crc, 14);
+    local.writeUInt32LE(comp.length, 18); local.writeUInt32LE(f.data.length, 22); local.writeUInt16LE(nome.length, 26);
+    const c = Buffer.alloc(46);
+    c.writeUInt32LE(0x02014b50, 0); c.writeUInt16LE(20, 4); c.writeUInt16LE(20, 6); c.writeUInt16LE(0x0800, 8); c.writeUInt16LE(8, 10);
+    c.writeUInt16LE(tempo, 12); c.writeUInt16LE(data, 14); c.writeUInt32LE(crc, 16); c.writeUInt32LE(comp.length, 20);
+    c.writeUInt32LE(f.data.length, 24); c.writeUInt16LE(nome.length, 28); c.writeUInt32LE(off, 42);
+    partes.push(local, nome, comp);
+    central.push(c, nome);
+    off += 30 + nome.length + comp.length;
+  }
+  const cd = Buffer.concat(central);
+  const fim = Buffer.alloc(22);
+  fim.writeUInt32LE(0x06054b50, 0); fim.writeUInt16LE(files.length, 8); fim.writeUInt16LE(files.length, 10);
+  fim.writeUInt32LE(cd.length, 12); fim.writeUInt32LE(off, 16);
+  return Buffer.concat([...partes, cd, fim]);
+}
+export function arquivosDoZip(dir) {
+  const raiz = path.basename(path.resolve(dir));
+  const lista = [];
+  const andar = (sub) => {
+    for (const e of fs.readdirSync(path.join(dir, sub), { withFileTypes: true })) {
+      const rel = sub ? `${sub}/${e.name}` : e.name;
+      if (FORA.test(rel)) continue;
+      if (e.isDirectory()) andar(rel);
+      else lista.push({ name: `${raiz}/${rel}`, data: fs.readFileSync(path.join(dir, rel)) });
+    }
+  };
+  andar('');
+  const inicio = ['index.html', 'login.html'].find((f) => lista.some((x) => x.name === `${raiz}/${f}`)) || telas(dir)[0];
+  lista.unshift({ name: `${raiz}/LEIA-ME.txt`, data: Buffer.from(
+    `Protótipo navegável.\r\n\r\n1. Extraia a pasta inteira (no Windows: botão direito > Extrair tudo).\r\n` +
+    `2. Abra ${inicio} no navegador.\r\n\r\nAbrir direto de dentro do zip faz as telas perderem o visual.\r\n`) });
+  return lista;
+}
+
+// Zoom de quem tirou o print: retrato de celular (1170 px = 390 × 3) ou desktop retina/200% (2560 px = 1280 × 2).
+export const zoom = (w, h) => (h > w * 1.4 && w <= 1300 ? Math.min(3, Math.max(1, Math.round(w / 390))) : w > 2000 ? 2 : 1);
+
+// Tamanho de PNG ou JPEG sem abrir o navegador.
+export function medidas(buf) {
+  if (buf.readUInt32BE(0) === 0x89504e47) return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+  if (buf.readUInt16BE(0) === 0xffd8) {
+    for (let i = 2; i + 9 < buf.length;) {
+      const m = buf.readUInt16BE(i);
+      if (m >= 0xffc0 && m <= 0xffcf && ![0xffc4, 0xffc8, 0xffcc].includes(m)) return { w: buf.readUInt16BE(i + 7), h: buf.readUInt16BE(i + 5) };
+      i += 2 + buf.readUInt16BE(i + 2);
+    }
+  }
+  return null;
+}
+
+// ---------- CLI ----------
+async function main([cmd, ...a]) {
+  const flags = new Set(a.filter((x) => x.startsWith('--')));
+  const pos = a.filter((x) => !x.startsWith('--'));
+  if (cmd === 'init' && pos[0]) {
+    fs.mkdirSync(pos[0], { recursive: true });
+    fs.copyFileSync(path.join(ASSETS, 'estilo.css'), path.join(pos[0], 'estilo.css'));
+    const tema = path.join(pos[0], 'tema.css');
+    if (!fs.existsSync(tema)) fs.writeFileSync(tema, '/* Cores e fonte do projeto: sobrescreva aqui as variáveis de estilo.css (--cor, --cor-escura, --cor-clara, --fundo, --texto, --fonte, --raio...). */\n:root{}\n');
+    console.log(`ok ${pos[0]}/estilo.css e ${pos[0]}/tema.css${flags.has('--mobile') ? ' (mobile: use <body class="mobile"><div class="tela">)' : ''}`);
+  } else if (cmd === 'medir' && pos[0]) {
+    const m = medidas(fs.readFileSync(pos[0]));
+    if (!m) throw new Error('formato não reconhecido (use PNG ou JPEG)');
+    const z = zoom(m.w, m.h);
+    console.log(z === 1 ? `print ${m.w}×${m.h} px: monte para ${m.w} px de largura, medidas do print valem como estão`
+      : `print ${m.w}×${m.h} px: tela de ${Math.round(m.w / z)} px com zoom ${z * 100}%. Monte para ${Math.round(m.w / z)} px de largura e divida por ${z} o tamanho de texto, espaçamento e altura que você ler no print`);
+  } else if (cmd === 'checar' && pos[0]) await checar(pos[0]);
+  else if (cmd === 'prints' && pos[0]) await prints(pos[0], flags.has('--anotar'), pos.slice(1));
+  else if (cmd === 'lado' && pos.length === 3) await lado(...pos);
+  else if (cmd === 'pdf' && pos[0]) await pdf(pos[0], pos[1]);
+  else if (cmd === 'unico' && pos.length === 2) { fs.writeFileSync(pos[1], unico(pos[0])); console.log(`ok ${pos[1]}`); }
+  else if (cmd === 'zip' && pos.length === 2) {
+    const files = arquivosDoZip(pos[0]);
+    fs.writeFileSync(pos[1], zip(files));
+    console.log(`ok ${pos[1]} (${files.length} arquivos)`);
+  } else {
+    console.error('uso: init <pasta> [--mobile] | medir <print> | checar <pasta> | prints <pasta> [--anotar] [tela.html[#estado]...] | ' +
+      'lado <original> <tela.html> <saida.png> | pdf <arquivo.md|html> [saida.pdf] | unico <pasta> <saida.html> | zip <pasta> <saida.zip>');
+    process.exitCode = 2;
+  }
+}
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main(process.argv.slice(2)).catch((e) => { console.error(`erro: ${e.message}`); process.exitCode = 1; });
+}

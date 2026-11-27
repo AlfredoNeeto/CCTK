@@ -103,6 +103,7 @@ No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina ant
 | `/cctk:init-project` | Prepara ou atualiza o repositório |
 | `/cctk:audit <url>` | Diz se uma skill, plugin, MCP ou repo é seguro **antes** de instalar |
 | `/cctk:convert <arquivo>` | PDF, DOCX, PPTX ou XLSX → Markdown em `docs/` |
+| `/cctk:prototipo <telas \| print>` | Protótipo navegável em HTML, do zero ou a partir do print de um sistema; entrega zip, HTML único ou especificação em PDF |
 | `/cctk:secret` | Ajuda do cofre |
 
 ## O que vem instalado
