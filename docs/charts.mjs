@@ -24,8 +24,9 @@ const FLOWS = [ // [arm, US$ per run, correct runs, out of]
 ];
 
 // [label, metric, % vs its base, numbers as written in bench/README.md (base, arm in US$ when two), in the kit?]
+// "por execução" with a US$ pair is the sum of the per-task medians, as the bench reports print it.
 export const EXPERIMENTS = [
-  ['Sonnet no lugar do Opus', 'por tarefa', -52, ['52% menos'], true], // "Resultados" chart
+  ['Kit no lugar do de fábrica (Opus)', 'por execução', -52, ['1,707', '0,813'], true], // "Resultados" chart caption
   ['/effort high com muitas regras', 'por acerto', -38, ['0,34', '0,21'], true], // "O que tem ganho medido"
   ['Advisor (consulta ao Opus)', 'por acerto', -34, ['0,156', '0,103'], true], // "O que tem ganho medido"
   ['Seção Dimensões no proposal*', 'por execução', 10, ['+10% por execução'], true], // "Dimensões de regra implícita"
@@ -34,20 +35,24 @@ export const EXPERIMENTS = [
   ['Regras implícitas (skill)', 'por execução', 21, ['+21% como skill'], false], // "O que não mostrou ganho"
   ['Dimensões em toda a spec', 'por execução', 23, ['+23% por execução'], false], // "Dimensões de regra implícita"
   ['Regras implícitas (CLAUDE.md)', 'por execução', 45, ['+45% por execução'], false], // "O que não mostrou ganho"
+  // The table rounds to 0,124 -> 0,184 (+48%); the unrounded run costs give +49%, which is what the bench prose says.
   ['Pedir o Explore', 'por acerto', 49, ['~49% mais por acerto'], false], // "O que não mostrou ganho"
-  ['Teste antes do código', 'por execução', 58, ['58% a mais'], false], // "O que não mostrou ganho"
+  ['Teste antes do código', 'por execução', 58, ['0,444', '0,701'], false], // "O que não mostrou ganho"
   ['OpenSpec em toda tarefa', 'por acerto', 353, ['0,113', '0,512'], false], // "Fluxos de spec de ponta a ponta"
   ['tlc-spec-lean em toda tarefa', 'por acerto', 527, ['0,113', '0,709'], false], // "Fluxos de spec de ponta a ponta"
 ];
-// [version, total US$, correct runs, runs]: "Regressão da 1.4.0", "Regressão da 1.1.1" and "Rodadas anteriores".
+// [version, total US$, correct runs, runs] on the same 24 tasks: "Regressão da 1.4.0" (without security-commit-secret,
+// which 1.4.0 added), "Regressão da 1.1.1" and "Rodadas anteriores".
 export const VERSIONS = [
   ['1.0.2', 4.80, 46, 48],
   ['1.1.0', 3.98, 46, 48],
   ['1.1.1', 4.03, 48, 48],
-  ['1.4.0', 5.33, 49, 50],
+  ['1.4.0', 5.21, 47, 48],
 ];
 
-export const THEMES = { // validated with the dataviz palette validator (categorical slots 1-2, both modes)
+// kit and opus pass the dataviz palette validator (categorical slots 1-2, both modes). muted is the grey for "ficou de
+// fora": against kit it passes contrast and CVD separation and fails only the chroma floor, on purpose (it is context).
+export const THEMES = {
   light: { kit: '#2a78d6', opus: '#eb6834', ink: '#1f2328', muted: '#59636e', grid: '#d1d9e0', bg: '#ffffff' },
   dark: { kit: '#3987e5', opus: '#d95926', ink: '#f0f6fc', muted: '#9198a1', grid: '#3d444d', bg: '#0d1117' },
 };
@@ -133,9 +138,9 @@ function experimentos(t) {
   const sign = (v) => (v < 0 ? `−${-v}%` : `+${v}%`);
   const kept = EXPERIMENTS.filter((e) => e[4]).length;
   const out = [
-    ...head(H, `Variação de custo de cada experimento do benchmark contra a sua base: ${kept} entraram no kit (custo menor ou até +10%; a seção Dimensões entrou por argumento, sem ganho de acerto medido), ${EXPERIMENTS.length - kept} ficaram de fora por custar de 2% a 527% a mais sem acertar mais`, t),
+    ...head(H, `Variação de custo de ${EXPERIMENTS.length} mudanças testadas no benchmark, cada uma contra a sua base: ${kept} entraram no kit (custo menor ou até +10%; a seção Dimensões entrou por argumento, sem ganho de acerto medido), ${EXPERIMENTS.length - kept} ficaram de fora por custar de 2% a 527% a mais sem um ganho de acerto que se sustentasse`, t),
     `<text x="0" y="22" font-size="18" font-weight="600">O que entrou no kit e o que ficou de fora</text>`,
-    `<text x="0" y="44" font-size="13" class="m">Variação de custo de cada experimento contra a sua base; a métrica está no rótulo. Entra o que acerta mais com</text>`,
+    `<text x="0" y="44" font-size="13" class="m">Variação de custo de cada mudança testada contra a sua base; a métrica está no rótulo. Entra o que acerta mais com</text>`,
     `<text x="0" y="62" font-size="13" class="m">até +15% de custo por acerto, ou o que acerta o mesmo por menos. OpenSpec e tlc passam da escala.</text>`,
     `<text x="0" y="80" font-size="13" class="m">* Entrou por argumento (é onde você revisa a regra implícita na spec): o ganho de acerto não foi medido.</text>`,
     `<rect x="0" y="96" width="12" height="12" rx="2" fill="${t.kit}"/><text x="18" y="106.5" font-size="13">Entrou no kit</text>`,
@@ -167,7 +172,7 @@ function versoes(t) {
   const out = [
     ...head(H, `Regressão por versão do kit, custo por execução e acerto: ${desc}`, t),
     `<text x="0" y="22" font-size="18" font-weight="600">Entre versões: 96% a 100% de acerto, US$ 0,08 a 0,11 por execução</text>`,
-    `<text x="0" y="44" font-size="13" class="m">Kit completo em todas as tarefas do benchmark, 2 execuções cada. A 1.4.0 tem 25 tarefas; as outras, 24.</text>`,
+    `<text x="0" y="44" font-size="13" class="m">Kit completo nas mesmas 24 tarefas, 2 execuções cada (a security-commit-secret, que entrou na 1.4.0, fica de fora).</text>`,
     `<text x="0" y="62" font-size="13" class="m">Custo por execução em US$ (equivalente na API); acima de cada ponto, as execuções 100% corretas.</text>`,
   ];
   for (let v = 0; v <= MAX + 1e-9; v += 0.04) {

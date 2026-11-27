@@ -49,7 +49,7 @@ Proof: `node --test --test-name-pattern "^C4 " test/docs.test.mjs`
 **C10** - `docs/PROMPTS.md` tem a seção "Modelos por situação" com 6 ou mais blocos ```` ```text ````, e ela cita `bug`, `feature`, `pergunta`, `refatora`, `revis` e `documento` (AC 10)
 Proof: `node --test --test-name-pattern "^F10 " test/docs.test.mjs`
 
-**C11** - `docs/PROMPTS.md` tem a seção "Corrigir o rumo", que cita `Esc`, `/rewind` e `/clear`, e tem um link `https://code.claude.com/` (AC 11)
+**C11** - `docs/PROMPTS.md` tem a seção "Corrigir o rumo", em que a linha de `Esc`, a de `/rewind` e a de `/clear` têm, cada uma, um link `https://code.claude.com/` (AC 11)
 Proof: `node --test --test-name-pattern "^F11 " test/docs-conteudo.test.mjs`
 
 **C12** - Todo link `https://` do `docs/PROMPTS.md` é de domínio da Anthropic e responde 2xx (AC 12)
@@ -58,19 +58,19 @@ Proof: `grep -o 'https://[^) >]*' docs/PROMPTS.md | sort -u | xargs -n1 curl -fs
 
 ### S4 - gráficos do benchmark · 4 files · 34 KB · ~9k
 
-**C13** - Depois de `node docs/charts.mjs`, cada `experimentos-*.svg` tem uma barra (`<rect class="b"`) por experimento, as barras de "entrou no kit" e de "ficou de fora" com duas cores diferentes, os rótulos `+N%`/`−N%` em ordem crescente de cima para baixo, e cada rótulo de linha cita `por acerto`, `por execução` ou `por tarefa` (AC 13)
+**C13** - Depois de `node docs/charts.mjs`, cada `experimentos-*.svg` tem uma barra (`<rect class="b"`) por experimento, a cor de cada barra é `kit` se o experimento entrou no kit e `muted` se ficou de fora (duas cores diferentes), os rótulos `+N%`/`−N%` em ordem crescente de cima para baixo, e cada rótulo de linha termina em `, por acerto` ou `, por execução` (AC 13)
 Proof: `node --test --test-name-pattern "^F13 " test/docs.test.mjs`
 
-**C14** - Cada experimento de `charts.mjs` tem os seus números (os dois valores em US$, ou a %) escritos no `bench/README.md` (AC 14)
+**C14** - Cada experimento de `charts.mjs` tem os seus números (os dois valores em US$, com a % batendo com o par, ou a %) escritos no `bench/README.md`, e cada versão tem o total `US$ N,NN` e o `ok/execuções` escritos lá (AC 14)
 Proof: `node --test --test-name-pattern "^F14 " test/docs.test.mjs`
 
-**C15** - Cada `versoes-*.svg` tem 4 círculos, os rótulos `1.0.2`, `1.1.0`, `1.1.1`, `1.4.0`, `46/48`, `48/48`, `49/50`, e o subtítulo cita `25 tarefas` (AC 15)
+**C15** - Cada `versoes-*.svg` tem 4 círculos, os rótulos `1.0.2`, `1.1.0`, `1.1.1`, `1.4.0`, os rótulos de ponto `US$ 0,10 · 46/48`, `US$ 0,08 · 46/48`, `US$ 0,08 · 48/48`, `US$ 0,11 · 47/48`, e o subtítulo cita `mesmas 24 tarefas` (AC 15)
 Proof: `node --test --test-name-pattern "^F15 " test/docs.test.mjs`
 
 **C16** - Os SVGs novos têm `role="img"` e um `aria-label` que cita `custo`; as cores de série usadas estão em `THEMES` (AC 16)
 Proof: `node --test --test-name-pattern "^F16 " test/docs.test.mjs`
 
-**C17** - `bench/README.md` tem `## Resumo` antes de `## Lados`, com no máximo 8 linhas não vazias, e tem `<picture>` com `experimentos-dark.svg`/`experimentos-light.svg` e com `versoes-dark.svg`/`versoes-light.svg` (AC 17)
+**C17** - `bench/README.md` tem `## Resumo` logo abaixo do título, com no máximo 8 linhas não vazias, e tem `<picture>` com `experimentos-dark.svg`/`experimentos-light.svg` e com `versoes-dark.svg`/`versoes-light.svg` (AC 17)
 Proof: `node --test --test-name-pattern "^F17 " test/docs.test.mjs`
 
 ### S5 - links · 1 file · 5 KB · ~1k
@@ -118,4 +118,8 @@ Proof: `node --test --test-name-pattern "^F19 " test/docs.test.mjs`
 - **Settled mid-build:** C2 citava `--version` como flag do `cctk`, mas em `cli.mjs` ele só é passado a outros binários; o check passou a ler as flags da linha `Uso:` (`--dry-run`, `--yes`), que é o contrato da CLI. Corrigido também no AC 2 do plan
 - **Settled mid-build:** C13 conta só os rótulos de valor (`<text class="v"`), porque os ticks do eixo também têm `+N%`
 - **Settled mid-build:** a seção Dimensões fica azul (está no kit) com `*` e uma linha no subtítulo: entrou por argumento, sem ganho de acerto medido (aviso do usuário: a regra do subtítulo não a cobria)
+- **Round 2 (verificação FAIL de 27/11):** C8 passou a achar `cctk <sub>` também dentro de bloco de código (`cctk`); C13 amarra a cor de cada barra à flag "entrou no kit"; C11 exige um link por ação; C17 exige o Resumo logo abaixo do título
+- **Round 2, pedido do usuário:** o gráfico de versões passou a comparar as mesmas 24 tarefas (a 1.4.0 sem a `security-commit-secret`: 47/48 por US$ 5,21, de `bench/results/2026-11-20T14-22-01-864Z`); AC 15 e C15 mudaram, e o C14 passou a cobrir as versões
+- **Round 2, fatos:** "Sonnet no lugar do Opus" virou "Kit no lugar do de fábrica", por execução (soma das medianas, US$ 1,707 contra 0,813); o TDD ganhou o par US$ 0,444 → 0,701; o Explore fica em +49% (custo sem arredondar 0,1845/0,1236); "13 experimentos decididos" virou "13 mudanças testadas"
+- **Round 2, C16:** o cinza (`muted`) das barras de fora passa no contraste e na separação CVD do validador da dataviz e falha só o piso de croma, de propósito: é a cor de contexto, contra o azul de destaque
 - **Abandoned:** nada

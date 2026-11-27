@@ -66,6 +66,10 @@ test('F7 SITUACOES.md covers every tool in the kit', () => {
 });
 
 test('F11 PROMPTS.md tells how to steer the session back', () => {
-  const s = section(PROMPTS(), 'corrigir-o-rumo');
-  for (const t of ['Esc', '/rewind', '/clear', '](https://code.claude.com/']) assert.ok(s.includes(t), t);
+  const rows = section(PROMPTS(), 'corrigir-o-rumo').split('\n').filter((l) => l.startsWith('|') && !/^\|[-|]+\|$/.test(l)).slice(1);
+  for (const t of ['Esc', '/rewind', '/clear']) {
+    const row = rows.find((r) => r.includes(t));
+    assert.ok(row, t);
+    assert.ok(row.includes('](https://code.claude.com/'), `${t}: its own source link`);
+  }
 });

@@ -224,12 +224,11 @@ Corrigir cedo custa menos que desfazer depois.
 
 | Quando | Faça |
 |---|---|
-| O Claude começou a ir pelo caminho errado | `Esc` para no meio da ação e mantém o que já foi feito. Diga o que mudar |
-| A tentativa estragou o código ou a conversa | `/rewind` (ou `Esc` duas vezes com o campo vazio) volta o código, a conversa ou os dois a um pedido anterior |
-| Você já corrigiu a mesma coisa duas vezes e continua errado | `/clear` e um pedido novo que já inclua o que você aprendeu. Uma terceira correção só soma mais duas tentativas erradas para ele reler |
-
-Fonte: [Claude Code best practices, "Steer the session"](https://code.claude.com/docs/en/best-practices#steer-the-session) e
-[Checkpointing](https://code.claude.com/docs/en/checkpointing).
+| Quando | Faça | Fonte |
+|---|---|---|
+| O Claude começou a ir pelo caminho errado | `Esc` para no meio da ação e mantém o que já foi feito. Diga o que mudar | [Steer the session](https://code.claude.com/docs/en/best-practices#steer-the-session) |
+| A tentativa estragou o código ou a conversa | `/rewind` (ou `Esc` duas vezes com o campo vazio) volta o código, a conversa ou os dois a um pedido anterior | [Checkpointing](https://code.claude.com/docs/en/checkpointing) |
+| Você já corrigiu a mesma coisa duas vezes e continua errado | `/clear` e um pedido novo que já inclua o que você aprendeu. Uma terceira correção só soma mais duas tentativas erradas para ele reler | [Steer the session](https://code.claude.com/docs/en/best-practices#steer-the-session) |
 
 ## Fontes
 

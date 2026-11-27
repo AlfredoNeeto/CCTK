@@ -251,17 +251,16 @@ ferramentas (com backup), para o kit rodar como foi medido.
 
 **Quando:** o `5h` ou o `7d` da statusline passou de 80% (`!`).
 
-Num terminal:
-
-```text
-cctk stats
-```
-
-Ele mostra o uso por semana e por modelo. Depois:
+Num terminal, `cctk stats` mostra o uso por semana e por modelo. Depois:
 
 1. Deixe o que for grande para depois do reset que a statusline mostra.
 2. Confira se a sessão está no Sonnet; Opus só para planejar.
-3. `/clear` entre assuntos; com `cache frio` e contexto grande, `/clear` e um resumo.
+3. `/clear` entre assuntos. Com `cache frio` e contexto grande, peça um resumo antes, dê `/clear` e cole o resumo:
+
+```text
+Resuma em até 10 linhas o que fizemos nesta sessão: o objetivo, o que já está pronto, os arquivos mexidos
+e o próximo passo. Vou colar isso numa sessão nova.
+```
 
 **Confira:** se a cota sobe mais rápido que antes da 1.4, o suspeito é o advisor
 ([Deu problema?](GUIA.md#deu-problema)).

@@ -155,7 +155,7 @@ test('F6 SITUACOES.md has at least 12 situations with Quando, a prompt and Confi
 
 test('F8 every command and skill cited in SITUACOES.md exists', () => {
   const s = SITUACOES(), cli = read('cli.mjs');
-  const subs = new Set([...s.matchAll(/`cctk ([a-z]+)/g)].map((m) => m[1]));
+  const subs = new Set([...s.matchAll(/\bcctk ([a-z]+)/g)].map((m) => m[1])); // inline and inside code blocks
   const skills = new Set([...s.matchAll(/\/cctk:([a-z-]+)/g)].map((m) => m[1]));
   assert.ok(subs.size && skills.size, 'nothing cited');
   for (const c of subs) assert.ok(cli.includes(`cmd === '${c}'`), `cctk ${c}`);
@@ -182,20 +182,26 @@ test('F13 experiments chart: one bar per experiment, in vs out colored, sorted, 
     const s = svg(`experimentos-${mode}`);
     const bars = [...s.matchAll(/<rect class="b"[^>]*fill="([^"]+)"/g)].map((m) => m[1]);
     assert.equal(bars.length, EXPERIMENTS.length, `${mode}: bars`);
-    assert.equal(new Set(bars).size, 2, `${mode}: two colors`);
-    assert.ok(bars.includes(t.kit), `${mode}: kit color for "entrou"`);
+    assert.notEqual(t.kit, t.muted, `${mode}: two colors`);
+    // Each bar's color follows its own "in the kit?" flag, in the chart's order (sorted by the % change).
+    const sorted = [...EXPERIMENTS].sort((a, b) => a[2] - b[2]);
+    assert.deepEqual(bars, sorted.map((e) => (e[4] ? t.kit : t.muted)), `${mode}: color by in/out`);
     const pct = [...s.matchAll(/<text class="v"[^>]*>([+−])(\d+)%</g)].map((m) => (m[1] === '−' ? -m[2] : +m[2]));
     assert.equal(pct.length, EXPERIMENTS.length, `${mode}: % labels`);
     assert.deepEqual(pct, [...pct].sort((a, b) => a - b), `${mode}: sorted`);
     const labels = [...s.matchAll(/<text class="l"[^>]*>([^<]+)</g)].map((m) => m[1]);
     assert.equal(labels.length, EXPERIMENTS.length, `${mode}: row labels`);
-    for (const l of labels) assert.match(l, /por (acerto|execução|tarefa)/, l);
+    for (const l of labels) assert.match(l, /, por (acerto|execução)$/, l);
   }
 });
 
-test('F14 every experiment number is written in bench/README.md', async () => {
-  const { EXPERIMENTS } = await charts();
+test('F14 every experiment and version number is written in bench/README.md', async () => {
+  const { EXPERIMENTS, VERSIONS } = await charts();
   const b = read('bench/README.md');
+  for (const [v, total, ok, runs] of VERSIONS) {
+    assert.ok(b.includes(`US$ ${total.toFixed(2).replace('.', ',')}`), `${v}: US$ ${total}`);
+    assert.ok(b.includes(`${ok}/${runs}`), `${v}: ${ok}/${runs}`);
+  }
   for (const [label, , pct, evidence] of EXPERIMENTS) {
     for (const e of evidence) assert.ok(b.includes(e), `${label}: "${e}"`);
     if (evidence.length === 2 && evidence.every((e) => /^\d,\d+$/.test(e))) {
@@ -211,8 +217,8 @@ test('F15 versions chart: one dot per regression round with its accuracy', async
     const s = svg(n);
     assert.equal(count(s, /<circle /g), 4, `${n}: dots`);
     for (const t of ['1.0.2', '1.1.0', '1.1.1', '1.4.0']) assert.ok(s.includes(`>${t}</text>`), `${n}: ${t}`);
-    for (const t of ['46/48', '48/48', '49/50']) assert.ok(s.includes(t), `${n}: ${t}`);
-    assert.ok(s.includes('25 tarefas'), `${n}: subtitle`);
+    for (const t of ['US$ 0,10 · 46/48', 'US$ 0,08 · 46/48', 'US$ 0,08 · 48/48', 'US$ 0,11 · 47/48']) assert.ok(s.includes(`>${t}</text>`), `${n}: ${t}`);
+    assert.ok(s.includes('mesmas 24 tarefas'), `${n}: subtitle`);
   }
 });
 
@@ -231,7 +237,7 @@ test('F16 new charts are accessible and use the validated colors', async () => {
 
 test('F17 bench README opens with a summary and shows both new charts', () => {
   const b = read('bench/README.md');
-  assert.ok(b.indexOf('## Resumo') >= 0 && b.indexOf('## Resumo') < b.indexOf('## Lados'), 'Resumo before Lados');
+  assert.match(b, /^# [^\n]+\n+## Resumo\n/, 'Resumo is the first thing under the title');
   assert.ok(section(b, 'resumo').split('\n').filter((l) => l.trim()).length <= 8, 'Resumo at most 8 lines');
   for (const n of ['experimentos', 'versoes']) assert.match(b, new RegExp(`<picture>[\\s\\S]*?${n}-dark\\.svg[\\s\\S]*?${n}-light\\.svg[\\s\\S]*?</picture>`), n);
 });

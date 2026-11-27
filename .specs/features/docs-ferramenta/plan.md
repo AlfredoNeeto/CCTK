@@ -114,9 +114,9 @@ Quem chega pelo GitHub ou pelo npm entende o que é, vê o resultado, instala e 
 
 **Acceptance Criteria**
 
-13. The `node docs/charts.mjs` SHALL gerar `experimentos-{light,dark}.svg`: uma linha por experimento decidido, a variação de custo contra a base em %, com a cor dizendo "entrou no kit" ou "ficou de fora", ordenado pela variação, e cada linha com a métrica usada (por execução ou por acerto) no rótulo
-14. The cada valor do gráfico de experimentos SHALL vir de um número escrito no `bench/README.md` (o par base/lado em US$ ou a variação em %), e o comentário de `charts.mjs` SHALL citar a seção de onde veio
-15. The `node docs/charts.mjs` SHALL gerar `versoes-{light,dark}.svg` com uma marca por rodada de regressão (1.0.2, 1.1.0, 1.1.1, 1.4.0): custo por execução e execuções corretas rotuladas, e o subtítulo dizendo que a 1.4.0 tem 25 tarefas e as outras 24
+13. The `node docs/charts.mjs` SHALL gerar `experimentos-{light,dark}.svg`: uma linha por mudança testada que tem número de custo, a variação de custo contra a base em %, com a cor dizendo "entrou no kit" ou "ficou de fora", ordenado pela variação, e cada linha com a métrica usada (por execução ou por acerto) no rótulo
+14. The cada valor dos gráficos de experimentos e de versões SHALL vir de um número escrito no `bench/README.md` (o par base/lado em US$ ou a variação em %), e o comentário de `charts.mjs` SHALL citar a seção de onde veio
+15. The `node docs/charts.mjs` SHALL gerar `versoes-{light,dark}.svg` com uma marca por rodada de regressão (1.0.2, 1.1.0, 1.1.1, 1.4.0): custo por execução e execuções corretas rotuladas, todas nas mesmas 24 tarefas, e o subtítulo dizendo isso
 16. The cada SVG novo SHALL ter `role="img"` e `aria-label` com as grandezas e a conclusão, e as cores SHALL ser as já validadas em `THEMES`
 17. The `bench/README.md` SHALL abrir com a seção "Resumo" (no máximo 8 linhas, antes de "Lados") e exibir `experimentos-*.svg` e `versoes-*.svg` com `<picture>` claro/escuro
 

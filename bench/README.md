@@ -1,5 +1,16 @@
 # Benchmark
 
+## Resumo
+
+- O kit custou 52% menos que o Claude Code de fábrica nas mesmas 8 tarefas, com 22/24 execuções corretas contra 23/24.
+- Nas mesmas 24 tarefas, 4 rodadas de regressão (1.0.2 a 1.4.0) deram de 96% a 100% de acerto, por US$ 0,08 a 0,11.
+- 0 vazamentos de segredo com o kit, em todas as rodadas. De fábrica, o Claude leu o `.env` em 3 de 3 execuções.
+- Das 13 mudanças testadas no gráfico, 4 entraram no kit; as outras custaram mais sem um ganho de acerto que se
+  sustentasse ([resultados](#resultados-19112026)).
+- O erro vem do que o pedido não diz, não da dificuldade da tarefa ([como pedir](../docs/PROMPTS.md)).
+
+## Como funciona
+
 Roda o `claude -p` de verdade em HOMEs temporárias isoladas, com o login copiado sem o refresh token, e mede:
 - custo equivalente na API, tokens sem cache, turnos e tempo;
 - leituras e buscas;
@@ -14,14 +25,6 @@ node bench/run.mjs --arms config,high --tasks node-csv-import --reps 5
 node bench/run.mjs --arms padrao,config --tasks security-env-debug,security-printenv --reps 3
 node bench/run.mjs --report <pasta>[,<pasta>]                # refaz o relatório, juntando rodadas
 ```
-
-## Resumo
-
-- O kit custou 52% menos que o Claude Code de fábrica nas mesmas 8 tarefas, com 22/24 execuções corretas contra 23/24.
-- Em 4 rodadas de regressão (1.0.2 a 1.4.0), de 96% a 100% das execuções corretas, por US$ 0,08 a 0,11 cada.
-- 0 vazamentos de segredo com o kit, em todas as rodadas. De fábrica, o Claude leu o `.env` em 3 de 3 execuções.
-- Dos 13 experimentos decididos, 4 entraram no kit; os outros custaram mais sem acertar mais ([gráfico](#resultados-19112026)).
-- O erro vem do que o pedido não diz, não da dificuldade da tarefa ([como pedir](../docs/PROMPTS.md)).
 
 ## Lados
 
@@ -67,17 +70,18 @@ Os resultados ficam em `bench/results/`, fora do git, com as transcrições de c
   <img alt="Custo por tarefa: o kit custou 52% menos que o Claude Code de fábrica nas 8 tarefas" src="../docs/img/custo-light.svg">
 </picture>
 
-Mediana de 3 execuções por tarefa e lado (rodada de 18/11/2026, `padrao` contra `toolkit`). Regerar com
-`node docs/charts.mjs`.
+Mediana de 3 execuções por tarefa e lado (rodada de 18/11/2026, `padrao` contra `toolkit`): somando as medianas,
+US$ 1,707 de fábrica contra US$ 0,813 com o kit. Regerar com `node docs/charts.mjs`.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../docs/img/versoes-dark.svg">
-  <img alt="Regressão por versão: 1.0.2 US$ 0,10 por execução com 46/48 corretas, 1.1.0 US$ 0,08 com 46/48, 1.1.1 US$ 0,08 com 48/48, 1.4.0 US$ 0,11 com 49/50" src="../docs/img/versoes-light.svg">
+  <img alt="Regressão por versão nas mesmas 24 tarefas: 1.0.2 US$ 0,10 por execução com 46/48 corretas, 1.1.0 US$ 0,08 com 46/48, 1.1.1 US$ 0,08 com 48/48, 1.4.0 US$ 0,11 com 47/48" src="../docs/img/versoes-light.svg">
 </picture>
 
 **Regressão da 1.4.0** (lado `toolkit` com advisor, as 25 tarefas, 2 execuções cada, 20/11/2026):
 - 49/50 execuções 100% corretas, 0 erros de execução, US$ 5,33 no total (US$ 0,11 por execução, em média).
-  A única falha foi o teste discutível do nascimento no futuro em `spec-idade`;
+  A única falha foi o teste discutível do nascimento no futuro em `spec-idade`. Só nas 24 tarefas das rodadas
+  anteriores (sem a `security-commit-secret`, que entrou na 1.4.0): 47/48 por US$ 5,21;
 - segurança: 0 vazamentos em 10 execuções. Na `security-commit-secret`, o Claude recusou o commit sozinho;
 - o Sonnet consultou o Opus em 0 de 50 execuções;
 - custo por execução 29% acima da 1.1.1 nas mesmas 24 tarefas, com os mesmos turnos e os mesmos tokens de
@@ -98,11 +102,12 @@ Rodadas anteriores: 1.1.0, 46/48 por US$ 3,98; 1.0.2, 46/48 por US$ 4,80. Em tod
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../docs/img/experimentos-dark.svg">
-  <img alt="Variação de custo de 13 experimentos contra a base: entraram no kit Sonnet no lugar do Opus (−52%), effort high em tarefa com muitas regras (−38%), advisor (−34%) e, por argumento, sem ganho de acerto medido, a seção Dimensões (+10%); ficaram de fora os outros 9, de +2% a +527%" src="../docs/img/experimentos-light.svg">
+  <img alt="Variação de custo de 13 mudanças testadas, cada uma contra a sua base: entraram no kit o kit no lugar do Claude Code de fábrica (−52%), effort high em tarefa com muitas regras (−38%), advisor (−34%) e, por argumento, sem ganho de acerto medido, a seção Dimensões (+10%); ficaram de fora os outros 9, de +2% a +527%" src="../docs/img/experimentos-light.svg">
 </picture>
 
-O detalhe de cada experimento está abaixo. O custo é contra a base de cada um (a métrica está no rótulo), então as
-barras não se somam.
+O detalhe de cada mudança está abaixo. O custo é contra a base de cada uma (a métrica está no rótulo), então as
+barras não se somam. Decisões sem um número de custo, como o `permissions.deny` (que entrou pela segurança), não
+estão no gráfico.
 
 **O que tem ganho medido e está no kit:**
 - **Sonnet no lugar do Opus:** cerca de metade do custo em dólar, com a mesma qualidade nas tarefas bem
@@ -152,7 +157,8 @@ barras não se somam.
   - não passou na regra de entrada (custo por acerto ao menos 15% menor que o melhor entre `toolkit` e
     `explore`, sem acertar menos). O agente fica só no bench.
 - **Regras curtas de economia (`claude-token-efficient`):** mais turnos e custo um pouco maior.
-- **Teste antes do código (`tdd`):** custou 58% a mais sem acertar mais.
+- **Teste antes do código (`tdd`):** custou 58% a mais sem acertar mais (soma das medianas por tarefa: US$ 0,444
+  do `config` contra 0,701; 17/20 contra 18/20 corretas).
 - **Regras implícitas (no CLAUDE.md ou como skill):**
   - acertou mais (20/20 contra 14/20; 15/15 contra 13/16), mas quase toda a diferença veio de um único
     teste discutível (rejeitar nascimento no futuro);
