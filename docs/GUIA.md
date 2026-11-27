@@ -17,6 +17,8 @@ Como trabalhar com o Claude Code depois de instalar o kit. Leva 5 minutos para l
 | Gastar menos cota | [Economizar cota](#economizar-cota) |
 | Resolver um erro | [Deu problema?](#deu-problema) |
 
+Não entendeu uma palavra? Veja o [Glossário](#glossário).
+
 Referência: [statusline](#ler-a-statusline) · [o check](#o-check-antes-de-encerrar) ·
 [documentos e ferramentas de terceiros](#documentos-e-ferramentas-de-terceiros) · [Azure DevOps Server](#azure-devops-server)
 
@@ -274,6 +276,31 @@ cctk ado add https://servidor/tfs/MinhaCollection
 - Crie o PAT com escopo mínimo (Code: Read; Work Items: Read & Write para atualizar cards) e validade curta.
 - A autenticação básica do IIS precisa estar **desligada**, senão o PAT não funciona.
 - MCP usado: [Tiberriver256/mcp-server-azure-devops](https://github.com/Tiberriver256/mcp-server-azure-devops) 0.1.54.
+
+## Glossário
+
+As palavras que aparecem no kit e nos guias, em uma frase cada.
+
+| Palavra | O que é |
+|---|---|
+| **Sonnet, Opus** | Modelos do Claude. O Opus é o mais forte e o mais caro; o Sonnet faz quase tudo por cerca de metade do custo. O kit usa o Sonnet e deixa o Opus para planejar |
+| **Cota (`5h`, `7d`)** | Quanto do plano Pro você já usou. Há um limite que volta a cada 5 horas e outro que volta a cada 7 dias; o rodapé mostra os dois |
+| **Contexto (`ctx`)** | Tudo o que a conversa já tem: seus pedidos, as respostas e os arquivos lidos. Quanto maior, mais caro fica cada mensagem. O `/clear` esvazia |
+| **Cache** | Parte da conversa que a Anthropic guarda por alguns minutos e cobra mais barato quando é reenviada. Uma pausa longa esfria o cache |
+| **Rodapé (statusline)** | A linha no pé do Claude Code que mostra o modelo, o contexto e a cota ([como ler](#ler-a-statusline)) |
+| **Check** | O comando de build e teste do projeto que o Claude roda antes de dizer que terminou ([detalhes](#o-check-antes-de-encerrar)) |
+| **Spec, OpenSpec** | Especificação: a regra escrita antes do código, para você revisar. O OpenSpec é a ferramenta que o kit usa para isso |
+| **Prompt, pedido** | O que você escreve para o Claude ([como escrever](PROMPTS.md)) |
+| **Skill** | Um conjunto de instruções que ensina o Claude a fazer uma tarefa, como `/cctk:prototipo` |
+| **Plugin** | Um pacote de skills, travas e conexões que se instala de uma vez, como o `cctk` |
+| **MCP** | Uma conexão do Claude com outro sistema, como o Azure DevOps ou um banco de dados |
+| **Subagente** | Um ajudante que o Claude abre para uma parte da tarefa, com conversa própria |
+| **Advisor** | Recurso que deixa o Sonnet pedir uma segunda opinião ao Opus nos pontos difíceis |
+| **Trava (hook, permissão)** | Regra que o Claude Code cumpre sempre, como "não ler `.env`". Diferente de um pedido, ela não depende de o Claude obedecer |
+| **Cofre** | Onde o kit guarda tokens de desenvolvimento criptografados, para o Claude usar sem ver o valor ([detalhes](#tokens-e-senhas-cofre)) |
+| **Sandbox** | Isolamento que impede os comandos do Claude de mexer no resto do computador. Existe no macOS e no Linux |
+| **Token** | Duas coisas diferentes: a senha de uma API (o que vai no cofre) e a unidade em que o Claude mede texto (o que a cota conta) |
+| **Benchmark** | Os testes em que medimos custo e acerto do kit contra o Claude Code de fábrica ([números](../bench/README.md)) |
 
 ## Deu problema?
 

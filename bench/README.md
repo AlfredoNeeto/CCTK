@@ -2,12 +2,24 @@
 
 ## Resumo
 
-- O kit custou 52% menos que o Claude Code de fábrica nas mesmas 8 tarefas, com 22/24 execuções corretas contra 23/24.
-- Nas mesmas 24 tarefas, 4 rodadas de regressão (1.0.2 a 1.4.0) deram de 96% a 100% de acerto, por US$ 0,08 a 0,11.
-- 0 vazamentos de segredo com o kit, em todas as rodadas. De fábrica, o Claude leu o `.env` em 3 de 3 execuções.
-- Das 12 mudanças testadas no gráfico, 3 entraram no kit; as outras custaram mais sem um ganho de acerto que se
-  sustentasse ([resultados](#resultados-19112026)).
-- O erro vem do que o pedido não diz, não da dificuldade da tarefa ([como pedir](../docs/PROMPTS.md)).
+- Nas mesmas 8 tarefas, o kit custou 52% menos que o Claude Code de fábrica e acertou quase o mesmo (22 de 24 contra 23 de 24).
+- Da versão 1.0.2 à 1.4.0, nas mesmas 24 tarefas, o kit acertou de 96% a 100% das vezes, por US$ 0,08 a 0,11 cada.
+- Com o kit, nenhum segredo vazou em nenhum teste. De fábrica, o Claude leu o `.env` nas 3 vezes em que pedimos.
+- Das 12 mudanças que testamos para gastar menos ou acertar mais, só 3 entraram no kit; as outras custaram mais sem
+  acertar mais de um jeito confiável ([resultados](#resultados-19112026)).
+- O que mais faz o Claude errar é a regra que o pedido não diz, não a dificuldade da tarefa ([como pedir](../docs/PROMPTS.md)).
+
+## Como ler os números
+
+| Termo | O que quer dizer |
+|---|---|
+| Execução | Uma vez em que o Claude fez a tarefa do começo ao fim. Cada tarefa roda várias vezes, porque o resultado varia |
+| Acerto, "22/24" | Execuções em que todos os testes ocultos passaram, de quantas rodaram |
+| Custo | O preço que a execução teria na API da Anthropic, em dólar. Serve para comparar; não diz quanto da cota do Pro foi |
+| Custo por acerto | O custo total dividido pelos acertos. Um lado barato que erra muito sai caro por acerto |
+| Mediana | O valor do meio das execuções de uma tarefa; uma execução que saiu muito cara não distorce |
+| Lado | Uma configuração testada: o Claude Code de fábrica, o kit, o kit com uma mudança... ([lista](#lados)) |
+| IC 95%, Fisher p | Contas que dizem se uma diferença de acerto pode ser sorte. p acima de 0,05: pode ser sorte |
 
 ## Como funciona
 
@@ -105,8 +117,9 @@ Rodadas anteriores: 1.1.0, 46/48 por US$ 3,98; 1.0.2, 46/48 por US$ 4,80. Em tod
   <img alt="Variação de custo de 12 mudanças testadas, cada uma contra a sua base: entraram no kit o effort high em tarefa com muitas regras (−38%), advisor (−34%) e, por argumento, sem ganho de acerto medido, a seção Dimensões (+10%); ficaram de fora os outros 9, de +2% a +527%" src="../docs/img/experimentos-light.svg">
 </picture>
 
-O detalhe de cada mudança está abaixo. O custo é contra a base de cada uma (a métrica está no rótulo), então as
-barras não se somam. Decisões sem um número de custo, como o `permissions.deny` (que entrou pela segurança), não
+Como ler: cada barra é uma mudança testada, e o tamanho é quanto ela encareceu (para a direita) ou barateou (para
+a esquerda) em relação à mesma configuração sem ela. Azul entrou no kit; cinza ficou de fora. Cada barra compara com a sua própria
+base, então elas não se somam. O detalhe de cada mudança está abaixo. Decisões sem um número de custo, como o `permissions.deny` (que entrou pela segurança), não
 estão no gráfico.
 
 **O que tem ganho medido e está no kit:**

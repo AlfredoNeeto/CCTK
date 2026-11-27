@@ -1,7 +1,7 @@
 # Situações
 
 Receitas para o dia a dia, uma por situação: quando usar, o pedido pronto para copiar, as ferramentas do kit que
-entram e o que conferir no fim. Troque o que está entre `< >`.
+entram e o que conferir no fim. Troque o que está entre `< >`. Palavra desconhecida? Veja o [Glossário](GUIA.md#glossário).
 
 [← Voltar ao README](../README.md) · [Guia do dia a dia](GUIA.md) · [Guia de prompts](PROMPTS.md)
 
@@ -17,13 +17,13 @@ entram e o que conferir no fim. Troque o que está entre `< >`.
 
 ### Preparar um projeto para o time
 
-**Quando:** primeira vez do kit num repositório, ou a stack mudou.
+**Quando:** primeira vez do kit num repositório, ou o projeto mudou de linguagem ou de ferramentas.
 
 ```text
 /cctk:init-project
 ```
 
-1. Ele descobre a stack e cria `AGENTS.md`, `CLAUDE.md`, `openspec/` e o check em `.claude/cctk.json`. Se achar
+1. Ele descobre a linguagem e as ferramentas do projeto e cria `AGENTS.md`, `CLAUDE.md`, `openspec/` e o check em `.claude/cctk.json`. Se achar
    banco ou front web, oferece o DBHub e o Playwright (veja abaixo).
 2. Commite o que ele criou: quem clonar recebe o mesmo jeito de trabalhar e a sugestão de instalar o kit.
 3. Num terminal, na pasta do projeto: `cctk trust`, para aprovar o check.
@@ -85,7 +85,7 @@ filtre por <período> e confira que <o que deve aparecer>. Mande um print do res
 ```
 
 O `/cctk:init-project` oferece a skill do Playwright CLI em `.claude/skills/playwright-cli/`, versionada com o
-projeto. Ela usa o Chrome que você já tem, e o kit usa o CLI e não o MCP porque o CLI não carrega a árvore da
+projeto. Ela usa o Chrome que você já tem, e o kit usa essa versão de linha de comando porque ela não carrega a estrutura inteira da
 página no contexto.
 
 **Confira:** o print mostra o estado que você pediu. Sem a skill no projeto, rode o `/cctk:init-project` de novo.
@@ -103,7 +103,7 @@ Fora do escopo: <o que não mexer>.
 Pronto quando: <teste ou comando> passa.
 ```
 
-**Confira:** o diff só mexe no que você pediu. Terminou? `/clear` antes do próximo assunto.
+**Confira:** a mudança (o diff) só mexe no que você pediu. Terminou? `/clear` antes do próximo assunto.
 
 ### Feature com regra de negócio
 
@@ -181,7 +181,7 @@ Consulte o banco: quantos pedidos de <cliente fictício ou id> estão com status
 olhando as tabelas <pedidos> e <pagamentos>. Só leitura.
 ```
 
-O DBHub é oferecido pelo `/cctk:init-project` quando ele acha banco no projeto. O `dbhub.toml` com o DSN fica fora
+O DBHub é oferecido pelo `/cctk:init-project` quando ele acha banco no projeto. O `dbhub.toml`, com o endereço de conexão do banco, fica fora
 do git. Use um login **só com `db_datareader`**, num banco de dev ou homologação, nunca de produção: tudo o que a
 consulta retorna entra no contexto.
 
@@ -203,7 +203,7 @@ Depois, no Claude Code:
 Leia o card <12345> e liste o que ele pede e o que não diz. Não escreva código ainda.
 ```
 
-**Confira:** o PAT tem escopo mínimo e validade curta. Configuração: [Azure DevOps Server](GUIA.md#azure-devops-server).
+**Confira:** o token de acesso do Azure DevOps (PAT) tem permissão mínima e validade curta. Configuração: [Azure DevOps Server](GUIA.md#azure-devops-server).
 
 ### Chamar uma API com token
 
@@ -229,7 +229,7 @@ Revise o diff contra a main (git diff main...HEAD). Procure bug, caso de borda s
 Para cada achado: arquivo:linha, o problema e um caso que quebra. Não edite nada.
 ```
 
-O plugin `security-guidance` já roda sozinho: avisa sobre padrões perigosos a cada edição e revisa o diff no fim
+O plugin `security-guidance` já roda sozinho: avisa sobre padrões perigosos a cada edição e revisa as mudanças no fim
 da resposta e a cada commit. O kit bloqueia o commit que leva credencial.
 
 **Confira:** cada achado tem `arquivo:linha` e um caso concreto. Achado sem caso é opinião: peça o caso ou descarte.
