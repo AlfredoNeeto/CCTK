@@ -3,7 +3,7 @@
 Profile: light
 Plan: `.specs/features/api-http/plan.md`
 
-10 checks in 3 slices · 2 one-way doors · 0 open, of which 0 block
+12 checks in 3 slices · 2 one-way doors · 0 open, of which 0 block
 
 Os testes do `api-check.js` ficam em `test/api-check.test.mjs` (entra no `npm test`) e sobem uma API de exemplo
 (`node:http`) numa porta livre. Eles trocam o httpyac por um corretor falso com `CCTK_HTTP_RUNNER`, para o `npm test`
@@ -34,6 +34,12 @@ Proof: `node --test --test-name-pattern "^C5 " test/api-check.test.mjs`
 Proof: `node --test --test-name-pattern "^C6 " test/api-check.test.mjs`
 Proof: `node bench/run.mjs --dry --tasks api-contrato` (o check da tarefa usa `${CLAUDE_PLUGIN_ROOT}`)
 
+**C11** - Com outro servidor já respondendo em `--url` antes de subir, o `api-check.js` sai com 1, diz "já tem um servidor respondendo" e não roda o `--start` (AC 2)
+Proof: `node --test --test-name-pattern "^C11 " test/api-check.test.mjs`
+
+**C12** - Com um corretor que trava e `--limit 4`, o `api-check.js` sai com 1 em menos de 20 s, diz que o corretor foi interrompido, e a porta da API não aceita mais conexão (AC 3, AC 4)
+Proof: `node --test --test-name-pattern "^C12 " test/api-check.test.mjs`
+
 ### S2 - o init-project cria os testes · 1 file · 12 KB · ~3k
 
 **C7** - A seção de integrações do `init-project/SKILL.md` tem o passo de testes HTTP, que manda criar `http/<recurso>.http` com `?? status ==` e uma asserção de corpo por requisição, e `http/http-client.env.json` com a URL local (AC 6)
@@ -54,7 +60,7 @@ Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C10 " test/api-ch
 
 | Set (size) | Member -> proof | Unproven |
 | --- | --- | --- |
-| saídas do api-check (5) | passa C1 · API não sobe C2 · corretor falha C3 · sem arquivos C5 · derrubado no limite C4 | - |
+| saídas do api-check (7) | passa C1 · API não sobe C2 · corretor falha C3 · sem arquivos C5 · derrubado no limite C4 · porta já ocupada C11 · corretor travado C12 | - |
 | door: httpyac fixado (1) | C1 (prova com o httpyac de verdade) | - |
 | door: contrato do api-check.js (1) | C1 C2 C3 C4 C5 | - |
 
@@ -74,6 +80,8 @@ Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C10 " test/api-ch
 - observability: C2 C3 - a saída diz se foi a API que não subiu ou o teste que falhou
 
 ## Handoff
+
+- **Round 2 (verificação de 27/11, FAIL por C10 pendente e F1):** a API não usa mais grupo de processos próprio (no Linux e no macOS ela ficava órfã quando o check-gate mata o grupo do check no limite); a limpeza do `api-check` derruba os descendentes pelo `ps`; o corretor roda com prazo e é derrubado com a árvore (C12); servidor já respondendo na URL reprova antes de subir (C11); o lado `sem-http` recria o histórico do git, para o contrato apagado não ficar em `HEAD~1`; a mensagem de espera mostra o tempo que valeu. O ramo POSIX do C4 continua sem rodar aqui (só há Windows)
 
 - **Settled mid-build:** o `api-check.js` passa `--env dev` ao httpyac quando existe `http/http-client.env.json`, para o `{{baseUrl}}` resolver (provado com o httpyac de verdade); o C6 mata o mutante "check-gate sem a troca" (saída 2 contra 0 esperado)
 

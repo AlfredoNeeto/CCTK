@@ -99,6 +99,31 @@ test('C4 the API is down after a pass, after a fail, and after the check-gate ki
   assert.ok(await waitPort(port, false), 'API left running after the tree was killed');
 });
 
+test('C11 something already answering at --url: fails, says so, and never starts this API', async () => {
+  const port = await freePort();
+  const dir = project(port);
+  // Its own process: run() blocks this one (spawnSync), so a server here could not answer.
+  const intruso = spawn(process.execPath, ['-e', `require('http').createServer((q, s) => s.end('{}')).listen(${port}, '127.0.0.1')`]);
+  assert.ok(await waitPort(port, true), 'intruder never came up');
+  try {
+    fs.writeFileSync(path.join(dir, 'server.js'), "require('fs').writeFileSync('subiu.txt', 'sim');\n");
+    const r = run(dir, args(port));
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /já tem um servidor respondendo/);
+    assert.ok(!fs.existsSync(path.join(dir, 'subiu.txt')), 'the API was started anyway');
+  } finally { intruso.kill(); }
+});
+
+test('C12 a runner that hangs is killed at --limit, and the API goes down with it', async () => {
+  const port = await freePort();
+  const t0 = Date.now();
+  const r = run(project(port), args(port, ['--limit', '4']), { FAKE_SLEEP: '60000' });
+  assert.equal(r.status, 1);
+  assert.ok(Date.now() - t0 < 20000, `took ${Date.now() - t0} ms`);
+  assert.match(r.stderr, /interrompido/);
+  assert.ok(await waitPort(port, false), 'API left running');
+});
+
 test('C5 no .http file: passes, says so, and never starts the API', async () => {
   const port = await freePort();
   const dir = project(port, { http: false });

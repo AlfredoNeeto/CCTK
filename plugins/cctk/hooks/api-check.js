@@ -29,18 +29,51 @@ function expand(pattern, cwd) {
   } catch { return []; }
 }
 
+// The API stays in the check's own process group (no `detached`): when the check-gate kills that group at its time
+// limit, the API goes with it. To stop it ourselves we kill the child and every descendant (shell, npm, the server).
+function descendants(pid) {
+  const r = spawnSync('ps', ['-A', '-o', 'pid=,ppid='], { encoding: 'utf8' });
+  const kids = new Map();
+  for (const l of (r.stdout || '').split('\n')) {
+    const [p, pp] = l.trim().split(/\s+/).map(Number);
+    if (p && pp) kids.set(pp, [...(kids.get(pp) || []), p]);
+  }
+  const all = [];
+  for (const queue = [pid]; queue.length;) for (const k of kids.get(queue.shift()) || []) { all.push(k); queue.push(k); }
+  return all;
+}
+
 function killTree(child) {
   if (!child || child.exitCode !== null || child.signalCode !== null) return;
-  if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
-  else try { process.kill(-child.pid, 'SIGKILL'); } catch { /* already gone */ }
+  if (process.platform === 'win32') { spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true }); return; }
+  for (const pid of [...descendants(child.pid), child.pid]) try { process.kill(pid, 'SIGKILL'); } catch { /* already gone */ }
 }
+
+// A child process run to the end, killed with its whole tree at `ms` (spawnSync's timeout would only kill the shell,
+// and on Windows its children keep the pipes open).
+function runWithin(cmd, cwd, ms) {
+  return new Promise((resolve) => {
+    const child = spawn(cmd, { cwd, shell: true, windowsHide: true });
+    let out = '';
+    const keep = (d) => { out = (out + d).slice(-64 * 1024); };
+    child.stdout.on('data', keep);
+    child.stderr.on('data', keep);
+    const timer = setTimeout(() => { out += `\n(passou de ${Math.round(ms / 1000)} s e foi interrompido)`; killTree(child); }, ms);
+    child.on('error', (e) => { clearTimeout(timer); resolve({ status: 1, out: `${out}\n${e.message}` }); });
+    child.on('close', (status) => { clearTimeout(timer); resolve({ status: status ?? 1, out }); });
+  });
+}
+
+const answers = async (url) => {
+  try { await fetch(url, { signal: AbortSignal.timeout(2000) }); return true; } catch { return false; }
+};
 
 // Any HTTP answer counts as "up": a 404 on the health URL still means the server is listening.
 async function waitUp(url, ms, api) {
   const end = Date.now() + ms;
   while (Date.now() < end) {
     if (api.exitCode !== null) return false;
-    try { await fetch(url, { signal: AbortSignal.timeout(2000) }); return true; } catch { /* not yet */ }
+    if (await answers(url)) return true;
     await new Promise((r) => setTimeout(r, 1000));
   }
   return false;
@@ -58,11 +91,16 @@ async function main() {
     console.error('api-check: faltou --start "<comando que sobe a API>" ou --url <endereço que responde quando ela está no ar>');
     return 1;
   }
+  // Something already answering there (the developer's own instance, a leftover) would be tested instead of the
+  // fresh API, which then dies on a busy port: stop and say so.
+  if (await answers(o.url)) {
+    console.error(`api-check: já tem um servidor respondendo em ${o.url}. Pare-o antes, para o check testar a API deste código.`);
+    return 1;
+  }
   const deadline = Date.now() + Number(o.limit) * 1000;
   const tail = [];
   const keep = (d) => { for (const l of String(d).split(/\r?\n/)) if (l.trim()) { tail.push(l); if (tail.length > 20) tail.shift(); } };
-  // Own process group off Windows, so the whole tree (shell, npm, the server) goes down with one kill.
-  const api = spawn(o.start, { cwd, shell: true, windowsHide: true, detached: process.platform !== 'win32' });
+  const api = spawn(o.start, { cwd, shell: true, windowsHide: true });
   api.stdout.on('data', keep);
   api.stderr.on('data', keep);
   const stop = () => killTree(api);
@@ -71,7 +109,7 @@ async function main() {
 
   const waitMs = Math.min(Number(o.wait) * 1000, deadline - Date.now());
   if (!(await waitUp(o.url, waitMs, api))) {
-    console.error(`api-check: a API não respondeu em ${o.url} em ${o.wait} s. Últimas linhas da API:\n${tail.join('\n') || '(nada)'}`);
+    console.error(`api-check: a API não respondeu em ${o.url} em ${Math.round(waitMs / 1000)} s. Últimas linhas da API:\n${tail.join('\n') || '(nada)'}`);
     stop();
     return 1;
   }
@@ -79,12 +117,11 @@ async function main() {
   const runner = process.env.CCTK_HTTP_RUNNER || `npx -y ${HTTPYAC} send`;
   // {{baseUrl}} and friends come from http-client.env.json (the format VS and VS Code read); the kit's env is "dev".
   const env = fs.existsSync(path.resolve(cwd, path.dirname(files[0]), 'http-client.env.json')) ? ' --env dev' : '';
-  const r = spawnSync(`${runner} ${files.map((f) => JSON.stringify(f)).join(' ')} --all --bail${env}`,
-    { cwd, shell: true, encoding: 'utf8', windowsHide: true, timeout: Math.max(1000, deadline - Date.now()), maxBuffer: 16 << 20 });
+  const r = await runWithin(`${runner} ${files.map((f) => JSON.stringify(f)).join(' ')} --all --bail${env}`, cwd, Math.max(1000, deadline - Date.now()));
   stop();
-  const out = `${r.stdout || ''}${r.stderr || ''}`.trim();
+  const out = r.out.trim();
   if (r.status !== 0) {
-    console.error(`api-check: os testes HTTP falharam${r.error ? ` (${r.error.message})` : ''}:\n${out.slice(-8000)}`);
+    console.error(`api-check: os testes HTTP falharam:\n${out.slice(-8000)}`);
     return 1;
   }
   console.log(`api-check: os testes HTTP passaram (${files.join(', ')})`);

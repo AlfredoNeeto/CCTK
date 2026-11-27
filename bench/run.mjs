@@ -361,7 +361,9 @@ function runOnce(task, arm, home, rep) {
   if (arm === 'sem-http' && task.semHttp) { // the same project, as it was before the HTTP tests: no http/, unit check only
     for (const f of task.semHttp.remove) fs.rmSync(path.join(dir, f), { recursive: true, force: true });
     writeJson(path.join(dir, '.claude', 'cctk.json'), { check: task.semHttp.check });
-    sh('git add -A && git -c user.name=bench -c user.email=bench@localhost commit -qm sem-http', dir);
+    // A fresh history: a commit that deletes http/ would leave the contract one `git show HEAD~1:` away.
+    fs.rmSync(path.join(dir, '.git'), { recursive: true, force: true });
+    sh('git init -q && git add -A && git -c user.name=bench -c user.email=bench@localhost commit -qm inicial', dir);
   }
   approveCheck(dir, home);
   const started = Date.now();
