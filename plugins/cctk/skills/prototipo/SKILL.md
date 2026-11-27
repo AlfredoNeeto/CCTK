@@ -95,13 +95,13 @@ Antes de gravar cada tela, confira:
 - Navegação: menu com a tela atual em `.ativo`, links reais entre as telas, voltar/cancelar levam a algum lugar.
 - Estados onde fazem sentido: vazio, erro de validação, confirmação. Um estado que muda a tela inteira vira outro arquivo (`contas-pagar--vazio.html`) fora do menu.
 - Hierarquia: um botão primário por área, números alinhados à direita (`.num`), textos curtos.
-- Se a especificação já foi pedida, marque os pontos a explicar com `data-anotacao="1"`, `"2"`… em ordem de leitura (no máximo 6 por tela).
+- Ponha `id` nos elementos que alguém vai querer explicar (campos, botões principais, tabelas, modais): a especificação aponta para eles depois.
 
 Não abra os arquivos depois de criar: você já sabe o que escreveu.
 
 ## 4. Conferir
 
-1. `R checar prototipo` → aponta link quebrado, rolagem horizontal, texto estourando e erro de script. Corrija e rode de novo até sair limpo. Não custa imagem.
+1. `R checar prototipo` → aponta link quebrado, rolagem horizontal, texto estourando ou sobreposto e erro de script. Corrija e rode de novo até sair limpo. Não custa imagem.
 2. **Modo print, uma comparação por tela:** `R lado <print> prototipo/<tela>.html prototipo/revisao/<tela>.png` e abra a imagem gerada (original e protótipo numa imagem só). Liste as diferenças que um usuário notaria e corrija todas de uma vez: texto sobreposto ou cortado, estrutura e posição, proporção e espaçamento, tamanho e peso de texto, cor. Uma passada só; uma segunda apenas se a primeira mostrou texto sobreposto ou estrutura errada. Diferença de fonte ou de antialiasing não é defeito, e o dado fictício no lugar do real também não.
 3. **Modo do zero:** não tire print para conferir, a não ser que o usuário peça. O `checar` basta.
 
@@ -121,9 +121,12 @@ Pergunte o que o usuário quer, se ainda não disse (pode ser mais de um):
 Não publique em hospedagem pública: o protótipo de cliente não deve ficar com URL aberta.
 
 **Especificação:**
-1. Leia [especificacao.md](references/especificacao.md) (o modelo) e pergunte quais seções opcionais entram, sugerindo as que o protótipo já sustenta.
-2. Se as telas ainda não têm `data-anotacao`, acrescente (até 6 por tela). `R prints prototipo --anotar` (estados: acrescente `tela.html#id-do-modal`).
-3. Escreva `prototipo/especificacao.md` seguindo o modelo: a legenda de cada tela usa os mesmos números da imagem e cita os IDs (RF, RN, MSG). Não abra os prints: a legenda sai do HTML que você escreveu. O que não foi decidido vai para "Questões em aberto".
-4. `R pdf prototipo/especificacao.md` → `prototipo/especificacao.pdf`. O `.md` fica para versionar e para citar no OpenSpec.
+1. Leia [especificacao.md](references/especificacao.md) (o modelo) uma vez e pergunte quais seções opcionais entram (se o usuário ainda não disse), sugerindo as que o protótipo já sustenta.
+2. Os números das telas **não vão no HTML**: grave um só `prototipo/anotacoes.json` com o seletor CSS de cada ponto, em ordem de leitura, até 6 por tela. Estado (modal, aba) é outra chave e continua a numeração da tela:
+   `{"login.html": ["#cpf", "#senha", "#entrar", "a[href='#esqueci']"], "login.html#esqueci": ["#esqueci .janela"]}`
+   Se o HTML não está no contexto desta conversa, leia cada tela uma vez para tirar os seletores; não edite as telas só para anotar.
+3. `R checar prototipo` (aponta seletor sem alvo) e `R prints prototipo --anotar` + os estados (`login.html#esqueci`).
+4. Escreva `prototipo/especificacao.md` seguindo o modelo: a legenda de cada tela usa os mesmos números do `anotacoes.json` e cita os IDs (RF, RN, MSG). Não abra os prints: a legenda sai do HTML. O que não foi decidido vai para "Questões em aberto".
+5. `R pdf prototipo/especificacao.md` → `prototipo/especificacao.pdf`. O `.md` fica para versionar e para citar no OpenSpec.
 
 No fim, diga em poucas linhas o que foi gerado, onde está, e o que ficou em aberto.

@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import { md2html, zip, unico, arquivosDoZip, zoom, medidas } from '../plugins/cctk/skills/prototipo/scripts/render.mjs';
+import { md2html, zip, unico, arquivosDoZip, zoom, medidas, anotacoes } from '../plugins/cctk/skills/prototipo/scripts/render.mjs';
 
 test('md2html: tabela, lista, imagem, código, comentário e escape', () => {
   const h = md2html([
@@ -38,6 +38,8 @@ test('zip e HTML único: arquivos certos e links trocados por âncoras', () => {
   fs.writeFileSync(path.join(dir, 'login.html'), '<html><head><title>T</title><link rel="stylesheet" href="estilo.css"></head><body class="entrada"><a href="painel.html">ir</a></body></html>');
   fs.writeFileSync(path.join(dir, 'painel.html'), '<html><body><a href="login.html#x">sair</a><a href="https://e.com/a.html">fora</a></body></html>');
   fs.writeFileSync(path.join(dir, 'notas.md'), 'interno');
+  fs.writeFileSync(path.join(dir, 'anotacoes.json'), '{"login.html":["#a","#b"],"painel.html":[".x"],"login.html#m":["#m"]}');
+  assert.deepStrictEqual(anotacoes(dir), { 'login.html': [{ n: 1, sel: '#a' }, { n: 2, sel: '#b' }], 'painel.html': [{ n: 1, sel: '.x' }], 'login.html#m': [{ n: 3, sel: '#m' }] });
   fs.mkdirSync(path.join(dir, 'prints'));
   fs.writeFileSync(path.join(dir, 'prints', 'a.png'), 'x');
   const nomes = arquivosDoZip(dir).map((f) => f.name.split('/').slice(1).join('/'));

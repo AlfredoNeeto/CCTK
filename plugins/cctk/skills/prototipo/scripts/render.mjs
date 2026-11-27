@@ -3,7 +3,7 @@
 // Saída curta de propósito: o Claude lê só o resumo, nunca o HTML nem a imagem, salvo quando pede.
 //   init <pasta> [--mobile]           copia estilo.css e cria tema.css
 //   medir <print>                     tamanho real da tela do print (zoom 200% de tela retina)
-//   checar <pasta>                    links quebrados, rolagem horizontal, texto estourando, erros de console
+//   checar <pasta>                    links quebrados, rolagem horizontal, texto estourando ou sobreposto, erros de console
 //   prints <pasta> [--anotar] [tela.html[#estado] ...]   PNG de cada tela em <pasta>/prints/
 //   lado <original.png|jpg> <tela.html> <saida.png>     original x protótipo numa imagem só, já reduzida
 //   pdf <especificacao.md|html> [saida.pdf]             PDF A4 com número de página
@@ -126,8 +126,13 @@ async function abrir(page, file, hash = '') {
 }
 
 async function checar(dir) {
-  const b = await browser();
+  let notas = {};
   let problemas = 0;
+  try { notas = anotacoes(dir); } catch (e) { console.log(`anotacoes.json inválido: ${e.message}`); problemas++; }
+  for (const k of Object.keys(notas)) {
+    if (!fs.existsSync(path.join(dir, k.split('#')[0]))) { console.log(`anotacoes.json: tela não existe: ${k}`); problemas++; }
+  }
+  const b = await browser();
   try {
     for (const f of telas(dir)) {
       const page = await b.newPage({ viewport: { width: 1440, height: 900 } });
@@ -146,6 +151,33 @@ async function checar(dir) {
         const estouro = [...document.querySelectorAll('.btn,.selo,.valor,label,th,.card,.caixa>header,.barra-app,.nav-inferior a,.menu nav a')]
           .filter((e) => e.scrollWidth > e.clientWidth + 2 && getComputedStyle(e).overflowX === 'visible').slice(0, 3);
         for (const e of estouro) out.push(`texto estourando: ${sel(e)}`);
+        // Texto sobre texto: compara a caixa de cada trecho visível. Menu fixo/grudado sobre o conteúdo é de propósito.
+        const fixo = new Map();
+        const preso = (e) => {
+          if (!e || e === document.body) return false;
+          if (!fixo.has(e)) fixo.set(e, /fixed|sticky/.test(getComputedStyle(e).position) || preso(e.parentElement));
+          return fixo.get(e);
+        };
+        const trechos = [];
+        const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n; (n = tw.nextNode());) {
+          const t = n.textContent.trim();
+          if (!t || preso(n.parentElement) || getComputedStyle(n.parentElement).visibility === 'hidden') continue;
+          const rg = document.createRange();
+          rg.selectNodeContents(n);
+          for (const b of rg.getClientRects()) if (b.width > 2 && b.height > 2) trechos.push({ b, n, t: t.replace(/\s+/g, ' ').slice(0, 25) });
+        }
+        const sobre = [];
+        for (let i = 0; i < trechos.length && sobre.length < 3; i++) {
+          for (let j = i + 1; j < trechos.length; j++) {
+            const a = trechos[i], c = trechos[j];
+            if (a.n === c.n) continue;
+            const x = Math.min(a.b.right, c.b.right) - Math.max(a.b.left, c.b.left);
+            const y = Math.min(a.b.bottom, c.b.bottom) - Math.max(a.b.top, c.b.top);
+            if (x > 3 && y > 0.35 * Math.min(a.b.height, c.b.height)) { sobre.push(`texto sobreposto: "${a.t}" × "${c.t}"`); break; }
+          }
+        }
+        out.push(...sobre);
         const nums = [...document.querySelectorAll('[data-anotacao]')].map((e) => e.dataset.anotacao);
         const dup = nums.filter((n, i) => nums.indexOf(n) !== i);
         if (dup.length) out.push(`anotação repetida: ${[...new Set(dup)].join(', ')}`);
@@ -153,6 +185,11 @@ async function checar(dir) {
           .filter((h) => h && !/^(#|https?:|mailto:|tel:|javascript:)/i.test(h));
         return { out, links };
       });
+      for (const [k, itens] of Object.entries(notas)) {
+        if (k.split('#')[0] !== f) continue;
+        const faltam = await page.evaluate(MARCAR, itens);
+        if (faltam.length) r.out.push(`anotação sem alvo em ${k}: ${faltam.join(', ')}`);
+      }
       for (const h of new Set(r.links)) {
         if (!fs.existsSync(path.resolve(dir, decodeURI(h.split(/[?#]/)[0])))) r.out.push(`link quebrado: ${h}`);
       }
@@ -173,14 +210,43 @@ const ANOTAR = () => {
     Object.assign(b.style, { position: 'absolute', left: `${Math.max(2, r.left + scrollX - 12)}px`, top: `${Math.max(2, r.top + scrollY - 12)}px`,
       width: '24px', height: '24px', borderRadius: '50%', background: '#ea580c', color: '#fff', font: '700 13px/24px system-ui,sans-serif',
       textAlign: 'center', zIndex: 2147483647, boxShadow: '0 0 0 2px #fff,0 1px 4px rgba(0,0,0,.3)' });
-    el.style.outline = '2px solid rgba(234,88,12,.75)';
-    el.style.outlineOffset = '2px';
-    document.body.appendChild(b);
+    const caixa = document.createElement('div'); // fora do elemento: overflow do pai não corta o contorno
+    Object.assign(caixa.style, { position: 'absolute', left: `${r.left + scrollX - 3}px`, top: `${r.top + scrollY - 3}px`,
+      width: `${r.width + 6}px`, height: `${r.height + 6}px`, border: '2px solid rgba(234,88,12,.75)', borderRadius: '4px',
+      boxSizing: 'border-box', pointerEvents: 'none', zIndex: 2147483646 });
+    document.body.append(caixa, b);
   }
+};
+
+// anotacoes.json: { "tela.html": ["seletor do 1", "seletor do 2"], "tela.html#modal": ["seletor do 3"] }.
+// A numeração continua entre as chaves da mesma tela, na ordem do arquivo. Evita editar o HTML número a número.
+export function anotacoes(dir) {
+  const f = path.join(dir, 'anotacoes.json');
+  if (!fs.existsSync(f)) return {};
+  const json = JSON.parse(fs.readFileSync(f, 'utf8'));
+  const prox = {};
+  const out = {};
+  for (const [chave, sels] of Object.entries(json)) {
+    const tela = chave.split('#')[0];
+    prox[tela] ||= 1;
+    out[chave] = sels.map((sel) => ({ n: prox[tela]++, sel }));
+  }
+  return out;
+}
+const MARCAR = (itens) => {
+  const faltam = [];
+  if (itens.length) document.querySelectorAll('[data-anotacao]').forEach((e) => e.removeAttribute('data-anotacao'));
+  for (const { n, sel } of itens) {
+    let el = null;
+    try { el = document.querySelector(sel); } catch {}
+    if (el) el.dataset.anotacao = n; else faltam.push(`${n} (${sel})`);
+  }
+  return faltam;
 };
 
 async function prints(dir, anotar, lista) {
   const alvo = lista.length ? lista : telas(dir);
+  const notas = anotar ? anotacoes(dir) : {};
   fs.mkdirSync(path.join(dir, 'prints'), { recursive: true });
   const b = await browser();
   try {
@@ -188,7 +254,11 @@ async function prints(dir, anotar, lista) {
       const [f, h] = t.split('#');
       const page = await b.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
       await abrir(page, path.join(dir, f), h ? '#' + h : '');
-      if (anotar) await page.evaluate(ANOTAR);
+      if (anotar) {
+        const faltam = await page.evaluate(MARCAR, notas[t] || []);
+        if (faltam.length) console.log(`aviso ${t}: anotação sem alvo ${faltam.join(', ')}`);
+        await page.evaluate(ANOTAR);
+      }
       const nome = f.replace(/\.html?$/i, '') + (h ? `--${h}` : '') + '.png';
       await page.screenshot({ path: path.join(dir, 'prints', nome), fullPage: !h });
       console.log(`ok prints/${nome}`);
@@ -290,7 +360,7 @@ document.querySelectorAll('.pagina').forEach(function(p){p.hidden=p!==s});docume
 addEventListener('hashchange',mostrar);mostrar();</script></body></html>`;
 }
 
-const FORA = /^(prints|revisao|\.[^/]*)(\/|$)|^notas\.md$|^especificacao\.(md|html?)$|\.zip$/i;
+const FORA = /^(prints|revisao|\.[^/]*)(\/|$)|^notas\.md$|^anotacoes\.json$|^especificacao\.(md|html?)$|\.zip$/i;
 export function zip(files) {
   const d = new Date();
   const tempo = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);

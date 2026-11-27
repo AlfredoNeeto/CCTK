@@ -90,12 +90,12 @@ inventou funcionalidades e usou marcas reais.
 | Para | Faça |
 |---|---|
 | Telas do zero | Descreva as telas e o que cada uma mostra. Dados fictícios coerentes entre as telas, nada além do pedido |
-| A partir de um sistema que já existe | Mande o print. A skill copia layout, rótulos e menus, **troca todo dado do print por fictício** e compara uma vez com o original. Custa mais: numa tela densa, US$ 0,35 a 0,50 (3 execuções), contra 0,20 a 0,30 de um pedido simples, que nas 3 vezes copiou para o protótipo nomes, marcas e CNPJ do print. Mesmo assim, tarje nome e CPF antes de mandar |
+| A partir de um sistema que já existe | Mande o print. A skill copia layout, rótulos e menus, **troca todo dado do print por fictício** e compara uma vez com o original. No teste: login US$ 0,26 a 0,30; painel denso US$ 0,35 a 0,50; duas telas densas juntas US$ 0,63 a 0,70. Um pedido sem a skill sai por 0,20 a 0,30, mas nas 3 vezes copiou para o protótipo nomes, marcas e CNPJ do print. Mesmo assim, tarje nome e CPF antes de mandar |
 | Telas com a cara do app | Diga de onde vêm as cores: "use as cores de `src/theme.css`". Um arquivo, não o app inteiro |
 | App mobile (Flutter) | Diga "app" ou "celular": 390 px, visual Material |
 | Ajustes | Peça todos de uma vez |
 | Mandar ao cliente | No fim, peça **zip** (com LEIA-ME para extrair antes de abrir) ou **HTML único** (um arquivo, bom para e-mail e WhatsApp). Não publique em hospedagem aberta |
-| Especificação | No fim, peça a **especificação**: PDF com as telas numeradas e a legenda de cada número, no modelo de mercado (escopo, requisitos, regras, mensagens, telas, questões em aberto). As seções opcionais você escolhe. Para implementar, siga com o [OpenSpec](#feature-ou-bug-com-regra-de-negócio) citando o `especificacao.md` |
+| Especificação | No fim, peça a **especificação**: PDF com as telas numeradas e a legenda de cada número, no modelo de mercado (escopo, requisitos, regras, mensagens, telas, questões em aberto). As seções opcionais você escolhe. De 3 telas, numa sessão nova, custou US$ 0,25 a 0,31; o que ninguém decidiu sai como questão em aberto, não como regra inventada. Para implementar, siga com o [OpenSpec](#feature-ou-bug-com-regra-de-negócio) citando o `especificacao.md` |
 
 Não use dados reais de cliente no protótipo: ele vai para fora.
 
