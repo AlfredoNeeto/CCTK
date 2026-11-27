@@ -36,6 +36,7 @@ node bench/run.mjs --dry                                     # prova os corretor
 node bench/run.mjs --arms config,high --tasks node-csv-import --reps 5
 node bench/run.mjs --arms padrao,config --tasks security-env-debug,security-printenv --reps 3
 node bench/run.mjs --report <pasta>[,<pasta>]                # refaz o relatório, juntando rodadas
+node bench/run.mjs --arms toolkit --cota --reps 2                # mede US$ por 1% da cota (leia o /usage antes e depois)
 ```
 
 ## Lados
@@ -52,6 +53,12 @@ node bench/run.mjs --report <pasta>[,<pasta>]                # refaz o relatóri
 | `sem-advisor` | `toolkit` sem o `advisorModel: "opus"`, que o kit liga desde a 1.4 |
 | `openspec` | `toolkit` + o fluxo do GUIA (propose → apply → verify → `spec-reviewer` → archive) num projeto com `openspec init` |
 | `tlc` | `toolkit` + a skill tlc-spec-lean de ponta a ponta, copiada de `~/.claude/skills/tlc-spec-lean` |
+| `sg-sonnet` | `toolkit` com a revisão do `security-guidance` no Sonnet (`SECURITY_REVIEW_MODEL` e `SG_AGENTIC_MODEL`) |
+| `sem-sg` | `toolkit` sem o plugin `security-guidance` |
+
+Nos lados com o `security-guidance`, a revisão dele roda numa chamada à parte (no Opus, por padrão) que não entra no custo do
+`claude -p`. O bench lê o log do plugin de cada execução e soma esse custo em "Custo do security-guidance" e "Custo com o plugin".
+Rodadas de antes de 27/11/2026 não têm essa medida e aparecem como "não medido".
 
 Nos lados `openspec` e `tlc`, o plano vale como aprovado, porque no `-p` ninguém revisa a spec. Eles medem o custo
 do fluxo sem a revisão humana, que é onde a spec mais ajuda.

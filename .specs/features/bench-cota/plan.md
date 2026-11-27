@@ -7,9 +7,9 @@ coisas que pesam na cota nunca foram medidas:
 
 - O plugin `security-guidance`, que o kit instala, revisa as mudanças no fim de cada resposta e a cada commit
   usando o **Opus** por padrão (`llm.py:191`, `default_review_model`), numa chamada separada com o login do usuário.
-  Esse custo não entra no `total_cost_usd` do `claude -p`. Pior: no `-p`, a documentação diz que hooks
-  assíncronos são encerrados quando a sessão termina, então a revisão do fim da resposta (`asyncRewake`) provavelmente
-  nem roda no bench. O lado `toolkit` parece mais barato do que o kit é no uso interativo.
+  Esse custo não entra no `total_cost_usd` do `claude -p`, então o lado `toolkit` do bench parece mais barato do que o
+  kit é. Um teste de 27/11 mostrou que a revisão roda no `-p` e grava o custo no log do plugin (`Review usage: ...
+  est_cost_usd=0.0113`, Opus); a doc avisa que um hook assíncrono ainda rodando no fim do `-p` é cancelado.
 - O advisor (o Sonnet consultando o Opus) foi medido só em tarefas curtas, em que ele nunca consultou o Opus. O custo
   numa sessão longa e difícil é desconhecido, e é o que o README manda o usuário vigiar.
 - Ninguém sabe quanto um dólar de custo da API consome da cota de 5 horas e da semana. Sem isso, "custou 52% menos"
@@ -28,8 +28,8 @@ advisor custa e acerta em sessão longa, e quantos dólares de API cabem em 1% d
 Reusa `bench/run.mjs` (lados, HOMEs isolados, login copiado, `runOnce`, relatório) e o formato de tarefa de `bench/tasks/`.
 
 1. `bench/run.mjs` (exists) - ganha os lados `sg-sonnet` (revisão do plugin no Sonnet) e `sem-sg` (kit sem o plugin)
-2. `bench/run.mjs` (exists) - depois de cada execução nos lados com o plugin, roda a revisão do fim de resposta do
-   plugin de forma síncrona sobre o diff do workspace e soma o custo que ela informa (door 1) em `run.sgCost`
+2. `bench/run.mjs` (exists) - dá a cada execução um log próprio do plugin (`SECURITY_GUIDANCE_DEBUG_LOG`) e soma o
+   `est_cost_usd` das linhas `Review usage:` em `run.sgCost` (door 1)
 3. `bench/tasks/long-*` (new, door 2) - duas ou três tarefas longas com regra que o pedido não diz, para `toolkit` × `sem-advisor`
 4. `bench/run.mjs` (exists) - opção `--cota`: lê o `/usage` no `-p` antes e depois da rodada e grava as leituras no relatório
 5. out: `report.md` com custo do plugin por execução, custo total (Claude + plugin) e, com `--cota`, US$ por 1% da cota
@@ -55,7 +55,7 @@ None - nothing consumed outside (o bench é ferramenta interna; as flags novas e
 
 | One-way door | Literal shape | Alternative rejected |
 | --- | --- | --- |
-| como o bench mede a revisão do plugin | depois do `claude -p`, `python <plugin>/hooks/security_reminder_hook.py` com a entrada de um evento `Stop` no workspace, `SECURITY_GUIDANCE_DEBUG_LOG` por execução, custo lido do `cost_usd` da linha de métricas que o hook imprime | medir dentro do `-p`: a doc diz que o hook assíncrono é cancelado no fim da sessão, então mediria zero; proxy de rede na API: frágil e depende de certificado |
+| como o bench mede a revisão do plugin | `SECURITY_GUIDANCE_DEBUG_LOG=<pasta da rodada>/sg/<tarefa>-<lado>-<rep>.log` em cada execução; `sgCost` = soma de `est_cost_usd=` das linhas `Review usage:`; revisão incompleta = linha `Stop hook: reviewing` sem `Review usage: review=stop` depois | rodar a revisão de novo depois do `-p`: mede uma revisão que o usuário não teria; proxy de rede na API: frágil e depende de certificado |
 | tarefas longas novas | `bench/tasks/long-<nome>/` com `task.json`, `repo/`, `hidden/`, `solution/`, como as atuais, e `"kind": "edit"` | um formato novo de tarefa "longa": o `run.mjs` e o `--dry` já sabem provar e corrigir o formato atual |
 
 ## Criteria
@@ -65,8 +65,8 @@ None - nothing consumed outside (o bench é ferramenta interna; as flags novas e
 **Acceptance Criteria**
 
 1. The `bench/run.mjs` SHALL aceitar os lados `sg-sonnet` (kit com `SECURITY_REVIEW_MODEL` e `SG_AGENTIC_MODEL` iguais a `claude-sonnet-5-5`) e `sem-sg` (kit sem o plugin `security-guidance`)
-2. WHEN uma execução de um lado com o plugin termina THEN o bench SHALL rodar a revisão do fim de resposta do plugin sobre o diff do workspace e gravar em `run.sgCost` o custo em US$ que o plugin informa
-3. IF a revisão do plugin não informar custo ou falhar THEN o bench SHALL gravar `sgCost: null` e o motivo em `run.sgError`, sem derrubar a rodada
+2. WHEN uma execução de um lado com o plugin termina THEN o bench SHALL gravar em `run.sgCost` a soma do `est_cost_usd` das linhas `Review usage:` do log do plugin daquela execução, e em `run.sgModels` os modelos dessas linhas
+3. IF o log tiver mais linhas `Stop hook: reviewing` que linhas `Review usage: review=stop` THEN o bench SHALL gravar `run.sgIncomplete` com a diferença, sem derrubar a rodada
 4. The relatório SHALL mostrar, por lado, o custo do Claude, o custo do plugin e a soma, e marcar "não medido" onde não houver `sgCost`
 
 **Independent test:** uma execução de `node-bugfix` nos três lados mostra `sgCost` > 0 no `toolkit`, menor no `sg-sonnet` e ausente no `sem-sg`.
@@ -104,7 +104,7 @@ None - nothing consumed outside (o bench é ferramenta interna; as flags novas e
 
 | Assumption | Chosen default | Rationale | Confirmed? |
 | --- | --- | --- | --- |
-| revisão do plugin no bench | replay síncrono do hook de `Stop` depois do `-p` | ver Landing | n |
+| revisão do plugin no bench | ler o log do plugin de cada execução | testado em 27/11: a revisão roda no `-p`, usa o Opus e grava o custo no log | y |
 | leitura da cota | `claude -p "/usage"` em HOME com o login copiado | testado em 27/11: funciona, custo US$ 0 | y |
 | nome do modelo no `sg-sonnet` | `claude-sonnet-5-5` | pelo login, a chamada vai direto à API, que não aceita apelido (`llm.py`) | n |
 | quantas tarefas longas | 2, uma Node e uma .NET | cobrem as duas stacks do kit; uma terceira se o custo por execução for baixo | n |

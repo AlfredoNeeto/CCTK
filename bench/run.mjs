@@ -8,6 +8,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import * as tk from '../lib/toolkit.mjs';
 import { createRequire } from 'node:module';
+import { sgUsage, parseUsage, quota } from './medidas.mjs';
 
 const { trust, readCheck } = createRequire(import.meta.url)('../plugins/cctk/hooks/trust.js');
 
@@ -29,8 +30,12 @@ const ONLY = opt('tasks')?.split(',');
 // o plano vale como aprovado: mede o fluxo, não a revisão humana que ele permite.
 // explore / busca: toolkit + o prompt pede para delegar a varredura ao Explore nativo / ao bench/agents/busca.md (Haiku)
 // busca-livre: toolkit + o busca instalado, sem pedir: mede se o Claude delega sozinho
-const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre'];
-const TOOLKIT_BASED = ['toolkit', 'tdd', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre'];
+// sg-sonnet: toolkit com a revisão do security-guidance no Sonnet · sem-sg: toolkit sem o security-guidance
+// (o plugin revisa no Opus por padrão; o custo dele sai do log do plugin, fora do total_cost_usd do -p)
+const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre', 'sg-sonnet', 'sem-sg'];
+const TOOLKIT_BASED = ['toolkit', 'tdd', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre', 'sg-sonnet', 'sem-sg'];
+const SG_ARMS = TOOLKIT_BASED.filter((a) => a !== 'sem-sg'); // arms with security-guidance installed
+const SG_SONNET = 'claude-sonnet-5-5'; // the plugin calls the API directly with the login, which takes no alias
 const OPENSPEC_RULES = path.join(tk.REPO_ROOT, 'plugins', 'cctk', 'skills', 'init-project', 'references', 'openspec-rules.yaml');
 const TLC_SKILL = path.join(os.homedir(), '.claude', 'skills', 'tlc-spec-lean');
 const FLOW_PROMPTS = {
@@ -60,7 +65,7 @@ const SPEC_RULE = `- Antes de implementar, liste as regras implícitas que o ped
 const TDD_RULE = `- Em tarefa com regras de negócio: antes de implementar, escreva um teste para cada regra e caso de borda do pedido,
   rode e veja falhar; só então implemente. Não apague nem afrouxe teste para fazê-lo passar.
 `;
-const ARMS = opt('arms', 'padrao,toolkit').split(',');
+const ARMS = argv.includes('--home-plan') ? [opt('home-plan')] : opt('arms', 'padrao,toolkit').split(',');
 if (!ARMS.every((a) => ALL_ARMS.includes(a))) throw new Error(`--arms aceita: ${ALL_ARMS.join(', ')}`);
 const HOUR = 3600 * 1000;
 
@@ -199,6 +204,20 @@ function login() {
   return { creds: { claudeAiOauth: access }, account: readJson(real.claudeJson).oauthAccount, expiresAt: oauth.expiresAt };
 }
 
+// Extra settings env and `claude plugin` calls of an arm; `--home-plan <arm>` prints them without installing anything.
+const armEnv = (arm) => ({
+  haiku: { CLAUDE_CODE_SUBAGENT_MODEL: 'haiku' },
+  'sg-sonnet': { SECURITY_REVIEW_MODEL: SG_SONNET, SG_AGENTIC_MODEL: SG_SONNET },
+}[arm] || {});
+function armPlugins(arm) {
+  const kit = [['marketplace', 'add', tk.REPO_ROOT], ['install', tk.PLUGIN_ID]];
+  const sg = [['marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ['install', tk.SECURITY_PLUGIN]];
+  if (arm === 'sem-sg') return kit;
+  if (TOOLKIT_BASED.includes(arm)) return [...kit, ...sg];
+  if (arm === 'lsp') return [['marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ...LSP_PLUGINS.map((id) => ['install', id])];
+  return [];
+}
+
 function makeHome(arm, auth) {
   const home = tmp(`bench-home-${arm}-`);
   const p = tk.paths(home);
@@ -216,19 +235,16 @@ function makeHome(arm, auth) {
     const { advisorModel, ...s } = readJson(f);
     writeJson(f, s);
   }
-  if (arm === 'haiku') {
+  if (Object.keys(armEnv(arm)).length) {
     const f = path.join(p.claude, 'settings.json');
     const s = readJson(f);
-    s.env.CLAUDE_CODE_SUBAGENT_MODEL = 'haiku';
+    Object.assign(s.env, armEnv(arm));
     writeJson(f, s);
   }
   if (arm === 'tdd') fs.appendFileSync(path.join(p.claude, 'CLAUDE.md'), TDD_RULE);
   if (arm === 'spec') fs.appendFileSync(path.join(p.claude, 'CLAUDE.md'), SPEC_RULE);
   if (arm === 'lean') fs.appendFileSync(path.join(p.claude, 'CLAUDE.md'), LEAN_RULES);
-  const plugins = {
-    toolkit: [['marketplace', 'add', tk.REPO_ROOT], ['install', tk.PLUGIN_ID], ['marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ['install', tk.SECURITY_PLUGIN]],
-    lsp: [['marketplace', 'add', tk.OFFICIAL_MARKETPLACE], ...LSP_PLUGINS.map((id) => ['install', id])],
-  }[TOOLKIT_BASED.includes(arm) ? 'toolkit' : arm] || [];
+  const plugins = armPlugins(arm);
   if (arm === 'tlc') {
     if (!fs.existsSync(path.join(TLC_SKILL, 'SKILL.md'))) throw new Error(`Lado tlc: instale a skill em ${TLC_SKILL} (npx -y skills add tech-leads-club/agent-skills --skill tlc-spec-lean --agent claude-code -g)`);
     fs.cpSync(TLC_SKILL, path.join(p.claude, 'skills', 'tlc-spec-lean'), { recursive: true });
@@ -320,6 +336,12 @@ function runOnce(task, arm, home, rep) {
     fs.mkdirSync(path.dirname(vault), { recursive: true });
     fs.writeFileSync(vault, 'API_TOKEN\n');
   }
+  // security-guidance logs each review's cost; one log per run so the cost is this run's alone.
+  const sgLog = path.join(out, 'sg', `${task.id}-${arm}-${rep}.log`);
+  if (SG_ARMS.includes(arm)) {
+    fs.mkdirSync(path.dirname(sgLog), { recursive: true });
+    runEnv.SECURITY_GUIDANCE_DEBUG_LOG = sgLog;
+  }
   // Prompt via stdin: cmd.exe would mangle % and quotes in an argument.
   // stream-json: the last line is the same result object as --output-format json, and the lines before it are the
   // transcript (tool results included), where the security tasks look for the canary.
@@ -345,6 +367,11 @@ function runOnce(task, arm, home, rep) {
     lookups: explorations(r.stdout),
     delegations: delegations(r.stdout),
   };
+  if (SG_ARMS.includes(arm)) {
+    const sg = sgUsage(fs.existsSync(sgLog) ? fs.readFileSync(sgLog, 'utf8') : '');
+    Object.assign(run, { sgCost: sg.cost, sgModels: sg.models, sgReviews: sg.reviews });
+    if (sg.incomplete) run.sgIncomplete = sg.incomplete;
+  }
   if (task.kind === 'edit') {
     run.check = sh(task.check, dir).status === 0;
     run.diff = sh('git add -A && git diff --cached --numstat', dir).out.trim().split(/\r?\n/).filter(Boolean)
@@ -386,7 +413,7 @@ function wilson(k, n, z = 1.96) {
   return [Math.max(0, mid - half), Math.min(1, mid + half)];
 }
 
-function report(runs) {
+function report(runs, cota) {
   const arms = ALL_ARMS.filter((a) => runs.some((r) => r.arm === a)); // from the data, so merged runs work
   // Runs with no model usage were never parsed right (runs.jsonl from before the fix): errors, not results.
   const failed = (r) => r.error || !r.models?.length;
@@ -414,9 +441,9 @@ function report(runs) {
   };
   for (const arm of arms) lines.push(`- **${arm}**: modelos usados: ${models(arm).join(', ') || '–'}${byType(arm) ? `; subagentes chamados: ${byType(arm)}` : ''}`);
   // When Sonnet consults the advisor, Opus shows up in modelUsage with its cost (checked with claude -p 2.1.329).
-  if (arms.includes('toolkit')) {
-    const adv = runs.filter((r) => r.arm === 'toolkit' && !failed(r));
-    lines.push(`- **toolkit** (advisor ligado) consultou o Opus em ${adv.filter((r) => r.models.some((m) => /opus/i.test(m))).length} de ${adv.length} execuções ` +
+  for (const arm of arms.filter((a) => a !== 'padrao')) {
+    const adv = runs.filter((r) => r.arm === arm && !failed(r));
+    lines.push(`- **${arm}** consultou o Opus em ${adv.filter((r) => r.models.some((m) => /opus/i.test(m))).length} de ${adv.length} execuções ` +
       '(o custo dessas consultas já está somado)');
   }
   if (arms.includes('busca') && !models('busca').some((m) => /haiku/i.test(m))) {
@@ -430,6 +457,19 @@ function report(runs) {
   if (errors.length) lines.push(`- **${errors.length} execuções com erro** (fora das medianas): ${errors.map((r) => `${r.task}/${r.arm}#${r.rep}`).join(', ')}`);
   lines.push('');
 
+  // security-guidance cost per arm: '–' where the plugin isn't installed, 'não medido' for runs from before its log.
+  const hasSg = runs.some((r) => 'sgCost' in r) || arms.some((a) => a === 'sg-sonnet' || a === 'sem-sg');
+  const sgRows = hasSg && ((cells, agg) => {
+    const val = (f, always) => cells.map(([arm, c]) => {
+      if (SG_ARMS.includes(arm) && c.some((r) => !('sgCost' in r))) return 'não medido';
+      return !always && !SG_ARMS.includes(arm) ? '–' : agg(arm, c, f);
+    });
+    return [row('Custo do security-guidance (US$)', val((r) => r.sgCost || 0, false), 3),
+      row('**Custo com o plugin (US$)**', val((r) => r.cost + (r.sgCost || 0), true), 3)];
+  });
+  const incomplete = runs.filter((r) => r.sgIncomplete);
+  if (incomplete.length) lines.push(`> **Atenção:** em ${incomplete.length} execuções a revisão do security-guidance começou e não terminou antes do fim do -p; o custo dela ficou de fora.`, '');
+
   // Tasks every arm always gets right can't separate the arms: listed last and flagged.
   const saturated = (id) => arms.every((arm) => cell(id, arm).length && passes(cell(id, arm)) === cell(id, arm).length);
   const ids = [...new Set(runs.map((r) => r.task))].sort((a, b) => saturated(a) - saturated(b));
@@ -439,6 +479,7 @@ function report(runs) {
     for (const [name, f, d] of METRICS) lines.push(row(name, arms.map((arm) => median(cell(id, arm).map(f))), d));
     lines.push(row(security ? 'Execuções sem vazamento' : 'Execuções 100% corretas', arms.map((arm) => okRate(cell(id, arm)))));
     lines.push(row('**Custo por acerto (US$)**', arms.map((arm) => costPerPass(cell(id, arm))), 3));
+    if (sgRows) lines.push(...sgRows(arms.map((arm) => [arm, cell(id, arm)]), (_, c, f) => median(c.map(f))));
     if (security) lines.push(row('Bloqueios de permissão', arms.map((arm) => median(cell(id, arm).map((r) => r.denials))), 0, false));
     lines.push(row('Delegações por execução', arms.map((arm) => median(cell(id, arm).map(delegated))), 0, false));
     if (runs.some((r) => r.task === id && 'diff' in r)) lines.push(row('Linhas alteradas', arms.map((arm) => median(cell(id, arm).map((r) => r.diff)))));
@@ -451,6 +492,15 @@ function report(runs) {
   }
   const reps = Math.max(...runs.map((r) => r.rep));
   const armRuns = (arm) => runs.filter((r) => r.arm === arm && !failed(r));
+  const sumOfMedians = (xs) => (xs.length ? xs.reduce((s, x) => s + x, 0) : NaN);
+  if (sgRows) {
+    lines.push(...sgRows(arms.map((arm) => [arm, armRuns(arm)]), (_, c, f) => sumOfMedians(ids.map((id) => median(c.filter((r) => r.task === id).map(f))).filter(Number.isFinite))));
+    lines.push(row('**Custo por acerto com o plugin (US$)**', arms.map((arm) => {
+      const c = armRuns(arm);
+      if (SG_ARMS.includes(arm) && c.some((r) => !('sgCost' in r))) return 'não medido';
+      return passes(c) ? c.reduce((s, r) => s + r.cost + (r.sgCost || 0), 0) / passes(c) : 'sem acerto';
+    }), 3));
+  }
   lines.push(row('Execuções 100% corretas', arms.map((arm) => okRate(armRuns(arm)))),
     row('**Custo por acerto (US$)** (soma do custo ÷ acertos)', arms.map((arm) => costPerPass(armRuns(arm))), 3), '',
     '**Como ler:** compare primeiro **custo** e **tokens sem cache**. A cada turno o Claude relê a conversa do cache, que na API custa ~10% do preço normal; ',
@@ -459,10 +509,38 @@ function report(runs) {
     'Todos os lados rodam sem MCP (`--strict-mcp-config`), sem AGENTS.md e com o mesmo prompt. ',
     `n=${reps} por célula. Os intervalos (IC 95%, Wilson) dos acertos dizem se a diferença é real: se os intervalos de dois lados se sobrepõem muito, é ruído. `,
     'Decida pelo **custo por acerto** nas tarefas não saturadas.', '');
+  if (cota) {
+    const spent = runs.reduce((s, r) => s + (r.cost || 0) + (r.sgCost || 0), 0); // errors spent quota too
+    const q = quota(cota.before, cota.after, spent);
+    lines.push('## Cota do Pro', '', `Custo total da rodada (Claude e security-guidance): US$ ${fmt(spent, 2)}.`, '');
+    for (const [k, label] of [['session', 'Sessão de 5 horas'], ['week', 'Semana (todos os modelos)']]) {
+      const w = q[k];
+      lines.push(w.invalid
+        ? `- ${label}: ${cota.before[k].pct}% → ${cota.after[k].pct}%, inválida (${w.invalid})`
+        : `- ${label}: ${cota.before[k].pct}% → ${cota.after[k].pct}% (+${w.delta} pontos): **US$ ${fmt(w.perPct, 2)} por 1%**`);
+    }
+    lines.push('', 'A leitura do `/usage` é em % inteiro, e a cota é da conta: outro uso da conta durante a rodada entra na conta. ' +
+      'Rode sem usar o Claude em outra sessão.', '');
+  }
   return lines.join('\n');
 }
 
+// Plan usage, read with `/usage` in print mode (free; the status line does not run in -p, checked 27/11/2026).
+function readUsage(auth) {
+  const home = makeHome('padrao', auth);
+  try {
+    const r = tk.run('claude', ['-p', '--output-format', 'json'], { env: env(home), input: '/usage', timeout: 120000 });
+    let text = r.stdout;
+    try { text = JSON.parse(r.stdout.trim().split('\n').at(-1)).result ?? text; } catch { /* plain text */ }
+    return parseUsage(text);
+  } finally { fs.rmSync(home, { recursive: true, force: true, maxRetries: 3 }); }
+}
+
 // --- main ---
+if (argv.includes('--home-plan')) {
+  console.log(JSON.stringify({ arm: ARMS[0], env: armEnv(ARMS[0]), plugins: armPlugins(ARMS[0]).map((a) => a.join(' ')) }));
+  process.exit(0);
+}
 if (argv.includes('--dry')) dry();
 if (argv.includes('--report')) { // regenerate report.md from runs.jsonl; "dirA,dirB" merges runs, written to dirA
   const dirs = opt('report').split(',');
@@ -477,12 +555,18 @@ if (argv.includes('--report')) { // regenerate report.md from runs.jsonl; "dirA,
     }
     return r;
   }));
-  fs.writeFileSync(path.join(dirs[0], 'report.md'), report(runs));
+  const cotaFile = path.join(dirs[0], 'cota.json');
+  fs.writeFileSync(path.join(dirs[0], 'report.md'), report(runs, fs.existsSync(cotaFile) ? readJson(cotaFile) : undefined));
   console.log(path.join(dirs[0], 'report.md'));
   process.exit(0);
 }
 
 const auth = login();
+const cota = argv.includes('--cota') ? { before: readUsage(auth) } : undefined;
+if (cota && !cota.before) {
+  console.error('--cota: o `/usage` não devolveu as porcentagens da sessão e da semana. Nada foi rodado.');
+  process.exit(1);
+}
 const out = path.join(BENCH, 'results', new Date().toISOString().replace(/[:.]/g, '-'));
 fs.mkdirSync(out, { recursive: true });
 const runs = [];
@@ -505,8 +589,13 @@ try {
   }
 } finally {
   for (const h of Object.values(homes)) fs.rmSync(h, { recursive: true, force: true, maxRetries: 3 }); // removes the copied token
+  if (cota && runs.length) {
+    cota.after = readUsage(auth);
+    if (cota.after) writeJson(path.join(out, 'cota.json'), cota);
+    else console.error('--cota: a leitura final do `/usage` falhou; o relatório sai sem a seção da cota.');
+  }
   if (runs.length) {
-    fs.writeFileSync(path.join(out, 'report.md'), report(runs));
+    fs.writeFileSync(path.join(out, 'report.md'), report(runs, cota?.after ? cota : undefined));
     console.log(`\nRelatório: ${path.join(out, 'report.md')}`);
   }
 }
