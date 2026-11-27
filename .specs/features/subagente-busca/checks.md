@@ -5,6 +5,8 @@ Plan: `.specs/features/subagente-busca/plan.md`
 
 Status: C1-C14 verdes; rodada `bench/results/2026-11-27T14-45-03-319Z` (a regra não passou: valem C12 e C10; C9 e C11 só pela regra
 em fixtures). Rodada 2: C3, C5, C9 e C10 reforçados e C13–C14 acrescentados, a partir das lacunas da verificação 1.
+Rodada 3: C9 ganha os casos que pegam a comparação só com o `toolkit`; C13 prova o custo na rodada; C14 confere a âncora
+e o "mais barato" do Haiku (lacunas G1, G2 e G4 da verificação 2).
 
 14 checks in 2 slices · 2 one-way doors · 0 open, of which 0 block
 
@@ -48,7 +50,7 @@ Proof: `node --test --test-name-pattern "^C8 " test/bench.test.mjs`
 
 ### S2 - decidir e entregar · 4 files · 35 KB · ~9k
 
-**C9** - A regra (provada em fixtures: exatamente 15% mais barato passa, 14% não; vale contra o `explore` quando ele é o mais barato; menos acertos reprova mesmo muito mais barato; mais acertos que a base passa), calculada sobre a rodada (custo por acerto do `busca` ≤ 0,85 × o menor entre `toolkit` e `explore`, e acertos do `busca` ≥ os do melhor dos dois): se passa, `plugins/cctk/agents/busca.md` existe com conteúdo idêntico a `bench/agents/busca.md` (AC 9)
+**C9** - A regra (provada em fixtures: exatamente 15% mais barato passa, 14% não; vale contra o `explore` quando ele é o mais barato; menos acertos reprova mesmo muito mais barato; mais acertos que a base passa; 20% abaixo do `toolkit` mas não 15% abaixo do `explore` mais barato reprova; mais acertos que o `toolkit` e menos que o `explore` reprova), calculada sobre a rodada (custo por acerto do `busca` ≤ 0,85 × o menor entre `toolkit` e `explore`, e acertos do `busca` ≥ os do melhor dos dois): se passa, `plugins/cctk/agents/busca.md` existe com conteúdo idêntico a `bench/agents/busca.md` (AC 9)
 Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C9 " test/bench-rodada.test.mjs` (os dois testes `C9`)
 
 **C10** - O `bench/README.md` tem, só dentro do bloco que a regra escolhe (`O que não mostrou ganho` até o próximo título em negrito; ou `## Resultados` fora desse bloco), uma linha por lado com custo por acerto (`US$ 0,124`), acertos (`12/12`) e mediana de delegações iguais aos recalculados da rodada, e a frase `Explore rodou em Sonnet (claude-sonnet` (AC 10)
@@ -60,10 +62,11 @@ Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C11 " test/bench-
 **C12** - Se a regra não passou, `plugins/cctk/agents/busca.md` não existe (AC 12)
 Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C12 " test/bench-rodada.test.mjs`
 
-**C13** - Um transcrito com dois eventos `result` (2 e 1 turnos) dá `Turnos` = `3` no `--report`; o custo vem do último evento e o tempo é o relógio da execução (AC 13)
+**C13** - Um transcrito com dois eventos `result` (2 e 1 turnos) dá `Turnos` = `3` no `--report`, e na rodada o `cost` de cada execução é o `total_cost_usd` do último `result` do seu transcrito (AC 13). O tempo pelo relógio não tem prova automática: só uma rodada nova o exercita
 Proof: `node --test --test-name-pattern "^C13 " test/bench.test.mjs`
+Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C13 " test/bench-rodada.test.mjs`
 
-**C14** - A seção `Economizar cota` do GUIA diz `o Explore roda em Sonnet`, cita `~<n>% mais por acerto` com o `n` recalculado da rodada (49) e linka o `bench/README.md` (AC 14)
+**C14** - A seção `Economizar cota` do GUIA diz `o Explore roda em Sonnet`, cita `~<n>% mais por acerto` com o `n` recalculado da rodada (49), linka uma âncora que existe no `bench/README.md` e não diz que o Haiku "saiu mais barato" sem dizer por execução (AC 14)
 Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C14 " test/bench-rodada.test.mjs`
 
 ## Coverage

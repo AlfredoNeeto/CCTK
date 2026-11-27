@@ -44,6 +44,8 @@ test('C9 the entry rule: 15% cheaper per pass with no fewer passes', () => {
   assert.equal(rule(round([0.2, 0.1, 0.085, 0.1])).passes, true, 'against explore when it is the cheaper one');
   assert.equal(rule(round([0.1, 0.2, 0.01, 0.1], { busca: 1 })).passes, false, 'cheaper but fewer passes');
   assert.equal(rule(round([0.1, 0.2, 0.08, 0.1], { toolkit: 1 })).passes, true, 'more passes than the baseline');
+  assert.equal(rule(round([0.2, 0.15, 0.16, 0.1])).passes, false, '20% below toolkit but not 15% below the cheaper explore');
+  assert.equal(rule(round([0.1, 0.2, 0.01, 0.1], { busca: 1, toolkit: 2 })).passes, false, 'more passes than toolkit, fewer than explore');
 });
 
 test('C1 the new arms run as the toolkit, with the cctk plugin', () => {
@@ -131,5 +133,19 @@ test('C14 the GUIA warns that asking for the Explore costs more, with the round 
   const item = g.slice(g.indexOf('## Economizar cota'), g.indexOf('\n## ', g.indexOf('## Economizar cota') + 1));
   assert.ok(item.includes('o Explore roda em Sonnet'), 'diz em que modelo o Explore roda');
   assert.ok(item.includes(`~${pct}% mais por acerto`), `cita ~${pct}%`);
-  assert.ok(item.includes('../bench/README.md#'), 'linka o benchmark');
+  const [, anchor] = item.match(/\.\.\/bench\/README\.md#([\w-]+)/) || [];
+  assert.ok(anchor, 'linka o benchmark');
+  const slugs = read('bench/README.md').split('\n').filter((l) => l.startsWith('#'))
+    .map((l) => l.replace(/^#+\s*/, '').toLowerCase().replace(/[^\p{L}\p{N} -]/gu, '').replace(/ /g, '-'));
+  assert.ok(slugs.includes(anchor), `âncora #${anchor} existe no bench/README`);
+  assert.ok(!/Haiku saiu\s+mais barato,/.test(item), 'Haiku: mais barato por execução, não por acerto');
+});
+
+test('C13 in the round, each run cost is the last result event of its transcript', () => {
+  need();
+  for (const r of runs()) {
+    const last = fs.readFileSync(path.join(ROUND, 'transcripts', `${r.task}-${r.arm}-${r.rep}.jsonl`), 'utf8').split(/\r?\n/)
+      .map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter((e) => e?.type === 'result').at(-1);
+    assert.equal(r.cost, last.total_cost_usd, `${r.task}/${r.arm}#${r.rep}`);
+  }
 });

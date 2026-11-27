@@ -47,7 +47,7 @@ test('C3 busca.md declares haiku, read-only tools and the arquivo:linha answer',
   assert.ok(body.includes('Não copie arquivos inteiros'));
 });
 
-test('C13 turns add up across result segments; cost comes from the last one', () => {
+test('C13 turns add up across result segments', () => {
   const result = (turns, cost) => JSON.stringify({ type: 'result', num_turns: turns, total_cost_usd: cost, permission_denials: [] });
   const md = report([run({ delegations: { Explore: 1 }, turns: 1 })], {
     'node-question-busca-1': [result(2, 0.2), '{"type":"system","subtype":"init"}', result(1, 0.2)],
