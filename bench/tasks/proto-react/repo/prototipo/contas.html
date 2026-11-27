@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Contas a pagar</title><link rel="stylesheet" href="estilo.css"><link rel="stylesheet" href="tema.css"></head>
+<body><div class="app">
+  <aside class="menu"><div class="marca"><span class="logo">FC</span>Financeiro Claro</div>
+    <nav><a class="ativo" href="contas.html">Contas a pagar</a></nav>
+    <div class="rodape">Ana Souza · <a id="sair" href="login.html">Sair</a></div></aside>
+  <main><header class="topo"><div><div class="trilha">Financeiro › Contas</div><h1>Contas a pagar</h1></div>
+      <div class="acoes"><a class="btn primario" id="nova-conta" href="#nova">Nova conta</a></div></header>
+    <div class="conteudo">
+      <div class="filtros"><div class="campo"><label for="periodo">Período</label><select id="periodo"><option>Março de 2026</option><option>Abril de 2026</option></select></div><button class="btn" id="filtrar">Filtrar</button></div>
+      <div class="caixa"><div class="rolagem"><table class="tabela" id="contas">
+        <thead><tr><th>Fornecedor</th><th>Vencimento</th><th class="num">Valor</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Papelaria Central</td><td>05/03/2026</td><td class="num">R$ 1.250,00</td><td><span class="selo alerta">Vence hoje</span></td></tr>
+          <tr><td>Energia Sul</td><td>08/03/2026</td><td class="num">R$ 487,90</td><td><span class="selo info">Aberta</span></td></tr>
+          <tr><td>Limpeza Brilho</td><td>02/03/2026</td><td class="num">R$ 320,00</td><td><span class="selo erro">Atrasada</span></td></tr>
+          <tr><td>Telefonia Norte</td><td>12/03/2026</td><td class="num">R$ 189,90</td><td><span class="selo info">Aberta</span></td></tr>
+        </tbody>
+        <tfoot><tr><td>4 contas</td><td></td><td class="num">R$ 2.247,80</td><td></td></tr></tfoot>
+      </table></div></div>
+    </div></main></div>
+  <div class="modal" id="nova"><div class="janela"><header><h2>Nova conta</h2></header>
+    <div class="corpo"><div class="form">
+      <div class="campo inteiro"><label for="fornecedor">Fornecedor <span class="obrig">*</span></label><input id="fornecedor"></div>
+      <div class="campo"><label for="valor">Valor</label><input id="valor"></div></div></div>
+    <footer><a class="btn" id="cancelar" href="#">Cancelar</a><a class="btn primario" id="salvar" href="#">Salvar</a></footer></div></div>
+</body></html>

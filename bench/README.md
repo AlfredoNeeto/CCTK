@@ -55,6 +55,7 @@ node bench/run.mjs --arms toolkit --cota --reps 2                # mede US$ por 
 | `tlc` | `toolkit` + a skill tlc-spec-lean de ponta a ponta, copiada de `~/.claude/skills/tlc-spec-lean` |
 | `sg-sonnet` | `toolkit` com a revisão do `security-guidance` no Sonnet (`SECURITY_REVIEW_MODEL` e `SG_AGENTIC_MODEL`) |
 | `sem-sg` | `toolkit` sem o plugin `security-guidance` |
+| `proto-codigo` | `toolkit` + o pedido usa a etapa "Levar ao código" do `/cctk:prototipo` |
 
 Nos lados com o `security-guidance`, a revisão dele roda numa chamada à parte (no Opus, por padrão) que não entra no custo do
 `claude -p`. O bench lê o log do plugin de cada execução e soma esse custo em "Custo do security-guidance" e "Custo com o plugin".

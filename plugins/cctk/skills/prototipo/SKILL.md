@@ -1,6 +1,6 @@
 ---
 name: prototipo
-description: Cria protótipo navegável de telas em HTML e CSS, do zero (a partir de uma descrição) ou a partir do print de um sistema que já existe, para validar com o cliente. No fim entrega o que o usuário escolher - zip, HTML único ou especificação em PDF com as telas anotadas. Use quando pedirem protótipo, mockup, wireframe, "desenha as telas", "recria esta tela" ou especificação com telas.
+description: Cria protótipo navegável de telas em HTML e CSS, do zero (a partir de uma descrição) ou a partir do print de um sistema que já existe, para validar com o cliente. No fim entrega o que o usuário escolher - zip, HTML único ou especificação em PDF com as telas anotadas. Depois de aprovado, leva o protótipo ao código do projeto (Angular, React ou Flutter) reaproveitando o estilo. Use quando pedirem protótipo, mockup, wireframe, "desenha as telas", "recria esta tela", especificação com telas, ou "leve o protótipo para o código".
 argument-hint: <descrição das telas | caminho do print> [mobile]
 allowed-tools: Bash(node "${CLAUDE_SKILL_DIR}/scripts/render.mjs" *)
 ---
@@ -130,3 +130,22 @@ Não publique em hospedagem pública: o protótipo de cliente não deve ficar co
 5. `R pdf prototipo/especificacao.md` → `prototipo/especificacao.pdf`. O `.md` fica para versionar e para citar no OpenSpec.
 
 No fim, diga em poucas linhas o que foi gerado, onde está, e o que ficou em aberto.
+
+## 6. Levar ao código
+
+Só quando pedirem, com o protótipo aprovado, na pasta do projeto (Angular, React ou Flutter). O estilo já existe e o
+cliente aprovou: o trabalho é ligar as telas aos dados, e **não reescreva o estilo**.
+
+1. `R codigo <angular|react|flutter>` na raiz do projeto. No web, grava `src/styles/prototipo.css` (o `estilo.css` e o
+   `tema.css`, com escopo `.prototipo`, para não mexer nas telas que o app já tem); no Flutter, `lib/tema/tema_prototipo.dart`.
+   Ele diz o que falta ligar (o `import` no React, o `theme:` no Flutter). Se o arquivo já existe, ele para: não apague
+   sem perguntar.
+2. Leia **só** o mapa do framework do projeto: [codigo-angular.md](references/codigo-angular.md),
+   [codigo-react.md](references/codigo-react.md) ou [codigo-flutter.md](references/codigo-flutter.md).
+3. Crie os **componentes base** uma vez (layout com menu e topo, tabela, campo, modal) e monte cada tela com eles,
+   seguindo o HTML da tela: mesmas classes (web), mesmos rótulos, `id`, ordem de blocos e navegação. Leia cada HTML
+   uma vez; o que já está no contexto desta conversa não precisa ser relido.
+4. Troque só o que é comportamento: links por rotas, `href="#modal"` por estado, dados fictícios por dados do
+   serviço. O check do projeto (build e testes) confere antes de encerrar.
+
+Se o projeto usa outra biblioteca de componentes (Angular Material, MUI), o mapa diz como manter a dela.

@@ -1,0 +1,7 @@
+{
+  "kind": "edit",
+  "deps": true,
+  "prompt": "O cliente aprovou o protótipo em prototipo/ (login.html e contas.html, com o estilo em estilo.css e tema.css). Implemente as duas telas neste app React, nas rotas /login e /contas, em src/App.jsx (o BrowserRouter já está em src/main.jsx). A tela de contas mostra as contas de src/dados.js. Mantenha o visual, os textos, os id e a navegação do protótipo. Os testes ficam em src/.",
+  "check": "npm run build && npm test",
+  "grade": "node hidden/grade.mjs"
+}

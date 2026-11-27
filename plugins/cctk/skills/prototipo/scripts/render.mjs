@@ -9,6 +9,7 @@
 //   pdf <especificacao.md|html> [saida.pdf]             PDF A4 com número de página
 //   unico <pasta> <saida.html>        um HTML só, com CSS e imagens dentro e navegação entre as telas
 //   zip <pasta> <saida.zip>           zip para mandar ao cliente (sem prints, notas e rascunhos)
+//   codigo <angular|react|flutter> [raiz]   o tema do protótipo aprovado no projeto (CSS global ou ThemeData)
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -431,6 +432,126 @@ export function medidas(buf) {
   return null;
 }
 
+// ---------- Levar ao código: o tema do protótipo aprovado no projeto Angular, React ou Flutter ----------
+// Web: o estilo.css + tema.css viram estilo global, com as mesmas classes, e o Claude não reescreve CSS.
+// Flutter: as variáveis viram um ThemeData. Nunca sobrescreve arquivo existente.
+const AVISO_CSS = '/* Gerado por `R codigo` a partir do protótipo aprovado (estilo.css + tema.css), com escopo .prototipo: vale só dentro de um\n' +
+  '   contêiner class="prototipo", então as telas que o app já tem não mudam. Para mudar cor ou fonte, mude o tema.css do protótipo e gere de novo. */\n';
+
+// Cada seletor passa a valer só dentro de `raiz`: `.btn` -> `.prototipo .btn`; `:root`, `html`, `body` -> `.prototipo`;
+// `body.mobile` -> `.prototipo.mobile`. @media e @supports são escopados por dentro; @keyframes e @font-face ficam como estão.
+// shortcut: cobre CSS sem aninhamento, que é o que estilo.css e tema.css usam; CSS aninhado pediria um parser de verdade.
+export function escopo(css, raiz = '.prototipo') {
+  const sel = (s) => s.split(',').map((x) => {
+    x = x.trim();
+    if (x === '*') return `${raiz}, ${raiz} *`;
+    if (/^(:root|html|body)$/.test(x)) return raiz;
+    if (/^(html|body)[.:[#]/.test(x)) return raiz + x.replace(/^(html|body)/, '');
+    if (/^(html|body)\s/.test(x)) return `${raiz} ${x.replace(/^(html|body)\s+/, '')}`;
+    return `${raiz} ${x}`;
+  }).join(',');
+  const fim = (txt, abre) => { // index after the '}' that closes the '{' at `abre`
+    let n = 0;
+    for (let j = abre; j < txt.length; j++) if (txt[j] === '{') n++; else if (txt[j] === '}' && --n === 0) return j + 1;
+    return txt.length;
+  };
+  const semComentario = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  let out = '';
+  for (let i = 0; i < semComentario.length;) {
+    const abre = semComentario.indexOf('{', i);
+    if (abre < 0) { out += semComentario.slice(i); break; }
+    const cabeca = semComentario.slice(i, abre).trim();
+    const f = fim(semComentario, abre);
+    if (/^@(media|supports)\b/.test(cabeca)) out += `${cabeca}{${escopo(semComentario.slice(abre + 1, f - 1), raiz)}}\n`;
+    else if (cabeca.startsWith('@')) out += `${semComentario.slice(i, f).trim()}\n`;
+    else if (cabeca) out += `${sel(cabeca)}${semComentario.slice(abre, f)}\n`;
+    i = f;
+  }
+  return out;
+}
+
+function variaveis(css) {
+  const v = {};
+  for (const bloco of css.matchAll(/:root\s*\{([^}]*)\}/g)) {
+    for (const [, nome, valor] of bloco[1].matchAll(/--([\w-]+)\s*:\s*([^;]+)/g)) v[nome] = valor.trim();
+  }
+  return v;
+}
+
+function corDart(valor, nome) {
+  let v = valor.trim().toLowerCase();
+  let m = v.match(/^#([0-9a-f]{3})$/);
+  if (m) v = `#${[...m[1]].map((c) => c + c).join('')}`;
+  if ((m = v.match(/^#([0-9a-f]{6})$/))) return `Color(0xFF${m[1].toUpperCase()})`;
+  if ((m = v.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/))) {
+    return `Color(0xFF${m.slice(1).map((n) => Number(n).toString(16).padStart(2, '0')).join('').toUpperCase()})`;
+  }
+  throw new Error(`--${nome}: cor "${valor}" não suportada (use #rgb, #rrggbb ou rgb(r,g,b))`);
+}
+
+const temaDart = (v) => {
+  const cor = (n) => corDart(v[n], n);
+  const fonte = (v.fonte || '').split(',')[0].trim().replace(/^["']|["']$/g, '');
+  const sistema = !fonte || /^(system-ui|-apple-system|sans-serif|serif|monospace|inherit)$/i.test(fonte);
+  return `// Gerado por \`R codigo flutter\` a partir do protótipo aprovado (prototipo/tema.css). Gere de novo se o tema mudar.
+import 'package:flutter/material.dart';
+
+const double raioPrototipo = ${parseFloat(v.raio) || 8};
+
+final ThemeData temaPrototipo = ThemeData(
+  useMaterial3: true,
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: const ${cor('cor')},
+    primary: const ${cor('cor')},
+    onPrimary: const ${cor('sobre-cor')},
+    surface: const ${cor('superficie')},
+    surfaceContainerLowest: const ${cor('fundo')},
+    onSurface: const ${cor('texto')},
+    error: const ${cor('erro')},
+  ),
+  scaffoldBackgroundColor: const ${cor('fundo')},${sistema ? '' : `\n  fontFamily: '${fonte}',`}
+);
+`;
+};
+
+export function codigo(alvo, raiz = '.', origem = path.join(raiz, 'prototipo')) {
+  const tema = path.join(origem, 'tema.css');
+  if (!fs.existsSync(tema)) throw new Error(`falta ${tema}: gere e aprove o protótipo antes (R init e as telas)`);
+  const estiloArq = fs.existsSync(path.join(origem, 'estilo.css')) ? path.join(origem, 'estilo.css') : path.join(ASSETS, 'estilo.css');
+  const estilo = fs.readFileSync(estiloArq, 'utf8');
+  const temaCss = fs.readFileSync(tema, 'utf8');
+  const existe = (f) => fs.existsSync(path.join(raiz, f));
+  const pkg = existe('package.json') ? JSON.parse(fs.readFileSync(path.join(raiz, 'package.json'), 'utf8')) : {};
+  const ehReact = Boolean({ ...pkg.dependencies, ...pkg.devDependencies }.react);
+  const exige = { angular: ['angular.json', existe('angular.json')], react: ['package.json com react', ehReact], flutter: ['pubspec.yaml', existe('pubspec.yaml')] }[alvo];
+  if (!exige) throw new Error(`framework "${alvo}" não suportado: use angular, react ou flutter`);
+  if (!exige[1]) throw new Error(`este projeto não é ${alvo}: falta ${exige[0]} em ${path.resolve(raiz)}`);
+  const destino = alvo === 'flutter' ? 'lib/tema/tema_prototipo.dart' : 'src/styles/prototipo.css';
+  const arq = path.join(raiz, destino);
+  if (fs.existsSync(arq)) throw new Error(`${arq} já existe; não sobrescrevi (apague ou renomeie, e rode de novo)`);
+  const conteudo = alvo === 'flutter' ? temaDart({ ...variaveis(estilo), ...variaveis(temaCss) }) : `${AVISO_CSS}${escopo(`${estilo}\n${temaCss}`)}`;
+  fs.mkdirSync(path.dirname(arq), { recursive: true });
+  fs.writeFileSync(arq, conteudo);
+  let aviso = '';
+  if (alvo === 'angular') { // antes dos estilos do app, que continuam podendo sobrescrever
+    const f = path.join(raiz, 'angular.json');
+    const cfg = JSON.parse(fs.readFileSync(f, 'utf8'));
+    let n = 0;
+    for (const p of Object.values(cfg.projects || {})) {
+      const styles = p.architect?.build?.options?.styles;
+      if (Array.isArray(styles) && !styles.includes(destino)) { styles.unshift(destino); n++; }
+    }
+    if (n) fs.writeFileSync(f, `${JSON.stringify(cfg, null, 2)}\n`);
+    else aviso = `angular.json sem "styles" no build: acrescente "${destino}" à mão`;
+  } else if (alvo === 'react') {
+    const entrada = ['src/main.tsx', 'src/main.jsx', 'src/index.tsx', 'src/index.jsx', 'src/main.js', 'src/index.js'].find(existe) || 'o arquivo de entrada';
+    aviso = `ponha \`import './styles/prototipo.css'\` no topo de ${entrada}`;
+  } else {
+    aviso = 'use `theme: temaPrototipo` no MaterialApp (import do lib/tema/tema_prototipo.dart)';
+  }
+  return { arquivo: destino, aviso };
+}
+
 // ---------- CLI ----------
 async function main([cmd, ...a]) {
   const flags = new Set(a.filter((x) => x.startsWith('--')));
@@ -456,9 +577,13 @@ async function main([cmd, ...a]) {
     const files = arquivosDoZip(pos[0]);
     fs.writeFileSync(pos[1], zip(files));
     console.log(`ok ${pos[1]} (${files.length} arquivos)`);
+  } else if (cmd === 'codigo' && pos[0]) {
+    const r = codigo(pos[0], pos[1] || '.');
+    console.log(`ok ${r.arquivo}${r.aviso ? `; ${r.aviso}` : ''}`);
   } else {
     console.error('uso: init <pasta> [--mobile] | medir <print> | checar <pasta> | prints <pasta> [--anotar] [tela.html[#estado]...] | ' +
-      'lado <original> <tela.html> <saida.png> | pdf <arquivo.md|html> [saida.pdf] | unico <pasta> <saida.html> | zip <pasta> <saida.zip>');
+      'lado <original> <tela.html> <saida.png> | pdf <arquivo.md|html> [saida.pdf] | unico <pasta> <saida.html> | zip <pasta> <saida.zip> | ' +
+      'codigo <angular|react|flutter> [raiz do projeto]');
     process.exitCode = 2;
   }
 }

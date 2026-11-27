@@ -5,6 +5,11 @@ import assert from 'node:assert/strict';
 import { criarPedido, fecharPedido, pedido, limpar } from './src/pedidos.js';
 import * as estoque from './src/estoque.js';
 import * as notificacoes from './src/notificacoes.js';
+import * as cupons from './src/cupons.js';
+import * as frete from './src/frete.js';
+
+// An error, and not the stub's "not implemented" one.
+const erroDeVerdade = (e) => e instanceof Error && !/não foi implementado/.test(e.message);
 
 beforeEach(() => {
   limpar();
@@ -38,7 +43,7 @@ test('frete cobra cada kg ou fração acima de 1 kg', () => {
 
 test('cupom abaixo do mínimo: erro, e nada muda', () => {
   const id = criarPedido('c1', [{ sku: 'CAM-01', qtd: 2 }, { sku: 'CAL-02', qtd: 1 }]);
-  assert.throws(() => fecharPedido(id, { cupom: 'VIP25', uf: 'SP' }));
+  assert.throws(() => fecharPedido(id, { cupom: 'VIP25', uf: 'SP' }), erroDeVerdade);
   assert.equal(pedido(id).status, 'aberto');
   assert.equal(estoque.saldo('CAM-01'), 10);
   assert.equal(notificacoes.enviadas.length, 0);
@@ -58,16 +63,16 @@ test('avisa o cliente com o total formatado', () => {
 });
 
 test('pedido inexistente ou já fechado: erro', () => {
-  assert.throws(() => fecharPedido('P99', { uf: 'SP' }));
+  assert.throws(() => fecharPedido('P99', { uf: 'SP' }), erroDeVerdade);
   const id = criarPedido('c1', [{ sku: 'MEI-04', qtd: 1 }]);
   fecharPedido(id, { uf: 'SP' });
-  assert.throws(() => fecharPedido(id, { uf: 'SP' }));
+  assert.throws(() => fecharPedido(id, { uf: 'SP' }), erroDeVerdade);
 });
 
 test('regra implícita: falta estoque de um item, nenhum item é baixado e ninguém é avisado', () => {
   estoque.definir('CAL-02', 0);
   const id = criarPedido('c1', [{ sku: 'CAM-01', qtd: 2 }, { sku: 'CAL-02', qtd: 1 }]);
-  assert.throws(() => fecharPedido(id, { uf: 'SP' }));
+  assert.throws(() => fecharPedido(id, { uf: 'SP' }), erroDeVerdade);
   assert.equal(estoque.saldo('CAM-01'), 10);
   assert.equal(pedido(id).status, 'aberto');
   assert.equal(notificacoes.enviadas.length, 0);
@@ -76,7 +81,7 @@ test('regra implícita: falta estoque de um item, nenhum item é baixado e ningu
 test('regra implícita: o mesmo SKU em duas linhas soma antes de conferir o estoque', () => {
   estoque.definir('CAM-01', 3);
   const id = criarPedido('c1', [{ sku: 'CAM-01', qtd: 2 }, { sku: 'CAM-01', qtd: 2 }]);
-  assert.throws(() => fecharPedido(id, { uf: 'SP' }));
+  assert.throws(() => fecharPedido(id, { uf: 'SP' }), erroDeVerdade);
   assert.equal(estoque.saldo('CAM-01'), 3);
   assert.equal(pedido(id).status, 'aberto');
 });
@@ -84,4 +89,21 @@ test('regra implícita: o mesmo SKU em duas linhas soma antes de conferir o esto
 test('regra implícita: cupom fixo maior que o subtotal não deixa o total abaixo do frete', () => {
   const id = criarPedido('c1', [{ sku: 'MEI-04', qtd: 1 }]);
   assert.deepEqual(fecharPedido(id, { cupom: 'DESC50', uf: 'SP' }), { subtotal: 1990, desconto: 1990, frete: 1500, total: 1500 });
+});
+
+test('desconto: percentual arredondado, fixo, e erro abaixo do mínimo', () => {
+  assert.equal(cupons.desconto('BEMVINDO10', 22970), 2297);
+  assert.equal(cupons.desconto('DESC50', 22970), 5000);
+  assert.throws(() => cupons.desconto('VIP25', 29999), erroDeVerdade);
+  assert.equal(cupons.desconto('VIP25', 30000), 7500);
+});
+
+test('freteDoPedido: calcula pela tabela e zera a partir de R$ 300,00', () => {
+  assert.equal(frete.freteDoPedido('SP', 1200, 25980), 2000);
+  assert.equal(frete.freteDoPedido('BA', 1180, 29999), 3400);
+  assert.equal(frete.freteDoPedido('BA', 1180, 30000), 0);
+});
+
+test('regra implícita: o desconto fixo nunca passa do subtotal', () => {
+  assert.equal(cupons.desconto('DESC50', 1990), 1990);
 });

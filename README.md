@@ -121,7 +121,7 @@ Passo a passo completo, com o que conferir em cada etapa: [Primeiro uso](docs/GU
 | `/cctk:init-project` | Prepara o repositório para o Claude, ou atualiza o que já foi preparado |
 | `/cctk:audit <url>` | Diz se uma skill, plugin, MCP ou repositório é seguro **antes** de você instalar |
 | `/cctk:convert <arquivo>` | Transforma PDF, Word, PowerPoint ou Excel em texto (Markdown) que o Claude lê melhor |
-| `/cctk:prototipo <telas \| print>` | Cria telas clicáveis em HTML para mostrar ao cliente, do zero ou a partir do print de um sistema |
+| `/cctk:prototipo <telas \| print>` | Cria telas clicáveis em HTML para mostrar ao cliente, do zero ou a partir do print de um sistema; depois de aprovado, leva ao código (Angular, React ou Flutter) |
 | `/cctk:secret` | Explica como usar o cofre |
 
 ## O que vem instalado

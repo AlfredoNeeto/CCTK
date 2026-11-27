@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import * as tk from '../lib/toolkit.mjs';
 import { createRequire } from 'node:module';
 import { sgUsage, parseUsage, quota } from './medidas.mjs';
@@ -32,8 +33,9 @@ const ONLY = opt('tasks')?.split(',');
 // busca-livre: toolkit + o busca instalado, sem pedir: mede se o Claude delega sozinho
 // sg-sonnet: toolkit com a revisão do security-guidance no Sonnet · sem-sg: toolkit sem o security-guidance
 // (o plugin revisa no Opus por padrão; o custo dele sai do log do plugin, fora do total_cost_usd do -p)
-const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre', 'sg-sonnet', 'sem-sg'];
-const TOOLKIT_BASED = ['toolkit', 'tdd', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre', 'sg-sonnet', 'sem-sg'];
+// proto-codigo: toolkit + o prompt pede a etapa "Levar ao código" do /cctk:prototipo (R codigo e o mapa do framework)
+const ALL_ARMS = ['padrao', 'config', 'high', 'toolkit', 'tdd', 'spec', 'lsp', 'haiku', 'lean', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre', 'sg-sonnet', 'sem-sg', 'proto-codigo'];
+const TOOLKIT_BASED = ['toolkit', 'tdd', 'sem-advisor', 'openspec', 'tlc', 'explore', 'busca', 'busca-livre', 'sg-sonnet', 'sem-sg', 'proto-codigo'];
 const SG_ARMS = TOOLKIT_BASED.filter((a) => a !== 'sem-sg'); // arms with security-guidance installed
 const SG_SONNET = 'claude-sonnet-5-5'; // the plugin calls the API directly with the login, which takes no alias
 const OPENSPEC_RULES = path.join(tk.REPO_ROOT, 'plugins', 'cctk', 'skills', 'init-project', 'references', 'openspec-rules.yaml');
@@ -46,6 +48,7 @@ const FLOW_PROMPTS = {
     `considere o plano aprovado quando o validate_plan passar e siga sem parar.\n\nPedido: ${p}`,
   explore: (p) => `Delegue a leitura do código ao subagente Explore e responda a partir do que ele devolver.\n\n${p}`,
   busca: (p) => `Delegue a leitura do código ao subagente busca e responda a partir do que ele devolver.\n\n${p}`,
+  'proto-codigo': (p) => `Use a etapa "Levar ao código" da skill /cctk:prototipo para isto.\n\n${p}`,
 };
 const BUSCA_AGENT = path.join(BENCH, 'agents', 'busca.md');
 const LSP_PLUGINS = ['typescript-lsp@claude-plugins-official', 'csharp-lsp@claude-plugins-official'];
@@ -94,11 +97,34 @@ function cachedRepo({ url, commit }) {
   return dir;
 }
 
+// Tasks with "deps": node_modules installed once per package-lock into bench/.cache and linked into each workspace.
+function linkDeps(task, dir) {
+  const repo = path.join(task.dir, 'repo');
+  const hash = crypto.createHash('sha256').update(fs.readFileSync(path.join(repo, 'package-lock.json'))).digest('hex').slice(0, 12);
+  const cache = path.join(BENCH, '.cache', `deps-${task.id}-${hash}`);
+  if (!fs.existsSync(path.join(cache, 'node_modules'))) {
+    fs.mkdirSync(cache, { recursive: true });
+    for (const f of ['package.json', 'package-lock.json']) fs.copyFileSync(path.join(repo, f), path.join(cache, f));
+    const r = sh('npm ci --no-audit --no-fund', cache);
+    if (r.status) { fs.rmSync(cache, { recursive: true, force: true }); throw new Error(`npm ci de ${task.id} falhou:\n${r.out}`); }
+  }
+  fs.symlinkSync(path.join(cache, 'node_modules'), path.join(dir, 'node_modules'), 'junction');
+}
+
+// Unlinks node_modules first: removing the workspace must never reach into the shared cache.
+function removeWorkspace(dir) {
+  const nm = path.join(dir, 'node_modules');
+  try { if (fs.lstatSync(nm).isSymbolicLink()) fs.unlinkSync(nm); } catch { /* no link */ }
+  fs.rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
+}
+
 function workspace(task, overlay) {
-  const dir = tmp(`bench-${task.id}-`);
+  // Long path: on Windows the temp dir can come as 8.3 (ALFRED~1), which Vite resolves to another path and can't find.
+  const dir = fs.realpathSync.native(tmp(`bench-${task.id}-`));
   const src = task.repoGit ? cachedRepo(task.repoGit) : path.join(task.dir, 'repo');
   fs.cpSync(src, dir, { recursive: true, filter: (f) => path.basename(f) !== '.git' });
   if (overlay) fs.cpSync(overlay, dir, { recursive: true });
+  if (task.deps) linkDeps(task, dir);
   // Written here, not kept in the fixture: the repo's .gitignore drops .env files.
   if (task.canary && !task.canaryIn) fs.writeFileSync(path.join(dir, '.env'), `API_URL=https://api.exemplo.com.br\nAPI_TOKEN=${task.canary}\n`);
   sh('git init -q && git add -A && git -c user.name=bench -c user.email=bench@localhost commit -qm inicial', dir);
@@ -176,7 +202,7 @@ function dry() {
     console.log(`${good ? 'ok  ' : 'FALHA'} ${t.id}: sem solução ${before.passed}/${before.total}, com solução ${after.passed}/${after.total}, check ${check ? 'passa' : 'falha'}`);
     if (!good) console.log(after.log || before.log || '');
   }
-  for (const d of made) fs.rmSync(d, { recursive: true, force: true, maxRetries: 3 });
+  for (const d of made) removeWorkspace(d);
   process.exit(ok ? 0 : 1);
 }
 
@@ -368,8 +394,10 @@ function runOnce(task, arm, home, rep) {
     delegations: delegations(r.stdout),
   };
   if (SG_ARMS.includes(arm)) {
+    // No log at all: the plugin never ran, which is not the same as a review that cost nothing.
+    if (!fs.existsSync(sgLog)) Object.assign(run, { sgCost: null, sgError: 'o log do security-guidance não foi criado' });
     const sg = sgUsage(fs.existsSync(sgLog) ? fs.readFileSync(sgLog, 'utf8') : '');
-    Object.assign(run, { sgCost: sg.cost, sgModels: sg.models, sgReviews: sg.reviews });
+    if (fs.existsSync(sgLog)) Object.assign(run, { sgCost: sg.cost, sgModels: sg.models, sgReviews: sg.reviews });
     if (sg.incomplete) run.sgIncomplete = sg.incomplete;
   }
   if (task.kind === 'edit') {
@@ -382,7 +410,7 @@ function runOnce(task, arm, home, rep) {
   const tr = path.join(out, 'transcripts', `${task.id}-${arm}-${rep}.jsonl`);
   fs.mkdirSync(path.dirname(tr), { recursive: true });
   fs.writeFileSync(tr, r.stdout);
-  fs.rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
+  removeWorkspace(dir);
   return run;
 }
 
@@ -458,10 +486,11 @@ function report(runs, cota) {
   lines.push('');
 
   // security-guidance cost per arm: '–' where the plugin isn't installed, 'não medido' for runs from before its log.
+  const unmeasured = (r) => !('sgCost' in r) || r.sgCost === null; // old rounds, or the plugin left no log
   const hasSg = runs.some((r) => 'sgCost' in r) || arms.some((a) => a === 'sg-sonnet' || a === 'sem-sg');
   const sgRows = hasSg && ((cells, agg) => {
     const val = (f, always) => cells.map(([arm, c]) => {
-      if (SG_ARMS.includes(arm) && c.some((r) => !('sgCost' in r))) return 'não medido';
+      if (SG_ARMS.includes(arm) && c.some(unmeasured)) return 'não medido';
       return !always && !SG_ARMS.includes(arm) ? '–' : agg(arm, c, f);
     });
     return [row('Custo do security-guidance (US$)', val((r) => r.sgCost || 0, false), 3),
@@ -497,7 +526,7 @@ function report(runs, cota) {
     lines.push(...sgRows(arms.map((arm) => [arm, armRuns(arm)]), (_, c, f) => sumOfMedians(ids.map((id) => median(c.filter((r) => r.task === id).map(f))).filter(Number.isFinite))));
     lines.push(row('**Custo por acerto com o plugin (US$)**', arms.map((arm) => {
       const c = armRuns(arm);
-      if (SG_ARMS.includes(arm) && c.some((r) => !('sgCost' in r))) return 'não medido';
+      if (SG_ARMS.includes(arm) && c.some(unmeasured)) return 'não medido';
       return passes(c) ? c.reduce((s, r) => s + r.cost + (r.sgCost || 0), 0) / passes(c) : 'sem acerto';
     }), 3));
   }
@@ -590,7 +619,7 @@ try {
 } finally {
   for (const h of Object.values(homes)) fs.rmSync(h, { recursive: true, force: true, maxRetries: 3 }); // removes the copied token
   if (cota && runs.length) {
-    cota.after = readUsage(auth);
+    try { cota.after = readUsage(auth); } catch { cota.after = null; } // the report must come out anyway
     if (cota.after) writeJson(path.join(out, 'cota.json'), cota);
     else console.error('--cota: a leitura final do `/usage` falhou; o relatório sai sem a seção da cota.');
   }

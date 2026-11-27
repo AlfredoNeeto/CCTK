@@ -24,12 +24,12 @@ Proof: `node --test --test-name-pattern "^C2 " test/bench-cota.test.mjs`
 **C3** - `sgUsage` de um log com duas linhas `Stop hook: reviewing` e uma `Review usage: review=stop` devolve `incomplete` 1; de um log vazio ou inexistente devolve `cost` 0 e `incomplete` 0 (AC 3)
 Proof: `node --test --test-name-pattern "^C3 " test/bench-cota.test.mjs`
 
-**C4** - No relatório de uma rodada sintética com `toolkit` (`cost` 0.10, `sgCost` 0.02) e `sem-sg` (`cost` 0.10, sem `sgCost`), a seção da tarefa tem as linhas "Custo do security-guidance (US$)" com `0,020` no `toolkit` e "Custo com o plugin (US$)" com `0,120`; uma execução `toolkit` sem o campo `sgCost` aparece como `não medido` (AC 4)
+**C4** - No relatório de uma rodada sintética com `toolkit` (`cost` 0.10, `sgCost` 0.02) e `sem-sg` (`cost` 0.10, sem `sgCost`), a seção da tarefa tem as linhas "Custo do security-guidance (US$)" com `0,020` no `toolkit` e "Custo com o plugin (US$)" com `0,120`; uma execução `toolkit` sem o campo `sgCost`, ou com `sgCost: null` (o plugin não criou o log), aparece como `não medido` (AC 4)
 Proof: `node --test --test-name-pattern "^C4 " test/bench-cota.test.mjs`
 
 ### S2 - advisor em sessão longa · 2 tasks · 60 KB · ~15k
 
-**C5** - Existem no mínimo 2 pastas `bench/tasks/long-*`, cada uma com no mínimo 6 arquivos de código em `repo/` e um pedido que nomeia no mínimo 3 desses arquivos (AC 5)
+**C5** - Existem no mínimo 2 pastas `bench/tasks/long-*`, cada uma com no mínimo 6 arquivos de código em `repo/` um pedido que nomeia no mínimo 3 desses arquivos, e uma solução de referência que muda no mínimo 3 deles (AC 5)
 Proof: `node --test --test-name-pattern "^C5 " test/bench-cota.test.mjs`
 
 **C6** - `node bench/run.mjs --dry --tasks <as long-*>` sai com 0: sem a solução os testes ocultos falham, com a solução passam e o check passa (AC 6)
@@ -79,5 +79,6 @@ Proof: `node --test --test-name-pattern "^C11 " test/bench-cota.test.mjs`
 
 ## Handoff
 
+- **Round 2 (verificação de 27/11, PASS com achados):** as tarefas longas passaram a exigir mudança em 3 arquivos (C5 confere a solução); o pedido da folha exclui o desconto simplificado do IRRF; os `assert.throws` exigem erro que não seja o "não implementado"; log do plugin ausente vira `sgCost: null` e "não medido"; a leitura final do `/usage` não derruba o relatório
 - S1-S3 tocam `bench/run.mjs` (25 KB), `bench/medidas.mjs` (novo, ~3 KB), `bench/tasks/long-*` (novos, ~40 KB),
   `test/bench-cota*.test.mjs` (novos, ~10 KB), `package.json` (1 KB) = ~80 KB / 4 ≈ 20k, abaixo do budget de 150k - one builder

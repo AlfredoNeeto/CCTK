@@ -32,7 +32,7 @@ Reusa a skill `prototipo` (o script `render.mjs`, comandos `R ...`) e o catálog
 | Front | What changes |
 | --- | --- |
 | domain | "levar ao código" é uma etapa nova da skill `prototipo`, depois da especificação; nada muda nas etapas atuais |
-| projeto do usuário | ganha um arquivo de tema e, no web, o `estilo.css` como estilo global; em projeto com estilo próprio, o comando não sobrescreve arquivo existente |
+| projeto do usuário | ganha um arquivo de tema; no web, o `estilo.css` e o `tema.css` com escopo `.prototipo`, então as telas que já existem não mudam de cara; o comando não sobrescreve arquivo existente |
 | stored data | nada a migrar |
 
 ## Relations
@@ -48,7 +48,7 @@ None - nothing consumed outside (comando da skill, documentado em Observable)
 | One-way door | Literal shape | Alternative rejected |
 | --- | --- | --- |
 | onde o tema gerado vai em cada framework | Angular: `src/styles/prototipo.css` (o `estilo.css` + `tema.css`) e a linha em `angular.json` `styles`; React: `src/styles/prototipo.css` importado em `src/main.*`; Flutter: `lib/tema/tema_prototipo.dart` com `ThemeData` | gerar componentes prontos por script para os três frameworks: são ~12 componentes × 3 frameworks para manter, e quebram a cada versão do framework |
-| mesma classe no web | as telas Angular/React usam os nomes de classe do catálogo (`btn primario`, `tabela`, `campo`) | converter para Tailwind ou CSS modules: obriga o Claude a reescrever todo o estilo, que é o custo que a peça quer tirar |
+| mesma classe no web, com escopo | as telas Angular/React usam os nomes de classe do catálogo (`btn primario`, `tabela`, `campo`) dentro de um contêiner `class="prototipo"`; o script reescreve cada seletor para valer só ali (`.btn` → `.prototipo .btn`, `:root` e `body` → `.prototipo`, `body.mobile` → `.prototipo.mobile`) | estilo global: `.btn`, `.card` e `.modal` colidem com o estilo que o app já tem (Bootstrap usa os mesmos nomes); prefixar as classes (`.proto-btn`): obriga o Claude a renomear tudo nas telas, que é o custo que a peça quer tirar; Tailwind ou CSS modules: reescrever todo o estilo |
 
 ## Criteria
 
@@ -56,7 +56,8 @@ None - nothing consumed outside (comando da skill, documentado em Observable)
 
 **Acceptance Criteria**
 
-1. WHEN o usuário roda `R codigo angular` num projeto com `angular.json` THEN o script SHALL gravar `src/styles/prototipo.css` com o conteúdo de `estilo.css` seguido do `tema.css` e acrescentar esse caminho ao `styles` do projeto no `angular.json`
+1. WHEN o usuário roda `R codigo angular` num projeto com `angular.json` THEN o script SHALL gravar `src/styles/prototipo.css` com as regras de `estilo.css` seguidas das de `tema.css`, cada seletor com escopo `.prototipo`, e acrescentar esse caminho ao `styles` do projeto no `angular.json`
+10. The CSS gerado SHALL não ter regra que valha fora de `.prototipo`, exceto `@keyframes`
 2. WHEN o usuário roda `R codigo react` num projeto com `package.json` que depende de `react` THEN o script SHALL gravar `src/styles/prototipo.css` e dizer qual linha de `import` pôr no arquivo de entrada
 3. WHEN o usuário roda `R codigo flutter` num projeto com `pubspec.yaml` THEN o script SHALL gravar `lib/tema/tema_prototipo.dart` com um `ThemeData` cujo `ColorScheme` usa as cores `--cor`, `--superficie`, `--fundo`, `--erro` e `--texto` do `tema.css` (o `tema.css` vence o `estilo.css`)
 4. IF o arquivo de destino já existir THEN o script SHALL sair com 1 sem sobrescrever e dizer o caminho

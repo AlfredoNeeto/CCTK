@@ -1,9 +1,9 @@
 import { produto } from './catalogo.js';
-import { cupom } from './cupons.js';
-import { calcular } from './frete.js';
+import { desconto as descontoDoCupom } from './cupons.js';
+import { freteDoPedido } from './frete.js';
 import { saldo, baixar } from './estoque.js';
 import { enviar } from './notificacoes.js';
-import { formatar, percentual } from './dinheiro.js';
+import { formatar } from './dinheiro.js';
 
 const pedidos = new Map();
 let seq = 0;
@@ -28,15 +28,9 @@ export function fecharPedido(pedidoId, { cupom: codigo, uf } = {}) {
   if (p.status !== 'aberto') throw new Error(`Pedido ${pedidoId} não está aberto`);
   const linhas = p.itens.map((i) => ({ ...produto(i.sku), qtd: i.qtd }));
   const subtotal = linhas.reduce((s, l) => s + l.preco * l.qtd, 0);
-  let desconto = 0;
-  if (codigo) {
-    const c = cupom(codigo);
-    if (subtotal < c.minimo) throw new Error(`O cupom ${codigo} exige subtotal mínimo`);
-    // O desconto nunca passa do subtotal: o total não fica abaixo do frete.
-    desconto = Math.min(subtotal, c.tipo === 'percentual' ? percentual(subtotal, c.valor) : c.valor);
-  }
+  const desconto = codigo ? descontoDoCupom(codigo, subtotal) : 0;
   const peso = linhas.reduce((s, l) => s + l.peso * l.qtd, 0);
-  const frete = subtotal >= 30000 ? 0 : calcular(uf, peso);
+  const frete = freteDoPedido(uf, peso, subtotal);
   // Tudo ou nada: confere o saldo de todos (somando SKUs repetidos) antes de baixar qualquer um.
   const porSku = new Map();
   for (const l of linhas) porSku.set(l.sku, (porSku.get(l.sku) || 0) + l.qtd);

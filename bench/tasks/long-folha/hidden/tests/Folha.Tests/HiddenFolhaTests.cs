@@ -18,6 +18,22 @@ public class HiddenFolhaTests
     }
 
     [Fact]
+    public void TabelaInss_calcula_por_faixa_e_para_no_teto()
+    {
+        Perto(253.41m, TabelaInss.Calcular(3000m), "TabelaInss 3000");
+        Perto(113.85m, TabelaInss.Calcular(1518m), "TabelaInss 1518");
+        Perto(951.63m, TabelaInss.Calcular(10000m), "TabelaInss 10000");
+    }
+
+    [Fact]
+    public void TabelaIrrf_aliquota_menos_deducao_e_isencao()
+    {
+        Perto(23.83m, TabelaIrrf.Calcular(2746.59m), "TabelaIrrf 2746,59");
+        Perto(0m, TabelaIrrf.Calcular(2000m), "TabelaIrrf 2000");
+        Perto(1579.57m, TabelaIrrf.Calcular(9048.37m), "TabelaIrrf 9048,37");
+    }
+
+    [Fact]
     public void Inss_progressivo_por_faixa()
     {
         Perto(253.41m, FolhaService.Calcular(new("Ana", 3000m, 0, 0)).Inss, "Inss 3000");

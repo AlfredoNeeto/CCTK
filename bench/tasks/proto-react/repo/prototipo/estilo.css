@@ -1,0 +1,145 @@
+/* Base do protótipo (cctk). Não edite: cores e fonte do projeto vão em tema.css. */
+:root{
+  --cor:#2563eb;--cor-escura:#1e40af;--cor-clara:#eff6ff;--sobre-cor:#fff;
+  --fundo:#f4f6f9;--superficie:#fff;--borda:#e2e8f0;--texto:#0f172a;--texto-2:#64748b;
+  --ok:#15803d;--ok-claro:#dcfce7;--alerta:#b45309;--alerta-claro:#fef3c7;--erro:#b91c1c;--erro-claro:#fee2e2;
+  --info:#0369a1;--info-claro:#e0f2fe;
+  --fonte:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--raio:8px;--menu:240px;
+  --sombra:0 1px 2px rgba(15,23,42,.06),0 2px 8px rgba(15,23,42,.05);
+  /* menu lateral: para menu escuro, troque as quatro */
+  --menu-fundo:var(--superficie);--menu-texto:var(--texto);--menu-ativo-fundo:var(--cor-clara);--menu-ativo-texto:var(--cor-escura);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:14px/1.5 var(--fonte);color:var(--texto);background:var(--fundo)}
+h1,h2,h3{margin:0;line-height:1.25}h1{font-size:22px}h2{font-size:16px}h3{font-size:14px}
+p{margin:0}a{color:var(--cor)}
+small,.fraco{color:var(--texto-2)}
+.num,.tabela .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* Layout: <body><div class="app"><aside class="menu">…</aside><main>…</main></div> */
+.app{display:grid;grid-template-columns:var(--menu) 1fr;min-height:100vh}
+.menu{background:var(--menu-fundo);color:var(--menu-texto);border-right:1px solid var(--borda);padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+.marca{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;padding:4px 8px 16px}
+.marca .logo{width:32px;height:32px;border-radius:8px;background:var(--cor);color:var(--sobre-cor);display:grid;place-items:center;font-size:14px}
+.menu nav{display:flex;flex-direction:column;gap:2px}
+.menu nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;color:inherit;text-decoration:none}
+.menu nav a:hover{background:rgba(127,127,127,.12)}
+.menu nav a.ativo{background:var(--menu-ativo-fundo);color:var(--menu-ativo-texto);font-weight:600}
+.menu .grupo{font-size:11px;text-transform:uppercase;letter-spacing:.06em;opacity:.65;padding:14px 10px 4px}
+.menu .rodape{margin-top:auto;padding:12px 10px 0;border-top:1px solid rgba(127,127,127,.25);font-size:13px}
+main{min-width:0;display:flex;flex-direction:column}
+.topo{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 28px 0}
+.topo .trilha{font-size:12px;color:var(--texto-2);margin-bottom:4px}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.conteudo{padding:20px 28px 32px;display:flex;flex-direction:column;gap:20px}
+.grade{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+
+/* Caixas */
+.cards{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.card,.caixa{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra)}
+.card{padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.card .rotulo{font-size:13px;color:var(--texto-2)}
+.card .valor{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.card .variacao{font-size:12px}.sobe{color:var(--ok)}.desce{color:var(--erro)}
+.caixa>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--borda)}
+.caixa>.corpo{padding:16px 18px}
+.caixa>footer{padding:12px 18px;border-top:1px solid var(--borda);display:flex;justify-content:space-between;align-items:center;gap:12px}
+
+/* Tabela: <div class="caixa"><table class="tabela">… */
+.tabela{width:100%;border-collapse:collapse}
+.tabela th{font-size:12px;font-weight:600;color:var(--texto-2);text-align:left;padding:10px 18px;background:var(--fundo);border-bottom:1px solid var(--borda);white-space:nowrap}
+.tabela td{padding:11px 18px;border-bottom:1px solid var(--borda);vertical-align:middle}
+.tabela tr:last-child td{border-bottom:0}
+.tabela tfoot td{font-weight:600;background:var(--fundo);border-top:1px solid var(--borda)}
+.tabela tbody tr:hover{background:#f8fafc}
+.tabela .acoes{justify-content:flex-end;flex-wrap:nowrap}
+.rolagem{overflow-x:auto}
+
+/* Formulário */
+.form{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.form .inteiro{grid-column:1/-1}
+.campo{display:flex;flex-direction:column;gap:6px}
+.campo label{font-size:13px;font-weight:600}
+.campo label .obrig{color:var(--erro)}
+input,select,textarea{font:inherit;color:inherit;background:var(--superficie);border:1px solid #cbd5e1;border-radius:6px;padding:8px 10px;min-height:38px;width:100%}
+textarea{min-height:88px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--cor);outline-offset:0;border-color:var(--cor)}
+input[type=checkbox],input[type=radio]{width:16px;min-height:16px;accent-color:var(--cor)}
+.opcao{display:flex;align-items:center;gap:8px;font-weight:400}
+.campo .ajuda{font-size:12px;color:var(--texto-2)}
+.campo.com-erro input,.campo.com-erro select,.campo.com-erro textarea{border-color:var(--erro)}
+.campo.com-erro .ajuda{color:var(--erro)}
+.filtros{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.filtros .campo{min-width:160px}
+
+/* Botões e selos */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-weight:600;padding:8px 14px;min-height:38px;border-radius:6px;border:1px solid #cbd5e1;background:var(--superficie);color:var(--texto);cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--fundo)}
+.btn.primario{background:var(--cor);border-color:var(--cor);color:var(--sobre-cor)}
+.btn.primario:hover{background:var(--cor-escura)}
+.btn.perigo{background:var(--erro);border-color:var(--erro);color:#fff}
+.btn.fantasma{border-color:transparent;background:transparent;color:var(--cor)}
+.btn.pequeno{padding:4px 10px;min-height:30px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.selo{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--fundo);color:var(--texto-2);white-space:nowrap}
+.selo.ok{background:var(--ok-claro);color:var(--ok)}.selo.alerta{background:var(--alerta-claro);color:var(--alerta)}
+.selo.erro{background:var(--erro-claro);color:var(--erro)}.selo.info{background:var(--info-claro);color:var(--info)}
+
+/* Avisos e estados */
+.aviso{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--raio);border:1px solid;font-size:14px}
+.aviso.ok{background:var(--ok-claro);border-color:#86efac;color:#14532d}
+.aviso.erro{background:var(--erro-claro);border-color:#fca5a5;color:#7f1d1d}
+.aviso.alerta{background:var(--alerta-claro);border-color:#fcd34d;color:#78350f}
+.aviso.info{background:var(--info-claro);border-color:#7dd3fc;color:#0c4a6e}
+.vazio{text-align:center;padding:48px 24px;color:var(--texto-2);display:flex;flex-direction:column;align-items:center;gap:10px}
+.vazio strong{color:var(--texto);font-size:15px}
+.carregando{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--borda),#f1f5f9,var(--borda));background-size:200% 100%;animation:pulso 1.2s infinite}
+@keyframes pulso{to{background-position:-200% 0}}
+
+/* Abas e paginação */
+.abas{display:flex;gap:4px;border-bottom:1px solid var(--borda)}
+.abas a{padding:10px 14px;color:var(--texto-2);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}
+.abas a.ativo{color:var(--cor);border-color:var(--cor);font-weight:600}
+.paginacao{display:flex;gap:4px;align-items:center}
+
+/* Modal aberto por link: <a href="#confirmar"> … <div class="modal" id="confirmar"><div class="janela">…<a href="#">Fechar</a> */
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal:target,.modal.aberto{display:flex}
+.janela{background:var(--superficie);border-radius:12px;max-width:480px;width:100%;box-shadow:0 20px 50px rgba(15,23,42,.25)}
+.janela>header{padding:18px 20px 0}.janela>.corpo{padding:12px 20px}
+.janela>footer{padding:12px 20px 18px;display:flex;justify-content:flex-end;gap:8px}
+
+/* Gráfico de barras sem biblioteca: <div class="barras"><div style="--v:60%"><span>Jan</span></div>… */
+.barras{display:flex;align-items:flex-end;gap:12px;height:180px;padding-top:18px}
+.barras>div{flex:1;height:var(--v);background:var(--cor);border-radius:4px 4px 0 0;position:relative;min-width:12px}
+.barras>div.b{background:#94a3b8}
+.barras>div[data-valor]::before{content:attr(data-valor);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--texto-2);padding-bottom:2px;white-space:nowrap}
+.barras>div span{position:absolute;top:100%;left:50%;transform:translateX(-50%);font-size:12px;color:var(--texto-2);padding-top:4px;white-space:nowrap}
+.legenda{display:flex;gap:16px;font-size:12px;color:var(--texto-2);margin-top:28px}
+.legenda i{display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--cor);margin-right:6px}
+.legenda i.b{background:#94a3b8}
+
+/* Login: <body class="entrada"><form class="caixa cartao-entrada">… */
+.entrada{min-height:100vh;display:grid;place-items:center;padding:24px}
+.cartao-entrada{width:100%;max-width:400px;padding:32px;display:flex;flex-direction:column;gap:18px}
+
+/* Mobile (Flutter/Material): <body class="mobile"><div class="tela">… largura 390 px */
+.mobile{background:#e5e7eb}
+.tela{width:390px;min-height:844px;margin:0 auto;background:var(--fundo);display:flex;flex-direction:column;position:relative}
+.barra-app{height:56px;display:flex;align-items:center;gap:12px;padding:0 16px;background:var(--cor);color:var(--sobre-cor);font-size:18px;font-weight:500}
+.barra-app a{color:inherit;text-decoration:none}
+.tela>.conteudo{padding:16px;flex:1;gap:16px}
+.lista{background:var(--superficie);border-radius:12px;overflow:hidden}
+.lista>a,.lista>div{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:56px;border-bottom:1px solid var(--borda);color:inherit;text-decoration:none}
+.lista>:last-child{border-bottom:0}
+.lista .fim{margin-left:auto;text-align:right}
+.nav-inferior{height:64px;display:flex;background:var(--superficie);border-top:1px solid var(--borda);position:sticky;bottom:0}
+.nav-inferior a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--texto-2);text-decoration:none}
+.nav-inferior a.ativo{color:var(--cor);font-weight:600}
+.fab{position:absolute;right:16px;bottom:80px;width:56px;height:56px;border-radius:16px;background:var(--cor);color:var(--sobre-cor);display:grid;place-items:center;font-size:24px;box-shadow:0 4px 12px rgba(0,0,0,.2);text-decoration:none}
+.mobile .btn{min-height:48px;border-radius:24px}
+.mobile input,.mobile select{min-height:48px}
+
+@media (max-width:800px){.app{grid-template-columns:1fr}.menu{display:none}.topo,.conteudo{padding-left:16px;padding-right:16px}}
+@media print{.menu{display:none}.app{grid-template-columns:1fr}body{background:#fff}}

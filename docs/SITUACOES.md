@@ -155,6 +155,9 @@ pediu, não suposição.
 No fim, peça **zip** ou **HTML único** para mandar ao cliente e, numa sessão nova, a **especificação** em PDF.
 Detalhes e custos medidos: [Prototipar e especificar](GUIA.md#prototipar-e-especificar).
 
+Aprovado? Na pasta do projeto, peça "leve o protótipo para o código". O kit põe o estilo do protótipo no app (Angular,
+React ou Flutter) sem mexer nas telas que já existem, e o Claude só monta as telas e liga os dados.
+
 **Confira:** nenhum dado real (nome, CPF, marca do print) ficou no protótipo; ele vai para fora.
 
 ### Usar uma biblioteca na versão atual

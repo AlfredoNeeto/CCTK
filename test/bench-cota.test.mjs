@@ -82,6 +82,9 @@ test('C4 the report shows the plugin cost, the total with it, and "não medido" 
   assert.equal(cell(md, 'node-bugfix', '**Custo com o plugin (US$)**', 'sem-sg'), '0,100');
   const old = report([run({ arm: 'toolkit', cost: 0.1 }), run({ arm: 'sem-sg', cost: 0.1 })]);
   assert.equal(cell(old, 'node-bugfix', '**Custo com o plugin (US$)**', 'toolkit'), 'não medido');
+  // A run whose plugin left no log at all (sgCost null) is unmeasured too, not a measured zero.
+  const semLog = report([run({ arm: 'toolkit', cost: 0.1, sgCost: null }), run({ arm: 'sem-sg', cost: 0.1 })]);
+  assert.equal(cell(semLog, 'node-bugfix', 'Custo do security-guidance (US$)', 'toolkit'), 'não medido');
 });
 
 test('C5 at least two long tasks with 6+ code files, the prompt naming 3+ of them', () => {
@@ -96,6 +99,9 @@ test('C5 at least two long tasks with 6+ code files, the prompt naming 3+ of the
     const prompt = JSON.parse(fs.readFileSync(path.join(tasks, id, 'task.json'), 'utf8')).prompt;
     const named = code.filter((f) => prompt.includes(f) || prompt.includes(path.basename(f)));
     assert.ok(named.length >= 3, `${id}: prompt names ${named.length}: ${named}`);
+    // The request asks for changes in 3+ files: the reference solution changes at least 3 of the repo's code files.
+    const changed = fs.readdirSync(path.join(tasks, id, 'solution'), { recursive: true }).map((f) => f.replace(/\\/g, '/')).filter((f) => code.includes(f));
+    assert.ok(changed.length >= 3, `${id}: solution changes ${changed.length}: ${changed}`);
   }
 });
 
