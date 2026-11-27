@@ -1,9 +1,11 @@
 // Generates the benchmark charts (light and dark SVG). Run: node docs/charts.mjs
 // Numbers are copied here because bench/results/ is not in git:
 // - TASKS: bench/results/2026-11-18T21-01-22-458Z/report.md (median per task, 3 runs per side);
-// - FLOWS: the 26/11/2026 spec-flow round in bench/README.md (8 tasks, 3 runs each).
+// - FLOWS: the 26/11/2026 spec-flow round in bench/README.md (8 tasks, 3 runs each);
+// - EXPERIMENTS and VERSIONS: bench/README.md, "Resultados (19/11/2026)" (test F14 checks each number is there).
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const TASKS = [ // [label, factory Opus US$, kit Sonnet US$]
   ['Dias úteis (.NET)', 0.345, 0.156],
@@ -21,7 +23,31 @@ const FLOWS = [ // [arm, US$ per run, correct runs, out of]
   ['tlc', 0.71, 24, 24],
 ];
 
-const THEMES = { // validated with the dataviz palette validator (categorical slots 1-2, both modes)
+// [label, metric, % vs its base, numbers as written in bench/README.md (base, arm in US$ when two), in the kit?]
+export const EXPERIMENTS = [
+  ['Sonnet no lugar do Opus', 'por tarefa', -52, ['52% menos'], true], // "Resultados" chart
+  ['/effort high com muitas regras', 'por acerto', -38, ['0,34', '0,21'], true], // "O que tem ganho medido"
+  ['Advisor (consulta ao Opus)', 'por acerto', -34, ['0,156', '0,103'], true], // "O que tem ganho medido"
+  ['Seção Dimensões no proposal*', 'por execução', 10, ['+10% por execução'], true], // "Dimensões de regra implícita"
+  ['Subagente de busca (Haiku)', 'por acerto', 2, ['0,124', '0,127'], false], // "O que não mostrou ganho"
+  ['Plugins LSP', 'por acerto', 11, ['subiu 11%'], false], // "O que não mostrou ganho"
+  ['Regras implícitas (skill)', 'por execução', 21, ['+21% como skill'], false], // "O que não mostrou ganho"
+  ['Dimensões em toda a spec', 'por execução', 23, ['+23% por execução'], false], // "Dimensões de regra implícita"
+  ['Regras implícitas (CLAUDE.md)', 'por execução', 45, ['+45% por execução'], false], // "O que não mostrou ganho"
+  ['Pedir o Explore', 'por acerto', 49, ['~49% mais por acerto'], false], // "O que não mostrou ganho"
+  ['Teste antes do código', 'por execução', 58, ['58% a mais'], false], // "O que não mostrou ganho"
+  ['OpenSpec em toda tarefa', 'por acerto', 353, ['0,113', '0,512'], false], // "Fluxos de spec de ponta a ponta"
+  ['tlc-spec-lean em toda tarefa', 'por acerto', 527, ['0,113', '0,709'], false], // "Fluxos de spec de ponta a ponta"
+];
+// [version, total US$, correct runs, runs]: "Regressão da 1.4.0", "Regressão da 1.1.1" and "Rodadas anteriores".
+export const VERSIONS = [
+  ['1.0.2', 4.80, 46, 48],
+  ['1.1.0', 3.98, 46, 48],
+  ['1.1.1', 4.03, 48, 48],
+  ['1.4.0', 5.33, 49, 50],
+];
+
+export const THEMES = { // validated with the dataviz palette validator (categorical slots 1-2, both modes)
   light: { kit: '#2a78d6', opus: '#eb6834', ink: '#1f2328', muted: '#59636e', grid: '#d1d9e0', bg: '#ffffff' },
   dark: { kit: '#3987e5', opus: '#d95926', ink: '#f0f6fc', muted: '#9198a1', grid: '#3d444d', bg: '#0d1117' },
 };
@@ -97,10 +123,73 @@ function fluxos(t) {
   return out.join('\n') + '\n</svg>\n';
 }
 
-const dir = path.join(import.meta.dirname, 'img');
-fs.mkdirSync(dir, { recursive: true });
-for (const [name, t] of Object.entries(THEMES)) {
-  fs.writeFileSync(path.join(dir, `custo-${name}.svg`), custo(t));
-  fs.writeFileSync(path.join(dir, `fluxos-${name}.svg`), fluxos(t));
+// Diverging bars: each decided experiment's cost change against its own base; blue entered the kit, grey stayed out.
+// shortcut: the axis stops at +100%, so the two spec flows (+353%, +527%) are drawn clipped with their value written.
+function experimentos(t) {
+  const TOP = 126, ROW = 28, MIN = -80, MAX = 100, L = 320;
+  const H = TOP + EXPERIMENTS.length * ROW + 34;
+  const x = (v) => L + ((Math.max(MIN, Math.min(MAX, v)) - MIN) / (MAX - MIN)) * (W - L - 60);
+  const rows = [...EXPERIMENTS].sort((a, b) => a[2] - b[2]);
+  const sign = (v) => (v < 0 ? `−${-v}%` : `+${v}%`);
+  const kept = EXPERIMENTS.filter((e) => e[4]).length;
+  const out = [
+    ...head(H, `Variação de custo de cada experimento do benchmark contra a sua base: ${kept} entraram no kit (custo menor ou até +10%; a seção Dimensões entrou por argumento, sem ganho de acerto medido), ${EXPERIMENTS.length - kept} ficaram de fora por custar de 2% a 527% a mais sem acertar mais`, t),
+    `<text x="0" y="22" font-size="18" font-weight="600">O que entrou no kit e o que ficou de fora</text>`,
+    `<text x="0" y="44" font-size="13" class="m">Variação de custo de cada experimento contra a sua base; a métrica está no rótulo. Entra o que acerta mais com</text>`,
+    `<text x="0" y="62" font-size="13" class="m">até +15% de custo por acerto, ou o que acerta o mesmo por menos. OpenSpec e tlc passam da escala.</text>`,
+    `<text x="0" y="80" font-size="13" class="m">* Entrou por argumento (é onde você revisa a regra implícita na spec): o ganho de acerto não foi medido.</text>`,
+    `<rect x="0" y="96" width="12" height="12" rx="2" fill="${t.kit}"/><text x="18" y="106.5" font-size="13">Entrou no kit</text>`,
+    `<rect x="120" y="96" width="12" height="12" rx="2" fill="${t.muted}"/><text x="138" y="106.5" font-size="13">Ficou de fora</text>`,
+  ];
+  for (let v = MIN; v <= MAX; v += 20) {
+    out.push(`<line x1="${x(v)}" x2="${x(v)}" y1="${TOP - 6}" y2="${H - 26}" stroke="${t.grid}" stroke-width="${v ? 1 : 2}"/>`);
+    out.push(`<text x="${x(v)}" y="${H - 8}" font-size="12" class="m" text-anchor="middle">${v ? sign(v) : '0'}</text>`);
+  }
+  rows.forEach(([label, metric, v, , kit], i) => {
+    const cy = TOP + i * ROW + ROW / 2 - 4;
+    const x0 = x(Math.min(0, v)), x1 = x(Math.max(0, v));
+    out.push(`<text class="l" x="${L - 12}" y="${cy + 4.5}" font-size="12.5" text-anchor="end">${label}, ${metric}</text>`);
+    out.push(`<rect class="b" x="${x0}" y="${cy - 8}" width="${Math.max(2, x1 - x0)}" height="16" rx="2" fill="${kit ? t.kit : t.muted}"><title>${label}: ${sign(v)} ${metric}</title></rect>`);
+    out.push(`<text class="v" x="${v < 0 ? x0 - 6 : x1 + 6}" y="${cy + 4.5}" font-size="12" font-weight="600"${v < 0 ? ' text-anchor="end"' : ''}>${sign(v)}</text>`);
+  });
+  return out.join('\n') + '\n</svg>\n';
 }
-console.log(`docs/img/{custo,fluxos}-{${Object.keys(THEMES)}}.svg`);
+
+// One dot per regression round of the full kit: cost per run, with the correct runs written on each.
+function versoes(t) {
+  const TOP = 96, PH = 140, MAX = 0.16, L = 70, PAD = 70;
+  const H = TOP + PH + 44;
+  const step = (W - L - RIGHT - 2 * PAD) / (VERSIONS.length - 1);
+  const x = (i) => L + PAD + i * step;
+  const y = (v) => TOP + PH - (v / MAX) * PH;
+  const per = VERSIONS.map(([, total, , runs]) => total / runs);
+  const desc = VERSIONS.map(([v, , ok, runs], i) => `${v} US$ ${brl(per[i])} com ${ok}/${runs}`).join(', ');
+  const out = [
+    ...head(H, `Regressão por versão do kit, custo por execução e acerto: ${desc}`, t),
+    `<text x="0" y="22" font-size="18" font-weight="600">Entre versões: 96% a 100% de acerto, US$ 0,08 a 0,11 por execução</text>`,
+    `<text x="0" y="44" font-size="13" class="m">Kit completo em todas as tarefas do benchmark, 2 execuções cada. A 1.4.0 tem 25 tarefas; as outras, 24.</text>`,
+    `<text x="0" y="62" font-size="13" class="m">Custo por execução em US$ (equivalente na API); acima de cada ponto, as execuções 100% corretas.</text>`,
+  ];
+  for (let v = 0; v <= MAX + 1e-9; v += 0.04) {
+    out.push(`<line x1="${L}" x2="${W - RIGHT}" y1="${y(v)}" y2="${y(v)}" stroke="${t.grid}" stroke-width="1"/>`);
+    out.push(`<text x="${L - 10}" y="${y(v) + 4}" font-size="12" class="m" text-anchor="end">${v ? brl(v) : '0'}</text>`);
+  }
+  out.push(`<polyline points="${per.map((v, i) => `${x(i)},${y(v)}`).join(' ')}" fill="none" stroke="${t.kit}" stroke-width="2"/>`);
+  VERSIONS.forEach(([v, , ok, runs], i) => {
+    out.push(dot(x(i), y(per[i]), t.kit, t, `${v}: US$ ${brl(per[i], 3)} por execução, ${ok}/${runs} corretas`));
+    out.push(`<text x="${x(i)}" y="${y(per[i]) - 14}" font-size="12" font-weight="600" text-anchor="middle">US$ ${brl(per[i])} · ${ok}/${runs}</text>`);
+    out.push(`<text x="${x(i)}" y="${TOP + PH + 22}" font-size="13" text-anchor="middle">${v}</text>`);
+  });
+  return out.join('\n') + '\n</svg>\n';
+}
+
+// Writes only when run directly, so the tests can import the data without regenerating.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const dir = path.join(import.meta.dirname, 'img');
+  fs.mkdirSync(dir, { recursive: true });
+  const charts = { custo, fluxos, experimentos, versoes };
+  for (const [name, t] of Object.entries(THEMES)) {
+    for (const [chart, draw] of Object.entries(charts)) fs.writeFileSync(path.join(dir, `${chart}-${name}.svg`), draw(t));
+  }
+  console.log(`docs/img/{${Object.keys(charts)}}-{${Object.keys(THEMES)}}.svg`);
+}

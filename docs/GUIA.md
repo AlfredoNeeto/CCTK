@@ -11,6 +11,7 @@ Como trabalhar com o Claude Code depois de instalar o kit. Leva 5 minutos para l
 | Começar: acabei de instalar | [Primeiro uso](#primeiro-uso) |
 | Corrigir um bug ou construir uma feature | [Desenvolver](#desenvolver) |
 | Mostrar telas ao cliente ou escrever a especificação | [Prototipar e especificar](#prototipar-e-especificar) |
+| Uma receita pronta para a minha situação (bug com log, banco, card, protótipo, PR...) | [Situações](SITUACOES.md) |
 | Escrever pedidos que o Claude acerta de primeira | [Guia de prompts](PROMPTS.md) |
 | Dar um token ao Claude sem ele ver o valor | [Tokens e senhas (cofre)](#tokens-e-senhas-cofre) |
 | Gastar menos cota | [Economizar cota](#economizar-cota) |

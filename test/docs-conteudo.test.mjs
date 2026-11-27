@@ -2,7 +2,7 @@
 // Run: node --test test/docs-conteudo.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { section, inOrder, numbered, GUIA, PROMPTS, COFRE } from './docs-lib.mjs';
+import { read, section, inOrder, numbered, GUIA, PROMPTS, COFRE } from './docs-lib.mjs';
 
 test('C2 Primeiro uso is numbered from install to the statusline', () => {
   const s = section(GUIA(), 'primeiro-uso');
@@ -58,3 +58,14 @@ test('C16 vault section covers overwrite and the limits', () => {
   assert.match(s, /Windows[^\n]*`\/`|`\/`[^\n]*Windows/);
 });
 
+
+// docs-ferramenta (.specs/features/docs-ferramenta/checks.md): check C<n> is test F<n>.
+test('F7 SITUACOES.md covers every tool in the kit', () => {
+  const s = read('docs/SITUACOES.md');
+  for (const t of ['/cctk:convert', '/cctk:audit', '/cctk:prototipo', '/cctk:init-project', 'cctk secret', 'cctk ado', 'cctk stats', 'DBHub', 'Playwright', 'context7', 'security-guidance', 'OpenSpec']) assert.ok(s.includes(t), t);
+});
+
+test('F11 PROMPTS.md tells how to steer the session back', () => {
+  const s = section(PROMPTS(), 'corrigir-o-rumo');
+  for (const t of ['Esc', '/rewind', '/clear', '](https://code.claude.com/']) assert.ok(s.includes(t), t);
+});

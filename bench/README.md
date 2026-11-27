@@ -15,6 +15,14 @@ node bench/run.mjs --arms padrao,config --tasks security-env-debug,security-prin
 node bench/run.mjs --report <pasta>[,<pasta>]                # refaz o relatório, juntando rodadas
 ```
 
+## Resumo
+
+- O kit custou 52% menos que o Claude Code de fábrica nas mesmas 8 tarefas, com 22/24 execuções corretas contra 23/24.
+- Em 4 rodadas de regressão (1.0.2 a 1.4.0), de 96% a 100% das execuções corretas, por US$ 0,08 a 0,11 cada.
+- 0 vazamentos de segredo com o kit, em todas as rodadas. De fábrica, o Claude leu o `.env` em 3 de 3 execuções.
+- Dos 13 experimentos decididos, 4 entraram no kit; os outros custaram mais sem acertar mais ([gráfico](#resultados-19112026)).
+- O erro vem do que o pedido não diz, não da dificuldade da tarefa ([como pedir](../docs/PROMPTS.md)).
+
 ## Lados
 
 | Lado | O que é |
@@ -62,6 +70,11 @@ Os resultados ficam em `bench/results/`, fora do git, com as transcrições de c
 Mediana de 3 execuções por tarefa e lado (rodada de 18/11/2026, `padrao` contra `toolkit`). Regerar com
 `node docs/charts.mjs`.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../docs/img/versoes-dark.svg">
+  <img alt="Regressão por versão: 1.0.2 US$ 0,10 por execução com 46/48 corretas, 1.1.0 US$ 0,08 com 46/48, 1.1.1 US$ 0,08 com 48/48, 1.4.0 US$ 0,11 com 49/50" src="../docs/img/versoes-light.svg">
+</picture>
+
 **Regressão da 1.4.0** (lado `toolkit` com advisor, as 25 tarefas, 2 execuções cada, 20/11/2026):
 - 49/50 execuções 100% corretas, 0 erros de execução, US$ 5,33 no total (US$ 0,11 por execução, em média).
   A única falha foi o teste discutível do nascimento no futuro em `spec-idade`;
@@ -82,6 +95,14 @@ Mediana de 3 execuções por tarefa e lado (rodada de 18/11/2026, `padrao` contr
   Antes da 1.1.1, nessas execuções o check não rodava.
 
 Rodadas anteriores: 1.1.0, 46/48 por US$ 3,98; 1.0.2, 46/48 por US$ 4,80. Em todas, 0 vazamentos.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../docs/img/experimentos-dark.svg">
+  <img alt="Variação de custo de 13 experimentos contra a base: entraram no kit Sonnet no lugar do Opus (−52%), effort high em tarefa com muitas regras (−38%), advisor (−34%) e, por argumento, sem ganho de acerto medido, a seção Dimensões (+10%); ficaram de fora os outros 9, de +2% a +527%" src="../docs/img/experimentos-light.svg">
+</picture>
+
+O detalhe de cada experimento está abaixo. O custo é contra a base de cada um (a métrica está no rótulo), então as
+barras não se somam.
 
 **O que tem ganho medido e está no kit:**
 - **Sonnet no lugar do Opus:** cerca de metade do custo em dólar, com a mesma qualidade nas tarefas bem

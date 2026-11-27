@@ -8,15 +8,15 @@ mostra a cota. Projeto da comunidade, sem vínculo com a Anthropic.
 
 [![npm](https://img.shields.io/npm/v/@alfredoneeto/cctk)](https://www.npmjs.com/package/@alfredoneeto/cctk) ![versão](https://img.shields.io/badge/vers%C3%A3o-1.4.1-blue) ![licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green) ![node](https://img.shields.io/badge/node-%E2%89%A5%2022.20-339933)
 
-**[Instalar](#instalar)** · **[📖 Guia do dia a dia](docs/GUIA.md)** · [Guia de prompts](docs/PROMPTS.md) · [Comandos](#comandos) · [Benchmark](bench/README.md)
+**[Instalar](#instalar)** · **[📖 Guia do dia a dia](docs/GUIA.md)** · [Situações](docs/SITUACOES.md) · [Guia de prompts](docs/PROMPTS.md) · [Comandos](#comandos) · [Benchmark](bench/README.md)
 
-![Claude Code com o kit: statusline com a cota, leitura do .env bloqueada e uso da semana](demo/toolkit.gif)
+<img alt="Claude Code com o kit: statusline com a cota, leitura do .env bloqueada e uso da semana" src="https://raw.githubusercontent.com/AlfredoNeeto/cctk/main/demo/toolkit.gif">
 
 ## Resultados
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/custo-dark.svg">
-  <img alt="Custo por tarefa: o kit custou 52% menos que o Claude Code de fábrica nas 8 tarefas" src="docs/img/custo-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/AlfredoNeeto/cctk/main/docs/img/custo-dark.svg">
+  <img alt="Custo por tarefa: o kit custou 52% menos que o Claude Code de fábrica nas 8 tarefas" src="https://raw.githubusercontent.com/AlfredoNeeto/cctk/main/docs/img/custo-light.svg">
 </picture>
 
 | −52% | 22/24 | 0/3 |
@@ -28,8 +28,8 @@ medida sozinha nas 25 tarefas do benchmark, 2 execuções cada: **49/50 execuç�
 execução** e **0 vazamentos** em 10 execuções de segurança ([detalhes](bench/README.md#resultados-19112026)).
 
 Medido com o Claude Code real, em HOMEs isoladas e com testes ocultos. O custo é o equivalente em dólar na
-API; quanto cada modelo pesa na cota do Pro não é documentado. O que não ajudou ficou de fora.
-[Método e números →](bench/README.md)
+API; quanto cada modelo pesa na cota do Pro não é documentado. Dos 13 experimentos decididos, 4 entraram; o que
+não ajudou ficou de fora. [Método, números e o placar dos experimentos →](bench/README.md)
 
 ## Para quem é
 
@@ -86,13 +86,22 @@ No Windows, rode no PowerShell ou no Terminal. Com proxy corporativo, defina ant
 4. Peça uma tarefa pequena. Depois, leia o **[Guia do dia a dia](docs/GUIA.md)**.
 
 O passo a passo completo, com o que conferir em cada etapa, está no [Primeiro uso](docs/GUIA.md#primeiro-uso).
-Para escrever pedidos que o Claude acerta de primeira: [Guia de prompts](docs/PROMPTS.md).
+
+## Documentação
+
+| Leia | Quando |
+|---|---|
+| [Primeiro uso](docs/GUIA.md#primeiro-uso) | Acabou de instalar: do `install` ao primeiro pedido, passo a passo |
+| [Situações](docs/SITUACOES.md) | Quer uma receita pronta: bug com log, banco, card do Azure DevOps, protótipo, revisão de PR, cota acabando |
+| [Guia de prompts](docs/PROMPTS.md) | Quer que o Claude acerte de primeira: princípios com fonte, modelos por tipo de pedido e como corrigir o rumo |
+| [Guia do dia a dia](docs/GUIA.md) | Referência: desenvolver, prototipar, statusline, check, cofre, Azure DevOps e o que fazer quando dá erro |
+| [Benchmark](bench/README.md) | Quer saber por que o kit é assim: o método, os números e o que ficou de fora |
 
 ## Comandos
 
 | No terminal (`cctk ...`) | Para quê |
 |---|---|
-| `install [--dry-run]` | Instala o kit, ou mostra o que mudaria |
+| `install [--dry-run] [--yes]` | Instala o kit, mostra o que mudaria (`--dry-run`) ou instala sem perguntas (`--yes`) |
 | `update` | Baixa a versão nova e atualiza, mantendo seus ajustes |
 | `doctor` | Confere a instalação e diz o que fazer em cada falha |
 | `trust` | Aprova o check do projeto (rode na pasta dele) |
@@ -153,10 +162,30 @@ cctk restore <data>    # um backup específico (lista em ~/.cctk/backups/)
 Devolve sua configuração, seus plugins e MCPs, e tira os plugins do kit. Se quiser, apague à mão a pasta
 `~/.cctk/` e rode `npm uninstall -g @alfredoneeto/cctk @fission-ai/openspec @playwright/cli`.
 
-## Privacidade
+## Perguntas frequentes
 
-Sem telemetria. O `stats` lê só as transcrições locais. O context7 recebe suas buscas de documentação, e o
-MCP do Azure DevOps fala só com o seu servidor.
+**Vou perder meus plugins, MCPs e skills?**
+Na primeira instalação, sim, com backup em `~/.cctk/backups/`; o `cctk restore` devolve tudo. As atualizações não
+removem nada.
+
+**Posso usar o Opus?**
+Sim: `claude --model opus` para planejar. O kit abre no Sonnet porque, no benchmark, ele fez as mesmas tarefas
+por cerca de metade do custo.
+
+**Como desligo uma peça, como o advisor?**
+Apague `"advisorModel"` do `~/.claude/settings.json`. O próximo `cctk install` o recoloca
+([Deu problema?](docs/GUIA.md#deu-problema)).
+
+**O time inteiro precisa instalar?**
+Cada pessoa roda `cctk install` uma vez. O `/cctk:init-project` grava no repositório o Sonnet e a sugestão do
+plugin, então quem clona já recebe o mesmo jeito de trabalhar.
+
+**Funciona no Windows?**
+Sim. A diferença é que lá os comandos de terminal não ficam em sandbox; as travas de segredo e de Edit/Write valem.
+
+**O kit manda dados para algum lugar?**
+Sem telemetria. O `stats` lê só as transcrições locais. O context7 recebe suas buscas de documentação, e o MCP do
+Azure DevOps fala só com o seu servidor.
 
 ## Problemas e contribuições
 

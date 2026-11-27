@@ -12,7 +12,11 @@ todas escritas, deram 10/10; quase todas as falhas eram uma regra que faltava no
 - [Princípios](#princípios)
 - [No Claude Code](#no-claude-code)
 - [Modelo para copiar](#modelo-para-copiar)
+- [Modelos por situação](#modelos-por-situação)
+- [Corrigir o rumo](#corrigir-o-rumo)
 - [Fontes](#fontes)
+
+Quer o passo a passo completo de uma situação (comandos do kit e o que conferir)? Veja [Situações](SITUACOES.md).
 
 ## Princípios
 
@@ -143,6 +147,89 @@ Hoje: <o que acontece> | Esperado: <o que deveria acontecer, com um valor concre
 Regras que não estão no código: <o porquê, os casos estranhos>
 Pronto quando: <o teste ou comando que passa>
 ```
+
+## Modelos por situação
+
+O mesmo modelo, preenchido para os pedidos mais comuns. Troque o que está entre `< >`.
+
+**Bug com sintoma conhecido**
+
+```text
+<Ação> com <entrada concreta> dá <resultado errado>, mas o certo é <resultado certo> (<a regra>).
+Onde: @<arquivo>
+Pronto quando: esse caso está num teste e <comando de teste> passa.
+```
+
+**Bug a partir de um erro ou log**
+
+```text
+Em <log> está a saída de <o que você rodou>. Diga a causa antes de mudar código e me mostre a linha.
+Depois corrija e escreva um teste que falharia sem a correção.
+<log>
+<cole aqui>
+</log>
+```
+
+**Feature pequena (regra clara, até uns 3 arquivos)**
+
+```text
+Adicione <o que> em @<arquivo>. Siga o padrão de @<arquivo parecido que já existe>.
+Exemplo: <entrada> → <saída esperada>.
+Fora do escopo: <o que não mexer>.
+Pronto quando: <teste ou comando> passa.
+```
+
+**Feature com regra de negócio (vai para o OpenSpec)**
+
+```text
+/openspec-propose <a feature em uma frase>. Regras que eu sei: <lista>.
+Casos que eu não sei responder: <data no futuro? valor zerado? registro repetido?>.
+```
+
+**Pergunta sobre o código (sem mudar nada)**
+
+```text
+Sem editar nada: como <o fluxo ou a regra> funciona hoje? Comece por @<arquivo ou pasta>.
+Responda com os arquivos e linhas que provam cada passo.
+```
+
+**Refatoração (mesmo comportamento)**
+
+```text
+Refatore @<arquivo> para <objetivo: separar X, tirar duplicação de Y>, sem mudar o comportamento.
+Antes de mexer, rode <comando de teste> e anote o resultado; no fim, o mesmo comando tem que passar igual.
+Não mude a interface pública: <funções ou rotas que outros usam>.
+```
+
+**Revisão antes do PR**
+
+```text
+Revise o diff contra a main (git diff main...HEAD). Procure bug, caso de borda sem teste e segredo no código.
+Para cada achado: arquivo:linha, o problema e um caso que quebra. Não edite nada.
+```
+
+**A partir de um documento (requisito, contrato, e-mail)**
+
+```text
+<documento>
+<cole aqui, ou use @docs/requisitos.md depois do /cctk:convert>
+</documento>
+Liste as regras do documento acima, uma por linha, citando o trecho de cada uma.
+Marque como "em aberto" o que o documento não decide. Não escreva código ainda.
+```
+
+## Corrigir o rumo
+
+Corrigir cedo custa menos que desfazer depois.
+
+| Quando | Faça |
+|---|---|
+| O Claude começou a ir pelo caminho errado | `Esc` para no meio da ação e mantém o que já foi feito. Diga o que mudar |
+| A tentativa estragou o código ou a conversa | `/rewind` (ou `Esc` duas vezes com o campo vazio) volta o código, a conversa ou os dois a um pedido anterior |
+| Você já corrigiu a mesma coisa duas vezes e continua errado | `/clear` e um pedido novo que já inclua o que você aprendeu. Uma terceira correção só soma mais duas tentativas erradas para ele reler |
+
+Fonte: [Claude Code best practices, "Steer the session"](https://code.claude.com/docs/en/best-practices#steer-the-session) e
+[Checkpointing](https://code.claude.com/docs/en/checkpointing).
 
 ## Fontes
 
