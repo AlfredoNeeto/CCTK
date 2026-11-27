@@ -185,6 +185,10 @@ async function checar(dir) {
           .filter((h) => h && !/^(#|https?:|mailto:|tel:|javascript:)/i.test(h));
         return { out, links };
       });
+      // Notebook comum e largura da maioria dos prints: o que cabe em 1440 pode vazar aqui.
+      await page.setViewportSize({ width: 1280, height: 900 });
+      const sw = await page.evaluate(() => !document.body.classList.contains('mobile') && document.documentElement.scrollWidth);
+      if (sw > 1281 && !r.out.some((o) => o.startsWith('rolagem horizontal'))) r.out.push(`rolagem horizontal: ${sw}px numa janela de 1280px (cabe em 1440, não em notebook)`);
       for (const [k, itens] of Object.entries(notas)) {
         if (k.split('#')[0] !== f) continue;
         const faltam = await page.evaluate(MARCAR, itens);
@@ -278,6 +282,7 @@ async function lado(original, tela, saida) {
     await page.setViewportSize({ width: Math.round(w / dpr), height: Math.round(h / dpr) });
     const p2 = await b.newPage({ viewport: { width: Math.round(w / dpr), height: Math.round(h / dpr) }, deviceScaleFactor: dpr });
     await abrir(p2, tela);
+    const largo = await p2.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     await p2.screenshot({ path: tmp + '.png' });
     const W = 1560; // cabe no limite de imagem do Claude sem ser reduzida de novo
     fs.writeFileSync(tmp + '.html', `<!doctype html><meta charset="utf-8"><style>body{margin:0;font:600 14px system-ui;background:#fff}
@@ -286,6 +291,7 @@ async function lado(original, tela, saida) {
     await page.setViewportSize({ width: W, height: 400 });
     await page.goto(url(tmp + '.html'));
     await page.screenshot({ path: saida, fullPage: true });
+    if (largo > 1) console.log(`atenção: o protótipo passa ${largo}px da largura do print; a imagem corta o que está à direita. Faça a linha caber.`);
     console.log(`ok ${saida} (abra esta imagem para comparar)`);
   } finally {
     await b.close();
