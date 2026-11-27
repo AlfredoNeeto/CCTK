@@ -455,12 +455,23 @@ export function escopo(css, raiz = '.prototipo') {
     for (let j = abre; j < txt.length; j++) if (txt[j] === '{') n++; else if (txt[j] === '}' && --n === 0) return j + 1;
     return txt.length;
   };
+  // The next `ch` outside quotes and parentheses: the Google Fonts URL (`wght@400;600`) has ";" inside url(...).
+  const proximo = (txt, ch, de) => {
+    let aspas = '', paren = 0;
+    for (let j = de; j < txt.length; j++) {
+      const c = txt[j];
+      if (aspas) { if (c === aspas) aspas = ''; } else if (c === '"' || c === "'") aspas = c;
+      else if (c === '(') paren++; else if (c === ')') paren--;
+      else if (c === ch && paren <= 0) return j;
+    }
+    return -1;
+  };
   const semComentario = css.replace(/\/\*[\s\S]*?\*\//g, '');
   let out = '';
   const imports = []; // @import só vale no topo do arquivo: vai para lá
   for (let i = 0; i < semComentario.length;) {
-    const abre = semComentario.indexOf('{', i);
-    const ponto = semComentario.indexOf(';', i);
+    const abre = proximo(semComentario, '{', i);
+    const ponto = proximo(semComentario, ';', i);
     // At-rule sem bloco (@import, @layer a, b;): copiada inteira até o ";".
     if (semComentario.slice(i).trimStart().startsWith('@') && ponto >= 0 && (abre < 0 || ponto < abre)) {
       const regra = semComentario.slice(i, ponto + 1).trim();
@@ -471,7 +482,8 @@ export function escopo(css, raiz = '.prototipo') {
     if (abre < 0) { out += semComentario.slice(i); break; }
     const cabeca = semComentario.slice(i, abre).trim();
     const f = fim(semComentario, abre);
-    if (/^@(media|supports)\b/.test(cabeca)) out += `${cabeca}{${escopo(semComentario.slice(abre + 1, f - 1), raiz)}}\n`;
+    // At-rules whose block holds rules: scoped inside. Others (@keyframes, @font-face) are copied as they are.
+    if (/^@(media|supports|layer|container)\b/.test(cabeca)) out += `${cabeca}{${escopo(semComentario.slice(abre + 1, f - 1), raiz)}}\n`;
     else if (cabeca.startsWith('@')) out += `${semComentario.slice(i, f).trim()}\n`;
     else if (cabeca) out += `${sel(cabeca)}${semComentario.slice(abre, f)}\n`;
     i = f;

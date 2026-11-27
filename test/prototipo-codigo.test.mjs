@@ -24,7 +24,8 @@ function projeto(arquivos, tema = ':root{--cor:#0a7d4f;--erro:#c00}\n.topo h1{le
   }
   return dir;
 }
-const ANGULAR = { 'angular.json': { projects: { app: { architect: { build: { options: { styles: ['src/styles.css'] } } } } } } };
+const ANGULAR = { 'angular.json': { projects: { app: { architect: {
+  build: { options: { styles: ['src/styles.css'] } }, test: { options: { styles: ['src/styles.css'] } } } } } } };
 const REACT = { 'package.json': { dependencies: { react: '^19.0.0' } }, 'src/main.jsx': '' };
 const cli = (dir, ...a) => spawnSync(process.execPath, [RENDER, 'codigo', ...a], { cwd: dir, encoding: 'utf8' });
 
@@ -38,6 +39,7 @@ test('C1 angular: the scoped prototype CSS goes first in styles, estilo before t
   assert.match(css, /\.prototipo \.topo h1\{letter-spacing:\.2px\}/, 'tema rules scoped too');
   const cfg = JSON.parse(fs.readFileSync(path.join(dir, 'angular.json'), 'utf8'));
   assert.deepEqual(cfg.projects.app.architect.build.options.styles, ['src/styles/prototipo.css', 'src/styles.css']);
+  assert.deepEqual(cfg.projects.app.architect.test.options.styles, ['src/styles/prototipo.css', 'src/styles.css'], 'component tests get it too');
 });
 
 test('C10 every selector outside @keyframes is scoped to .prototipo', () => {
@@ -45,6 +47,11 @@ test('C10 every selector outside @keyframes is scoped to .prototipo', () => {
   assert.match(css, /^@import url\("fonte\.css"\);\n/, '@import goes to the top');
   assert.match(css, /^@layer base;$/m, '@layer statement kept');
   assert.match(css, /^\.prototipo\{--fonte:Inter\}/m, 'a rule after an @import is still scoped');
+  // The Google Fonts URL has ";" inside url(...), and an @layer block holds rules that must be scoped too.
+  const fontes = escopo("@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');\n:root{--cor:#1}\n@layer tema{.btn{x:1}}\n");
+  assert.match(fontes, /^@import url\('https:\/\/fonts\.googleapis\.com\/css2\?family=Inter:wght@400;600&display=swap'\);$/m, 'whole Google Fonts @import');
+  assert.match(fontes, /^\.prototipo\{--cor:#1\}/m, ':root after the Google Fonts @import');
+  assert.match(fontes, /@layer tema\{\.prototipo \.btn\{x:1\}/, '@layer block scoped inside');
   assert.match(css, /\.prototipo \.btn\{/);
   assert.match(css, /^\.prototipo\{\s*--cor:/m, ':root becomes .prototipo');
   assert.match(css, /\.prototipo\.mobile\{color:red\}/, 'body.mobile');

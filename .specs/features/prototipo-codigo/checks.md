@@ -13,10 +13,10 @@ entrada (C9) é conferida sobre uma rodada real, em `test/prototipo-codigo-rodad
 
 ### S1 - tema gerado por script · 2 files · 30 KB · ~8k
 
-**C1** - Num projeto com `angular.json` (um projeto com `architect.build.options.styles: ["src/styles.css"]`), `codigo('angular')` grava `src/styles/prototipo.css` com as regras de `estilo.css` seguidas das de `tema.css` (a regra de `--cor` do tema vem depois da do estilo), e o `styles` passa a ser `["src/styles/prototipo.css", "src/styles.css"]` (AC 1)
+**C1** - Num projeto com `angular.json` (um projeto com `architect.build.options.styles: ["src/styles.css"]`), `codigo('angular')` grava `src/styles/prototipo.css` com as regras de `estilo.css` seguidas das de `tema.css` (a regra de `--cor` do tema vem depois da do estilo), e o `styles` do `build` e do `test` passa a ser `["src/styles/prototipo.css", "src/styles.css"]` (AC 1)
 Proof: `node --test --test-name-pattern "^C1 " test/prototipo-codigo.test.mjs`
 
-**C10** - No CSS gerado, todo seletor fora de `@keyframes` começa por `.prototipo` (`.btn` vira `.prototipo .btn`, `:root` e `body` viram `.prototipo`, `body.mobile` vira `.prototipo.mobile`, e as regras dentro de `@media` também), `@keyframes pulso` fica como está, um `@import` do tema vai para o topo e `@layer base;` fica, e a regra depois deles continua com escopo (AC 10)
+**C10** - No CSS gerado, todo seletor fora de `@keyframes` começa por `.prototipo` (`.btn` vira `.prototipo .btn`, `:root` e `body` viram `.prototipo`, `body.mobile` vira `.prototipo.mobile`, e as regras dentro de `@media` também), `@keyframes pulso` fica como está, um `@import` do tema vai para o topo e `@layer base;` fica, e a regra depois deles continua com escopo, inclusive depois do `@import` do Google Fonts (com `;` dentro do `url(...)`), e as regras dentro de um bloco `@layer` também ganham escopo (AC 10)
 Proof: `node --test --test-name-pattern "^C10 " test/prototipo-codigo.test.mjs`
 
 **C2** - Num projeto com `package.json` que depende de `react` e tem `src/main.jsx`, `codigo('react')` grava `src/styles/prototipo.css` e devolve um aviso com `import './styles/prototipo.css'` e `src/main.jsx` (AC 2)
@@ -73,6 +73,8 @@ Proof: `BENCH_ROUND=<rodada> node --test --test-name-pattern "^C9 " test/prototi
 - observability: C2 - o comando diz a linha a pôr no arquivo de entrada
 
 ## Handoff
+
+- **Round 3 (verificação de 27/11, FAIL só por C9 pendente):** o escopo acha o fim do `@import` fora de aspas e parênteses (o endereço do Google Fonts tem `;`) e escopa blocos `@layer`/`@container`; o modal dos testes ocultos também conta como aberto por `style.display` e `<dialog open>` (5 variantes conferidas: 4 jeitos válidos passam 7/7, o modal que nunca abre falha); C1 cobre o alvo `test` do Angular
 
 - **Round 2 (verificação de 27/11, FAIL só por C9 pendente, com achados):** os testes ocultos do `proto-react` passam a aceitar o modal aberto por `:target` (cópia fiel do protótipo) além do aberto por estado, e normalizam o espaço inquebrável do `toLocaleString`; o escopo sobe `@import` e mantém `@layer` de uma linha; no Flutter, `--fundo` vira `surfaceContainer` (era `surfaceContainerLowest`, papel invertido), com aviso de versão e de registrar a fonte; o Angular também põe o estilo no alvo `test`; os mapas avisam sobre portal e overlay; o cache de dependências só vale com a marca `.ok`
 - **Limite conhecido do C9:** os testes ocultos conferem texto, `id` e navegação, não o visual; o C9 mede o custo de levar as telas ao código com o comportamento certo

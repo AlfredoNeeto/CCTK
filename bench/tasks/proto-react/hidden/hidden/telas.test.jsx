@@ -19,8 +19,17 @@ function clicar(el) {
 }
 function visivel(el) {
   if (!el) return false;
+  // Hidden by state: hidden attribute, inline display:none, or a closed <dialog> on the way up.
+  for (let n = el; n; n = n.parentElement) {
+    if (n.hidden || n.style?.display === 'none') return false;
+    if (n.tagName === 'DIALOG' && !n.open) return false;
+  }
   const modal = el.closest('.modal');
-  return !modal || modal.classList.contains('aberto') || (modal.id !== '' && window.location.hash === `#${modal.id}`);
+  if (!modal) return true;
+  // The catalog's .modal is display:none until opened: by class "aberto", an inline display, an open <dialog>,
+  // or :target (the address points at its id).
+  return modal.classList.contains('aberto') || (modal.style.display !== '' && modal.style.display !== 'none') ||
+    (modal.tagName === 'DIALOG' && modal.open) || (modal.id !== '' && window.location.hash === `#${modal.id}`);
 }
 
 test('login: título, CPF, senha e o botão Entrar', () => {
