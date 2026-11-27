@@ -7,6 +7,9 @@ Status: C1-C14 verdes; rodada `bench/results/2026-11-27T14-45-03-319Z` (a regra 
 em fixtures). Rodada 2: C3, C5, C9 e C10 reforçados e C13–C14 acrescentados, a partir das lacunas da verificação 1.
 Rodada 3: C9 ganha os casos que pegam a comparação só com o `toolkit`; C13 prova o custo na rodada; C14 confere a âncora
 e o "mais barato" do Haiku (lacunas G1, G2 e G4 da verificação 2).
+Depois da verificação 3 (limite de rodadas): C9 ganha o caso espelho (mais acertos que o `explore`, menos que o `toolkit`) e C14
+lê o link do próprio item; os dois mutantes (R1, R3) conferidos pelo autor, não por verificador. Abertos: R2 (na rodada, o
+primeiro e o último `result` têm o mesmo custo, então C13 não distingue os dois) e R4 (C14 só barra o texto antigo do Haiku).
 
 14 checks in 2 slices · 2 one-way doors · 0 open, of which 0 block
 
